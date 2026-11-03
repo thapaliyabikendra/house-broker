@@ -2,12 +2,19 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\HouseBroker.Application\HouseBroker.Application.csproj" />
+    <ProjectReference Include="..\..\src\HouseBroker.Application.Contracts\HouseBroker.Application.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\HouseBroker.Infrastructure\HouseBroker.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\HouseBroker.ServiceDefaults\HouseBroker.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>
