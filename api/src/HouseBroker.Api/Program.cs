@@ -2,6 +2,7 @@ using HouseBroker.Api.Authorization;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Infrastructure;
 using HouseBroker.ServiceDefaults;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
@@ -11,6 +12,13 @@ builder.AddServiceDefaults();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IListingService, HouseBroker.Application.Services.ListingService>();
+builder.Services.AddScoped<IValidator<HouseBroker.Application.Contracts.CreateListingRequest>, HouseBroker.Application.Services.CreateListingRequestValidator>();
+builder.Services.AddScoped<IValidator<HouseBroker.Application.Contracts.UpdateListingRequest>, HouseBroker.Application.Services.UpdateListingRequestValidator>();
+builder.Services.AddScoped<IIdempotencyService, HouseBroker.Infrastructure.IdempotencyService>();
+builder.Services.AddScoped<HouseBroker.Application.ICommissionRateRepository, HouseBroker.Infrastructure.CommissionRateRepository>();
+builder.Services.AddScoped<ICommissionRateAdminService, HouseBroker.Application.Services.CommissionRateAdminService>();
+builder.Services.AddHostedService<HouseBroker.Infrastructure.IdempotencyCleanupService>();
+builder.Services.AddScoped<ILookupService, HouseBroker.Application.Services.LookupService>();
 builder.Services.AddControllers();
 
 var connectionString = builder.Configuration.GetConnectionString("HouseBroker");

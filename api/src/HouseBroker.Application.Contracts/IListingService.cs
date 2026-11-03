@@ -16,6 +16,9 @@ public interface IListingService
     /// <summary>Gets public detail.</summary>
     Task<Result<ListingDetailDto>> GetDetailAsync(Guid id, bool includeContact, CancellationToken cancellationToken);
 
+    /// <summary>Searches listings.</summary>
+    Task<Result<PagedResult<ListingSummaryDto>>> SearchAsync(ListingSearchQuery query, CancellationToken cancellationToken);
+
     /// <summary>Gets owner detail.</summary>
     Task<Result<OwnerListingDto>> GetOwnerDetailAsync(Guid id, CancellationToken cancellationToken);
 

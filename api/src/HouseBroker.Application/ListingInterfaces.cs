@@ -21,6 +21,12 @@ public interface IListingRepository
 
     /// <summary>Removes a listing.</summary>
     Task RemoveAsync(Domain.Listing listing, CancellationToken cancellationToken);
+
+    /// <summary>Adds a price history entry.</summary>
+    Task AddPriceHistoryAsync(Domain.ListingPriceHistory priceHistory, CancellationToken cancellationToken);
+
+    /// <summary>Adds a status history entry.</summary>
+    Task AddStatusHistoryAsync(Domain.ListingStatusHistory statusHistory, CancellationToken cancellationToken);
 }
 
 /// <summary>Listing queries.</summary>
@@ -34,4 +40,13 @@ public interface IListingQueries
 
     /// <summary>Searches listings.</summary>
     Task<PagedResult<ListingSummaryDto>> SearchAsync(ListingSearchQuery query, CancellationToken cancellationToken);
+
+    /// <summary>Gets a broker profile.</summary>
+    Task<BrokerProfile?> GetBrokerProfileAsync(Guid brokerId, CancellationToken cancellationToken);
+
+    /// <summary>Gets property types.</summary>
+    Task<IReadOnlyList<PropertyType>> GetPropertyTypesAsync(CancellationToken cancellationToken);
+
+    /// <summary>Gets features.</summary>
+    Task<IReadOnlyList<Feature>> GetFeaturesAsync(CancellationToken cancellationToken);
 }

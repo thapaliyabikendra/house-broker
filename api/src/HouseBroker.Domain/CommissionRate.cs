@@ -102,6 +102,18 @@ public sealed class CommissionRate
     /// <summary>Gets the concurrency token.</summary>
     public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
+    /// <summary>Updates tier values.</summary>
+    public void Update(decimal minPrice, bool minInclusive, decimal? maxPrice, bool maxInclusive, decimal ratePercent, bool isActive, DateTime effectiveFrom)
+    {
+        MinPrice = minPrice;
+        MinInclusive = minInclusive;
+        MaxPrice = maxPrice;
+        MaxInclusive = maxInclusive;
+        RatePercent = ratePercent;
+        IsActive = isActive;
+        EffectiveFrom = effectiveFrom;
+    }
+
     /// <summary>Determines whether this tier covers a price.</summary>
     public bool Covers(decimal price)
     {

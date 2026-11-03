@@ -1,4 +1,5 @@
 using HouseBroker.Api.Authorization;
+using HouseBroker.Api.Filters;
 using HouseBroker.Application.Contracts;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,8 +8,17 @@ namespace HouseBroker.Api.Controllers;
 /// <summary>Listings controller.</summary>
 [ApiController]
 [Route("v1/[controller]")]
-public sealed class ListingsController(IListingService listingService) : ControllerBase
+public sealed class ListingsController(IListingService listingService, IImageStorage imageStorage) : ControllerBase
 {
+    /// <summary>Searches listings.</summary>
+    [HttpGet]
+    [AllowAnonymous] // Anonymous search per scope.
+    public async Task<IActionResult> Search([FromQuery] ListingSearchQuery query, CancellationToken cancellationToken)
+    {
+        var result = await listingService.SearchAsync(query ?? new ListingSearchQuery(), cancellationToken);
+        return result.ToActionResult(this);
+    }
+
     /// <summary>Gets a listing.</summary>
     [HttpGet("{id:guid}")]
     [AllowAnonymous] // Anonymous listing detail per scope.
@@ -21,6 +31,7 @@ public sealed class ListingsController(IListingService listingService) : Control
 
     /// <summary>Creates a listing.</summary>
     [HttpPost]
+    [Idempotent]
     [HasPermission("listings:create")]
     public async Task<IActionResult> Create([FromBody] CreateListingRequest request, CancellationToken cancellationToken)
     {
@@ -66,6 +77,46 @@ public sealed class ListingsController(IListingService listingService) : Control
     public async Task<IActionResult> GetMineById(Guid id, CancellationToken cancellationToken)
     {
         var result = await listingService.GetOwnerDetailAsync(id, cancellationToken);
+        return result.ToActionResult(this);
+    }
+
+    /// <summary>Uploads an image.</summary>
+    [HttpPost("{id:guid}/images")]
+    [HasPermission("listings:images:manage")]
+    public async Task<IActionResult> UploadImage(Guid id, IFormFile file, CancellationToken cancellationToken)
+    {
+        if (file is null || file.Length == 0)
+        {
+            return BadRequest();
+        }
+
+        await using var stream = file.OpenReadStream();
+        var result = await imageStorage.UploadAsync(id, stream, file.FileName, file.ContentType, file.Length, cancellationToken);
+        return result.ToActionResult(this);
+    }
+
+    /// <summary>Gets an image.</summary>
+    [HttpGet("{id:guid}/images/{imageId:guid}")]
+    [AllowAnonymous] // Public listing image.
+    public async Task<IActionResult> GetImage(Guid id, Guid imageId, CancellationToken cancellationToken)
+    {
+        var result = await imageStorage.GetAsync(id, imageId, cancellationToken);
+        if (!result.IsSuccess)
+        {
+            return result.ToActionResult(this);
+        }
+
+        Response.Headers.ETag = result.Value!.ETag ?? string.Empty;
+        Response.Headers.CacheControl = "public, max-age=31536000";
+        return File(result.Value.Stream, result.Value.ContentType);
+    }
+
+    /// <summary>Deletes an image.</summary>
+    [HttpDelete("{id:guid}/images/{imageId:guid}")]
+    [HasPermission("listings:images:manage")]
+    public async Task<IActionResult> DeleteImage(Guid id, Guid imageId, CancellationToken cancellationToken)
+    {
+        var result = await imageStorage.DeleteAsync(id, imageId, cancellationToken);
         return result.ToActionResult(this);
     }
 

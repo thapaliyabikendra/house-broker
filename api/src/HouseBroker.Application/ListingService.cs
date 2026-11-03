@@ -11,7 +11,9 @@ public sealed class ListingService(
     ICommissionRateProvider commissionRates,
     ICurrentUserService currentUser,
     IUnitOfWork unitOfWork,
-    TimeProvider clock) : IListingService
+    TimeProvider clock,
+    FluentValidation.IValidator<HouseBroker.Application.Contracts.CreateListingRequest> createValidator,
+    FluentValidation.IValidator<HouseBroker.Application.Contracts.UpdateListingRequest> updateValidator) : IListingService
 {
     private readonly IListingRepository _repository = repository;
     private readonly IListingQueries _queries = queries;
@@ -19,6 +21,8 @@ public sealed class ListingService(
     private readonly ICurrentUserService _currentUser = currentUser;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly TimeProvider _clock = clock;
+    private readonly FluentValidation.IValidator<HouseBroker.Application.Contracts.CreateListingRequest> _createValidator = createValidator;
+    private readonly FluentValidation.IValidator<HouseBroker.Application.Contracts.UpdateListingRequest> _updateValidator = updateValidator;
 
     /// <inheritdoc />
     public async Task<Result<OwnerListingDto>> CreateAsync(CreateListingRequest request, CancellationToken cancellationToken)
@@ -27,6 +31,13 @@ public sealed class ListingService(
         if (brokerId is null)
         {
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
+        }
+
+        var createValidation = await _createValidator.ValidateAsync(request, cancellationToken);
+        if (!createValidation.IsValid)
+        {
+            var failure = createValidation.Errors[0];
+            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, failure.PropertyName));
         }
 
         var listing = Listing.Create(
@@ -75,6 +86,28 @@ public sealed class ListingService(
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
+        var updateValidation = await _updateValidator.ValidateAsync(request, cancellationToken);
+        if (!updateValidation.IsValid)
+        {
+            var failure = updateValidation.Errors[0];
+            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, failure.PropertyName));
+        }
+
+        if (string.IsNullOrWhiteSpace(ifMatch))
+        {
+            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.PreconditionRequired, ErrorKind.PreconditionRequired));
+        }
+
+        if (!MatchesRowVersion(listing.RowVersion, ifMatch))
+        {
+            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.PreconditionFailed, ErrorKind.PreconditionFailed));
+        }
+
+        var oldPrice = listing.Price;
+        var oldCommissionAmount = listing.CommissionAmount;
+        var oldCommissionRatePercent = listing.CommissionRatePercent;
+        var oldCommissionRateId = listing.CommissionRateId;
+
         listing.UpdateDetails(
             request.Title,
             request.Description,
@@ -93,6 +126,25 @@ public sealed class ListingService(
         var tiers = await _commissionRates.GetActiveAsync(_clock.GetUtcNow().UtcDateTime, cancellationToken);
         var commission = CommissionCalculator.Calculate(request.Price, tiers, _clock.GetUtcNow().UtcDateTime);
         listing.ApplyCommission(commission.Amount, commission.RatePercent, commission.RateId);
+
+        if (oldPrice != request.Price ||
+            oldCommissionAmount != commission.Amount ||
+            oldCommissionRatePercent != commission.RatePercent ||
+            oldCommissionRateId != commission.RateId)
+        {
+            await _repository.AddPriceHistoryAsync(ListingPriceHistory.Create(
+                listing.Id,
+                oldPrice,
+                request.Price,
+                oldCommissionAmount,
+                commission.Amount,
+                oldCommissionRatePercent,
+                commission.RatePercent,
+                oldCommissionRateId == Guid.Empty ? null : oldCommissionRateId,
+                commission.RateId,
+                brokerId.Value,
+                _clock.GetUtcNow().UtcDateTime), cancellationToken);
+        }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Result<OwnerListingDto>.Success(MapOwner(listing));
@@ -135,7 +187,16 @@ public sealed class ListingService(
         var dto = MapDetail(listing);
         if (includeContact)
         {
-            // Broker contact is added at the API boundary when permitted.
+            var profile = await _queries.GetBrokerProfileAsync(listing.BrokerId, cancellationToken);
+            if (profile is not null)
+            {
+                dto.BrokerContact = new BrokerContactDto
+                {
+                    FullName = profile.FullName,
+                    Email = profile.Email,
+                    PhoneNumber = profile.PhoneNumber,
+                };
+            }
         }
 
         return Result<ListingDetailDto>.Success(dto);
@@ -162,6 +223,35 @@ public sealed class ListingService(
         }
 
         return Result<OwnerListingDto>.Success(MapOwner(listing));
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<PagedResult<ListingSummaryDto>>> SearchAsync(ListingSearchQuery query, CancellationToken cancellationToken)
+    {
+        if (query is null)
+        {
+            return Result<PagedResult<ListingSummaryDto>>.Failure(new Error(ErrorCodes.Required, ErrorKind.Validation, nameof(query)));
+        }
+
+        if (query.MinPrice.HasValue && query.MaxPrice.HasValue && query.MinPrice.Value > query.MaxPrice.Value)
+        {
+            return Result<PagedResult<ListingSummaryDto>>.Failure(new Error(ErrorCodes.OutOfRange, ErrorKind.Validation, nameof(query.MinPrice)));
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Location) && query.Location.Trim().Length > HouseBroker.Domain.Shared.Limits.MaxSearchTextLength)
+        {
+            return Result<PagedResult<ListingSummaryDto>>.Failure(new Error(ErrorCodes.OutOfRange, ErrorKind.Validation, nameof(query.Location)));
+        }
+
+        query.Page = Math.Max(1, query.Page);
+        query.PageSize = Math.Clamp(query.PageSize, 1, HouseBroker.Domain.Shared.Limits.MaxPageSize);
+        if (query.PageSize == 0)
+        {
+            query.PageSize = HouseBroker.Domain.Shared.Limits.DefaultPageSize;
+        }
+
+        var result = await _queries.SearchAsync(query, cancellationToken);
+        return Result<PagedResult<ListingSummaryDto>>.Success(result);
     }
 
     /// <inheritdoc />
@@ -197,7 +287,9 @@ public sealed class ListingService(
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
+        var fromStatus = listing.Status;
         listing.Publish();
+        await _repository.AddStatusHistoryAsync(ListingStatusHistory.Create(listing.Id, fromStatus, listing.Status, brokerId.Value, _clock.GetUtcNow().UtcDateTime, null), cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Result<OwnerListingDto>.Success(MapOwner(listing));
     }
@@ -259,6 +351,34 @@ public sealed class ListingService(
             IsPrimary = image.IsPrimary,
             SortOrder = image.SortOrder,
         };
+
+    /// <summary>Compares an ETag/row version value.</summary>
+    public static bool MatchesRowVersion(byte[] current, string? ifMatch)
+    {
+        if (string.IsNullOrWhiteSpace(ifMatch))
+        {
+            return false;
+        }
+
+        var value = ifMatch.Trim();
+        if (value.StartsWith("W/", StringComparison.Ordinal))
+        {
+            value = value[2..].Trim().Trim('"');
+        }
+        else
+        {
+            value = value.Trim('"');
+        }
+
+        try
+        {
+            return current.AsSpan().SequenceEqual(Convert.FromBase64String(value));
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
 
     /// <summary>Inverse-free marker for compilation cleanup.</summary>
     public static void NoOp() { }

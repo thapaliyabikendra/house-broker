@@ -39,6 +39,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     /// <summary>Gets audit events.</summary>
     public DbSet<AuditEvent> AuditEvents => Set<AuditEvent>();
 
+    /// <summary>Gets idempotency keys.</summary>
+    public DbSet<IdempotencyKey> IdempotencyKeys => Set<IdempotencyKey>();
+
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +56,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureCommissionRate(modelBuilder);
         ConfigureHistory(modelBuilder);
         ConfigureAuditEvent(modelBuilder);
+        ConfigureIdempotencyKey(modelBuilder);
 
         modelBuilder.Entity<Listing>().HasQueryFilter(listing => !listing.IsDeleted);
     }
@@ -209,5 +213,23 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.Property(audit => audit.EntityType).IsRequired().HasMaxLength(100);
         entity.Property(audit => audit.OccurredAt).IsRequired();
         entity.HasIndex(audit => audit.OccurredAt);
+    }
+
+    private static void ConfigureIdempotencyKey(ModelBuilder modelBuilder)
+    {
+        var entity = modelBuilder.Entity<IdempotencyKey>();
+        entity.ToTable("IdempotencyKeys");
+        entity.HasKey(key => key.Id);
+        entity.Property(key => key.Id).ValueGeneratedNever();
+        entity.Property(key => key.Key).IsRequired().HasMaxLength(128);
+        entity.Property(key => key.Scope).IsRequired().HasMaxLength(128);
+        entity.Property(key => key.RequestHash).IsRequired().HasMaxLength(128);
+        entity.Property(key => key.ResponseBody).HasColumnType("nvarchar(max)");
+        entity.Property(key => key.CreatedAt).IsRequired();
+        entity.Property(key => key.UpdatedAt).IsRequired();
+        entity.Property(key => key.ExpiresAt).IsRequired();
+        entity.Property(key => key.RowVersion).IsRowVersion();
+        entity.HasIndex(key => new { key.Key, key.Scope }).IsUnique();
+        entity.HasIndex(key => key.ExpiresAt);
     }
 }

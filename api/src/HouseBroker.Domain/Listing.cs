@@ -148,6 +148,22 @@ public sealed class Listing
         }
     }
 
+    /// <summary>Adds an image.</summary>
+    public void AddImage(ListingImage image)
+    {
+        _images.Add(image);
+    }
+
+    /// <summary>Removes an image.</summary>
+    public void RemoveImage(Guid imageId)
+    {
+        var image = _images.FirstOrDefault(item => item.Id == imageId);
+        if (image is not null)
+        {
+            _images.Remove(image);
+        }
+    }
+
     /// <summary>Replaces features.</summary>
     public void ReplaceFeatures(IEnumerable<Guid> featureIds)
     {

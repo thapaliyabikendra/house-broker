@@ -17,6 +17,7 @@ public static class InfrastructureExtensions
             ?? throw new InvalidOperationException("Connection string 'HouseBroker' is not configured.");
 
         services.AddScoped<ICurrentUserService, NullCurrentUserService>();
+        services.AddMemoryCache();
         services.AddScoped<AuditSaveChangesInterceptor>();
         services.AddDbContext<AppDbContext>((provider, options) =>
         {
@@ -24,10 +25,14 @@ public static class InfrastructureExtensions
             options.AddInterceptors(provider.GetRequiredService<AuditSaveChangesInterceptor>());
         });
 
-        services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<AppDbContext>());
+        services.AddScoped<ICacheService, MemoryCacheService>();
+        services.AddScoped<IUnitOfWork>(provider => new CacheInvalidatingUnitOfWork(provider.GetRequiredService<AppDbContext>(), provider.GetRequiredService<ICacheService>()));
         services.AddScoped<IListingRepository, ListingRepository>();
-        services.AddScoped<IListingQueries, ListingQueries>();
-        services.AddScoped<ICommissionRateProvider, CommissionRateProvider>();
+        services.AddScoped<IImageStorage, SqlImageStorage>();
+        services.AddScoped<ListingQueries>();
+        services.AddScoped<IListingQueries>(provider => new CachedListingQueries(provider.GetRequiredService<ListingQueries>(), provider.GetRequiredService<ICacheService>(), provider.GetRequiredService<IConfiguration>()));
+        services.AddScoped<CommissionRateProvider>();
+        services.AddScoped<ICommissionRateProvider>(provider => new CachedCommissionRateProvider(provider.GetRequiredService<CommissionRateProvider>(), provider.GetRequiredService<ICacheService>(), provider.GetRequiredService<IConfiguration>()));
 
         return services;
     }

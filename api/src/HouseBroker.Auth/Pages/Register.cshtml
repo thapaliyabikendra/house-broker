@@ -1,0 +1,26 @@
+@page
+@model HouseBroker.Auth.Pages.RegisterModel
+@{
+    ViewData["Title"] = "Register";
+}
+
+<h1>Register</h1>
+<form method="post">
+    <div asp-validation-summary="All"></div>
+    <label asp-for="Input.Email"></label>
+    <input asp-for="Input.Email" />
+    <label asp-for="Input.Password"></label>
+    <input asp-for="Input.Password" type="password" />
+    <label asp-for="Input.ConfirmPassword"></label>
+    <input asp-for="Input.ConfirmPassword" type="password" />
+    <label asp-for="Input.Role"></label>
+    <select asp-for="Input.Role">
+        <option value="Seeker">Seeker</option>
+        <option value="Broker">Broker</option>
+    </select>
+    <label asp-for="Input.FullName"></label>
+    <input asp-for="Input.FullName" />
+    <label asp-for="Input.PhoneNumber"></label>
+    <input asp-for="Input.PhoneNumber" />
+    <button type="submit">Register</button>
+</form>
