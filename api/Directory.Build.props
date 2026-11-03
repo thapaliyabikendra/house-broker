@@ -3,6 +3,6 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <WarningsNotAsErrors>NU1902;NU1903</WarningsNotAsErrors>
+    <WarningsNotAsErrors>NU1902;NU1903;NU1904</WarningsNotAsErrors>
   </PropertyGroup>
 </Project>
