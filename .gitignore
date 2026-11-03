@@ -1,0 +1,41 @@
+# .NET / build
+**/bin/
+**/obj/
+**/publish/
+*.user
+*.suo
+*.cache
+.vs/
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+# NuGet packages
+packages/
+*.nupkg
+
+# Node / Angular
+node_modules/
+.npm/
+ui/.angular/
+ui/dist/
+ui/coverage/
+
+# Docker
+*.log
+
+# Secrets and environment
+appsettings.*.Secrets.json
+.env
+.env.*
+!.env.example
+**/secrets.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Generated
+**/swagger.json
+ui/src/app/api/

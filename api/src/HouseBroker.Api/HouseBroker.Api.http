@@ -1,0 +1,6 @@
+@HouseBroker.Api_HostAddress = http://localhost:5049
+
+GET {{HouseBroker.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
