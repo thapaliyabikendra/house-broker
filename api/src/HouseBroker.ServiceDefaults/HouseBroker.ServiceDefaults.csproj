@@ -11,4 +11,19 @@
     <ProjectReference Include="..\..\src\HouseBroker.Domain.Shared\HouseBroker.Domain.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="Microsoft.AspNetCore.Http" />
+    <Using Include="Microsoft.Extensions.Logging" />
+    <Using Include="System.Diagnostics" />
+    <Using Include="HouseBroker.Domain.Shared" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.FeatureManagement.AspNetCore" Version="4.0.0" />
+    <PackageReference Include="NetEscapades.AspNetCore.SecurityHeaders" Version="0.22.0" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+  </ItemGroup>
+
 </Project>
