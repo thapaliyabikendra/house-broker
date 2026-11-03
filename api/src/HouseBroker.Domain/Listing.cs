@@ -139,6 +139,56 @@ public sealed class Listing
     /// <summary>Gets the concurrency token.</summary>
     public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
+    /// <summary>Adds a feature.</summary>
+    public void AddFeature(Guid featureId)
+    {
+        if (!_features.Any(feature => feature.FeatureId == featureId))
+        {
+            _features.Add(ListingFeature.Create(Id, featureId));
+        }
+    }
+
+    /// <summary>Replaces features.</summary>
+    public void ReplaceFeatures(IEnumerable<Guid> featureIds)
+    {
+        _features.Clear();
+        foreach (var featureId in featureIds.Distinct())
+        {
+            _features.Add(ListingFeature.Create(Id, featureId));
+        }
+    }
+
+    /// <summary>Updates basic details.</summary>
+    public void UpdateDetails(
+        string title,
+        string description,
+        Guid propertyTypeId,
+        decimal price,
+        string province,
+        string city,
+        string locality,
+        string postalCode,
+        int bedrooms,
+        int bathrooms,
+        decimal areaSqFt)
+    {
+        Title = title.Trim();
+        Description = description?.Trim() ?? string.Empty;
+        PropertyTypeId = propertyTypeId;
+        if (Price != price)
+        {
+            ChangePrice(price);
+        }
+
+        Province = province?.Trim() ?? string.Empty;
+        City = city?.Trim() ?? string.Empty;
+        Locality = locality?.Trim() ?? string.Empty;
+        PostalCode = postalCode?.Trim() ?? string.Empty;
+        Bedrooms = bedrooms;
+        Bathrooms = bathrooms;
+        AreaSqFt = areaSqFt;
+    }
+
     /// <summary>Publishes the listing.</summary>
     public void Publish()
     {

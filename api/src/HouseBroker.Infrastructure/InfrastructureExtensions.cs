@@ -1,3 +1,4 @@
+using HouseBroker.Application;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,9 @@ public static class InfrastructureExtensions
         });
 
         services.AddScoped<IUnitOfWork>(provider => provider.GetRequiredService<AppDbContext>());
+        services.AddScoped<IListingRepository, ListingRepository>();
+        services.AddScoped<IListingQueries, ListingQueries>();
+        services.AddScoped<ICommissionRateProvider, CommissionRateProvider>();
 
         return services;
     }
