@@ -1,0 +1,14 @@
+{
+  "/api": {
+    "target": "http://localhost:5049",
+    "secure": false,
+    "changeOrigin": false,
+    "logLevel": "debug"
+  },
+  "/sso": {
+    "target": "http://localhost:5222",
+    "secure": false,
+    "changeOrigin": false,
+    "logLevel": "debug"
+  }
+}
