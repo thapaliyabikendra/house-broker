@@ -113,7 +113,65 @@ Configuration keys:
 - `Client:RedirectUris`
 - `Client:Scopes`
 
-## Known limitations
+## Cultures, time, and currency
+
+- `Accept-Language: en|ne` selects the error-message culture (English fallback).
+- Localized responses include `Content-Language` and `Vary: Accept-Language`.
+- Every instant is serialized as ISO 8601 UTC with `Z` (for example
+  `2026-11-04T05:27:42Z`); offset-less input is rejected.
+- Embedded list values use Unicode NFC.
+- Currency is deployment-global: `meta.currencyCode` (default `NPR`) and matching
+  `Pricing:Culture` formatting. Amounts are never converted server-side.
+
+## CORS and pagination
+
+- CORS is driven by `Cors:AllowedOrigins`; with no configured origins the
+  service falls back to permissive development behavior, so production must set
+  the allowlist explicitly.
+- Paginated read responses use `{ items, total, page, pageSize }`. `page` is
+  1-based and `pageSize` is capped server-side. Sort defaults to `CreatedAt` desc
+  with `Id` as tie-breaker (machine ordering; human display may differ).
+
+## Error-code catalog
+
+All error responses use the same RFC 7807 `ProblemDetails` shape
+(`code`, `title`, `status`, `detail`, `correlationId`, and, when applicable,
+`field`/`errors`). `ProblemDetails.code` contains the stable code below; the
+human-readable `detail` is localized via `Accept-Language` (English fallback).
+`ErrorKind` always maps to the HTTP status through `ResultExtensions`. Codes
+that originate outside `Result<T>` (idempotency, feature flags, CORS/policy)
+still use the same ProblemDetails envelope.
+
+| Code (`ErrorCodes`) | Kind (`ErrorKind`) | HTTP status | Meaning |
+|--------------------|--------------------|-------------|---------|
+| `validation.failed` | Validation | 400 | Generic validation failure. |
+| `validation.required` | Validation | 400 | A required field is missing. |
+| `validation.out_of_range` | Validation | 400 | A value is outside the allowed range (including price ranges and page bounds). |
+| `validation.offset_required` | Validation | 400 | An instant was supplied without an offset (`Z`/offset is required). |
+| `validation.unsupported_culture` | Validation | 400 | The requested culture is not supported. |
+| `not_found` | NotFound | 404 | A lookup value does not exist. |
+| `resource.not_found` | NotFound | 404 | The requested resource does not exist (or is not visible to the caller). |
+| `forbidden` | Forbidden | 403 | The caller lacks permission, or a partner/user token lacks the required scope (`insufficient_scope`). |
+| `not_owner` | Forbidden | 403 | The caller is not the listing owner. |
+| `conflict` | Conflict | 409 | The operation conflicts with the current resource state. |
+| `precondition.required` | PreconditionRequired | 428 | A required `If-Match` header is missing on a mutating PUT. |
+| `precondition.failed` | PreconditionFailed | 412 | The `If-Match` ETag/row version is stale. |
+| `rate_limited` | RateLimited | 429 | A rate-limit policy was exceeded; see `Retry-After`. |
+| `feature.disabled` | (n/a) | 503 | A required feature flag is disabled. |
+| `idempotency.conflict` | Conflict | 409 | An idempotency key was reused with a different request. |
+| `idempotency.in_progress` | Conflict | 409 | An idempotency key is already being processed. |
+
+Additional endpoint-specific statuses:
+
+- `400` validation error (ProblemDetails with `field`/`errors`)
+- `401` missing/invalid token
+- `403` insufficient scope or permission
+- `404` resource not found
+- `422` invalid or too-long `Idempotency-Key` header
+- `429` rate limited (`Retry-After` provided)
+
+All codes are returned in `ProblemDetails.code`; localized text depends on
+`Accept-Language`.
 
 - Partner access is read-only.
 - Rate limits are currently per-instance.

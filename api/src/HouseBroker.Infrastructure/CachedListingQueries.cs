@@ -16,7 +16,15 @@ public sealed class CachedListingQueries(IListingQueries inner, ICacheService ca
 
     private bool CacheEnabled => _configuration.GetValue("ListingCache", true);
 
-    private static string Culture => CultureInfo.CurrentUICulture.Name;
+    /// <summary>The normalized culture used in cache keys.</summary>
+    private static string Culture
+    {
+        get
+        {
+            var name = CultureInfo.CurrentUICulture.Name;
+            return string.IsNullOrWhiteSpace(name) ? "en" : name.Trim();
+        }
+    }
 
     /// <inheritdoc />
     public async Task<Listing?> GetPublicAsync(Guid id, CancellationToken cancellationToken)
@@ -101,8 +109,10 @@ public sealed class CachedListingQueries(IListingQueries inner, ICacheService ca
     public Task UpsertBrokerProfileAsync(HouseBroker.Domain.BrokerProfile profile, CancellationToken cancellationToken)
         => _inner.UpsertBrokerProfileAsync(profile, cancellationToken);
 
-    private static string BuildSearchKey(string token, ListingSearchQuery query)
+    /// <summary>Builds a normalized, culture-aware cache key for a search query.</summary>
+    public static string BuildSearchKey(string token, ListingSearchQuery query)
     {
+        query ??= new ListingSearchQuery();
         var location = (query.Location ?? string.Empty).Trim().Normalize(NormalizationForm.FormC);
         if (!string.IsNullOrWhiteSpace(location))
         {
