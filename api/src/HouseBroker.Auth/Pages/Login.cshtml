@@ -1,17 +1,31 @@
 @page
 @model HouseBroker.Auth.Pages.LoginModel
 @{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = Model.Title;
 }
 
-<h1>Login</h1>
-<form method="post">
-    <div asp-validation-summary="All"></div>
-    <label asp-for="Input.Email"></label>
-    <input asp-for="Input.Email" />
-    <label asp-for="Input.Password"></label>
-    <input asp-for="Input.Password" type="password" />
-    <label asp-for="Input.RememberMe"></label>
-    <input asp-for="Input.RememberMe" />
-    <button type="submit">Sign in</button>
-</form>
+<div class="container mt-5">
+    <div class="card mx-auto" style="max-width: 400px;">
+        <div class="card-header">
+            <h3 class="text-center">@Model.Title</h3>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+                <div class="mb-3">
+                    <label asp-for="Input.Email" class="form-label">@Model.EmailLabel</label>
+                    <input asp-for="Input.Email" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Input.Password" class="form-label">@Model.PasswordLabel</label>
+                    <input asp-for="Input.Password" class="form-control" type="password" />
+                </div>
+                <div class="mb-3 form-check">
+                    <input asp-for="Input.RememberMe" class="form-check-input" />
+                    <label asp-for="Input.RememberMe" class="form-check-label">@Model.RememberMeLabel</label>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">@Model.ButtonText</button>
+            </form>
+        </div>
+    </div>
+</div>

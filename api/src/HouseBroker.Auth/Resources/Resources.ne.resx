@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="urn:schemas-microsoft-com:xml-schema" xmlns:msdata="urn:schemas-microsoft-com:DataSet" xmlns:msde="urn:schemas-microsoft-com:DataSet.Extensions">
+    <xsd:import schema="xsd://www.w3.org/2001/XMLSchema" namespace="UnityEngine" />
+    <xsd:import schema="xsd://www.w3.org/2001/XMLSchema" namespace="msdata" />
+  </xsd:schema>
+  <resheader name="resheader">
+    <value>ne</value>
+  </resheader>
+  <resheader name="value">
+    <value>Value</value>
+  </resheader>
+  <resheader name="comment">
+    <value>Comment</value>
+  </resheader>
+  <resheader name="resource">
+    <value>value</value>
+  </resheader>
+  <data name="Login_Title" xml:space="preserve">साइन इन गर्नुहोस्</data>
+  <data name="Login_EmailLabel" xml:space="preserve">इमेल ठेगाना</data>
+  <data name="Login_PasswordLabel" xml:space="preserve">पासवर्ड</data>
+  <data name="Login_RememberMe" xml:space="preserve">मलाई सम्झनुहोस्</data>
+  <data name="Login_Button" xml:space="preserve">साइन इन</data>
+  <data name="Login_InvalidCredentials" xml:space="preserve">अमान्य विवरणहरू।</data>
+  <data name="Register_Title" xml:space="preserve">खाता बनाउनुहोस्</data>
+  <data name="Register_EmailLabel" xml:space="preserve">इमेल ठेगाना</data>
+  <data name="Register_PasswordLabel" xml:space="preserve">पासवर्ड</data>
+  <data name="Register_ConfirmPasswordLabel" xml:space="preserve">पासवर्ड पुष्टि गर्नुहोस्</data>
+  <data name="Register_RoleLabel" xml:space="preserve">खाता प्रकार</data>
+  <data name="Register_FullNameLabel" xml:space="preserve">पूरा नाम</data>
+  <data name="Register_PhoneLabel" xml:space="preserve">फोन नम्बर</data>
+  <data name="Register_Button" xml:space="preserve">दर्ता गर्नुहोस्</data>
+  <data name="Register_BrokerFullNameRequired" xml:space="preserve">ब्रोकरहरूको लागि पूरा नाम आवश्यक छ।</data>
+  <data name="Register_BrokerPhoneRequired" xml:space="preserve">ब्रोकरहरूको लागि फोन नम्बर आवश्यक छ।</data>
+  <data name="Register_PasswordMismatch" xml:space="preserve">पासवर्डहरू मिल्दैनन्।</data>
+  <data name="Register_InvalidRole" xml:space="preserve">अमान्य भूमिका।</data>
+  <data name="Lockout_Title" xml:space="preserve">खाता लक गरिएको छ</data>
+  <data name="Lockout_Message" xml:space="preserve">धेरै पटक असफल लगइन प्रयासका कारण, तपाईंको खाता सुरक्षा कारणले लक गरिएको छ।</data>
+  <data name="Lockout_Instructions" xml:space="preserve">कृपया १५ मिनेट पछि फेरि प्रयास गर्नुहोस् वा यदि तपाईंलाई यो त्रुटि हो भन्ने लाग्छ भने समर्थनमा सम्पर्क गर्नुहोस्।</data>
+  <data name="Lockout_BackToLogin" xml:space="preserve">लगइनमा फर्कनुहोस्</data>
+  <data name="Consent_Title" xml:space="preserve">एप्लिकेशन सहमति</data>
+  <data name="Consent_Intro" xml:space="preserve">एप्लिकेशनले निम्न अनुमतिहरू अनुरोध गरिरहेको छ:</data>
+  <data name="Consent_Allow" xml:space="preserve">अनुमति दिनुहोस्</data>
+  <data name="Consent_Deny" xml:space="preserve">अस्वीकार गर्नुहोस्</data>
+</root>

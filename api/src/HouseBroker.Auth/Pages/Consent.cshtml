@@ -1,0 +1,30 @@
+@page
+@model HouseBroker.Auth.Pages.ConsentModel
+@{
+    ViewData["Title"] = Model.Title;
+}
+
+<div class="container mt-5">
+    <div class="card mx-auto" style="max-width: 600px;">
+        <div class="card-header">
+            <h3 class="text-center">@Model.Title</h3>
+        </div>
+        <div class="card-body">
+            <p>@Model.Intro</p>
+            <ul class="list-group mb-4">
+                @foreach (var scope in Model.Scopes)
+                {
+                    <li class="list-group-item">@scope</li>
+                }
+            </ul>
+            <div class="d-flex justify-content-end gap-2">
+                <form method="post" asp-page-handler="Deny">
+                    <button type="submit" class="btn btn-secondary">@Model.DenyText</button>
+                </form>
+                <form method="post" asp-page-handler="Allow">
+                    <button type="submit" class="btn btn-primary">@Model.AllowText</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

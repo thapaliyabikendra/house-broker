@@ -1,19 +1,32 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
-#pragma warning disable CS1591
-#pragma warning disable IDE0005
-using HouseBroker.Auth.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Localization;
+using HouseBroker.Auth.Resources;
+using HouseBroker.Auth.Data;
 
 namespace HouseBroker.Auth.Pages;
 
-public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, RoleManager<IdentityRole<Guid>> roleManager) : PageModel
+public class RegisterModel(
+    UserManager<ApplicationUser> userManager, 
+    SignInManager<ApplicationUser> signInManager, 
+    RoleManager<IdentityRole<Guid>> roleManager,
+    IStringLocalizer<HouseBroker.Auth.Resources.Resources> L) : PageModel
 {
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
     public string? ReturnUrl { get; set; }
+
+    public string Title => L["Register_Title"];
+    public string EmailLabel => L["Register_EmailLabel"];
+    public string PasswordLabel => L["Register_PasswordLabel"];
+    public string ConfirmPasswordLabel => L["Register_ConfirmPasswordLabel"];
+    public string RoleLabel => L["Register_RoleLabel"];
+    public string FullNameLabel => L["Register_FullNameLabel"];
+    public string PhoneLabel => L["Register_PhoneLabel"];
+    public string ButtonText => L["Register_Button"];
 
     public class InputModel
     {
@@ -36,12 +49,25 @@ public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManag
 
         if (Input.Role != "Seeker" && Input.Role != "Broker")
         {
-            ModelState.AddModelError("Input.Role", "Invalid role.");
+            ModelState.AddModelError("Input.Role", L["Register_InvalidRole"]);
+        }
+
+        if (Input.Role == "Broker")
+        {
+            if (string.IsNullOrWhiteSpace(Input.FullName))
+            {
+                ModelState.AddModelError("Input.FullName", L["Register_BrokerFullNameRequired"]);
+            }
+
+            if (string.IsNullOrWhiteSpace(Input.PhoneNumber))
+            {
+                ModelState.AddModelError("Input.PhoneNumber", L["Register_BrokerPhoneRequired"]);
+            }
         }
 
         if (Input.Password != Input.ConfirmPassword)
         {
-            ModelState.AddModelError("Input.ConfirmPassword", "Passwords do not match.");
+            ModelState.AddModelError("Input.ConfirmPassword", L["Register_PasswordMismatch"]);
         }
 
         if (!ModelState.IsValid)

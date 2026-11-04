@@ -1,0 +1,17 @@
+@page
+@model HouseBroker.Auth.Pages.LockoutModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<HouseBroker.Auth.Resources.Resources> L
+@{
+    ViewData["Title"] = L["Lockout_Title"];
+}
+
+<div class="container mt-5">
+    <div class="card mx-auto text-center" style="max-width: 500px;">
+        <div class="card-body">
+            <h1 class="display-4">@L["Lockout_Title"]</h1>
+            <p>@L["Lockout_Message"]</p>
+            <p>@L["Lockout_Instructions"]</p>
+            <a asp-page="/Login" class="btn btn-primary">@L["Lockout_BackToLogin"]</a>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="urn:schemas-microsoft-com:xml-schema" xmlns:msdata="urn:schemas-microsoft-com: DataSet" xmlns:msde="urn:schemas-microsoft-com: DataSet.Extensions">
+    <xsd:import schema="xsd://www.w3.org/2001/XMLSchema" namespace="UnityEngine" />
+    <xsd:import schema="xsd://www.w3.org/2001/XMLSchema" namespace="msdata" />
+  </xsd:schema>
+  <resheader name="resheader">
+    <value>en</value>
+  </resheader>
+  <resheader name="value">
+    <value>Value</value>
+  </resheader>
+  <resheader name="comment">
+    <value>Comment</value>
+  </resheader>
+  <resheader name="resource">
+    <value>value</value>
+  </resheader>
+  <data name="Login_Title" xml:space="preserve">Sign In</data>
+  <data name="Login_EmailLabel" xml:space="preserve">Email Address</data>
+  <data name="Login_PasswordLabel" xml:space="preserve">Password</data>
+  <data name="Login_RememberMe" xml:space="preserve">Remember me</data>
+  <data name="Login_Button" xml:space="preserve">Sign In</data>
+  <data name="Login_InvalidCredentials" xml:space="preserve">Invalid credentials.</data>
+  <data name="Register_Title" xml:space="preserve">Create Account</data>
+  <data name="Register_EmailLabel" xml:space="preserve">Email Address</data>
+  <data name="Register_PasswordLabel" xml:space="preserve">Password</data>
+  <data name="Register_ConfirmPasswordLabel" xml:space="preserve">Confirm Password</data>
+  <data name="Register_RoleLabel" xml:space="preserve">Account Type</data>
+  <data name="Register_FullNameLabel" xml:space="preserve">Full Name</data>
+  <data name="Register_PhoneLabel" xml:space="preserve">Phone Number</data>
+  <data name="Register_Button" xml:space="preserve">Register</data>
+  <data name="Register_BrokerFullNameRequired" xml:space="preserve">Full name is required for brokers.</data>
+  <data name="Register_BrokerPhoneRequired" xml:space="preserve">Phone number is required for brokers.</data>
+  <data name="Register_PasswordMismatch" xml:space="preserve">Passwords do not match.</data>
+  <data name="Register_InvalidRole" xml:space="preserve">Invalid role.</data>
+  <data name="Lockout_Title" xml:space="preserve">Account locked</data>
+  <data name="Lockout_Message" xml:space="preserve">Due to multiple failed login attempts, your account has been locked for security reasons.</data>
+  <data name="Lockout_Instructions" xml:space="preserve">Please try again in 15 minutes or contact support if you believe this is an error.</data>
+  <data name="Lockout_BackToLogin" xml:space="preserve">Back to Login</data>
+  <data name="Consent_Title" xml:space="preserve">Application Consent</data>
+  <data name="Consent_Intro" xml:space="preserve">The application is requesting the following permissions:</data>
+  <data name="Consent_Allow" xml:space="preserve">Allow</data>
+  <data name="Consent_Deny" xml:space="preserve">Deny</data>
+</root>

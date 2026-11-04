@@ -1,26 +1,46 @@
 @page
 @model HouseBroker.Auth.Pages.RegisterModel
 @{
-    ViewData["Title"] = "Register";
+    ViewData["Title"] = Model.Title;
 }
 
-<h1>Register</h1>
-<form method="post">
-    <div asp-validation-summary="All"></div>
-    <label asp-for="Input.Email"></label>
-    <input asp-for="Input.Email" />
-    <label asp-for="Input.Password"></label>
-    <input asp-for="Input.Password" type="password" />
-    <label asp-for="Input.ConfirmPassword"></label>
-    <input asp-for="Input.ConfirmPassword" type="password" />
-    <label asp-for="Input.Role"></label>
-    <select asp-for="Input.Role">
-        <option value="Seeker">Seeker</option>
-        <option value="Broker">Broker</option>
-    </select>
-    <label asp-for="Input.FullName"></label>
-    <input asp-for="Input.FullName" />
-    <label asp-for="Input.PhoneNumber"></label>
-    <input asp-for="Input.PhoneNumber" />
-    <button type="submit">Register</button>
-</form>
+<div class="container mt-5">
+    <div class="card mx-auto" style="max-width: 500px;">
+        <div class="card-header">
+            <h3 class="text-center">@Model.Title</h3>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+                <div class="mb-3">
+                    <label asp-for="Input.Email" class="form-label">@Model.EmailLabel</label>
+                    <input asp-for="Input.Email" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Input.Password" class="form-label">@Model.PasswordLabel</label>
+                    <input asp-for="Input.Password" class="form-control" type="password" />
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Input.ConfirmPassword" class="form-label">@Model.ConfirmPasswordLabel</label>
+                    <input asp-for="Input.ConfirmPassword" class="form-control" type="password" />
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Input.Role" class="form-label">@Model.RoleLabel</label>
+                    <select asp-for="Input.Role" class="form-select">
+                        <option value="Seeker">Seeker</option>
+                        <option value="Broker">Broker</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Input.FullName" class="form-label">@Model.FullNameLabel</label>
+                    <input asp-for="Input.FullName" class="form-control" />
+                </div>
+                <div class="mb-3">
+                    <label asp-for="Input.PhoneNumber" class="form-label">@Model.PhoneLabel</label>
+                    <input asp-for="Input.PhoneNumber" class="form-control" />
+                </div>
+                <button type="submit" class="btn btn-primary w-100">@Model.ButtonText</button>
+            </form>
+        </div>
+    </div>
+</div>

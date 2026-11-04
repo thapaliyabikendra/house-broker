@@ -14,7 +14,17 @@ builder.Services.AddHouseBrokerJsonOptions();
 var connectionString = builder.Configuration.GetConnectionString("HouseBroker")
     ?? throw new InvalidOperationException("Connection string 'HouseBroker' is not configured.");
 
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<AuthDbContext>(options => options.UseSqlServer(connectionString));
+
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.HttpOnly = Microsoft.AspNetCore.CookiePolicy.HttpOnlyPolicy.Always;
+    options.Secure = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
+    options.SameSite = SameSiteMode.Lax;
+});
+
+builder.Services.AddScoped<AuthDataSeeder>();
 
 builder.Services
     .AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
@@ -139,9 +149,15 @@ builder.Services
 var app = builder.Build();
 
 var pathBase = builder.Configuration["PathBase"] ?? "/sso";
-app.UsePathBase(pathBase);
+        app.UsePathBase(pathBase);
 
-app.UseServiceDefaults();
+    app.UseHsts();
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.Append("X-Frame-Options", "DENY");
+        await next();
+    });
+    app.UseServiceDefaults();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -153,6 +169,10 @@ if (args.Contains("migrate", StringComparer.OrdinalIgnoreCase))
     using var scope = app.Services.CreateScope();
     var database = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
     await database.Database.MigrateAsync();
+    
+    var seeder = scope.ServiceProvider.GetRequiredService<AuthDataSeeder>();
+    await seeder.SeedAsync();
+    
     return;
 }
 
