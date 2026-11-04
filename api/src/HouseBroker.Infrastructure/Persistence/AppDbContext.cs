@@ -21,6 +21,16 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             return Result.Failure<int>(new ApplicationError(ErrorCodes.PreconditionFailed, ErrorKind.PreconditionFailed));
         }
     }
+
+    /// <inheritdoc />
+    async Task<HouseBroker.Application.Contracts.ITransactionScope> IUnitOfWork.BeginTransactionAsync(HouseBroker.Application.Contracts.TransactionIsolationLevel isolationLevel, CancellationToken cancellationToken)
+    {
+        var systemLevel = isolationLevel == HouseBroker.Application.Contracts.TransactionIsolationLevel.ReadUncommitted ? System.Data.IsolationLevel.ReadUncommitted : isolationLevel == HouseBroker.Application.Contracts.TransactionIsolationLevel.ReadCommitted ? System.Data.IsolationLevel.ReadCommitted : isolationLevel == HouseBroker.Application.Contracts.TransactionIsolationLevel.RepeatableRead ? System.Data.IsolationLevel.RepeatableRead : isolationLevel == HouseBroker.Application.Contracts.TransactionIsolationLevel.Snapshot ? System.Data.IsolationLevel.Snapshot : System.Data.IsolationLevel.Serializable;
+
+        var transaction = await base.Database.BeginTransactionAsync(systemLevel, cancellationToken);
+        return new EfTransactionScope(transaction);
+    }
+
     /// <summary>Gets listings.</summary>
     public DbSet<Listing> Listings => Set<Listing>();
 
@@ -296,3 +306,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
             value => value.HasValue ? (value.Value.Kind == DateTimeKind.Utc ? value.Value : value.Value.ToUniversalTime()) : value,
             value => value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : value);
 }
+
+
+
+
+
+
+

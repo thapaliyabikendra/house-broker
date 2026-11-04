@@ -15,9 +15,13 @@ using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(30));
+
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = builder.Configuration.GetValue("Kestrel:Limits:MaxRequestBodySize", 10 * 1024 * 1024);
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(30);
 });
 builder.Services.AddCors(options =>
 {
@@ -195,3 +199,5 @@ if (args.Contains("migrate", StringComparer.OrdinalIgnoreCase))
 }
 
 await app.RunAsync();
+
+

@@ -9,9 +9,13 @@ using OpenIddict.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(30));
+
 builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MaxRequestBodySize = builder.Configuration.GetValue("Kestrel:Limits:MaxRequestBodySize", 10 * 1024 * 1024);
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(30);
 });
 
 builder.AddServiceDefaults();
@@ -87,9 +91,32 @@ builder.Services
             "listings.read", "contacts.read", "listings.write", "commission.read", "admin.commission");
 
         options.AddEphemeralEncryptionKey();
-        options.AddDevelopmentSigningCertificate();
 
-        options.UseAspNetCore();
+        // Development uses an ephemeral signing certificate; production must configure a persistent
+        // signing certificate via OpenIddict:SigningCertificate (path + optional password).
+        if (builder.Environment.IsDevelopment())
+        {
+            options.AddDevelopmentSigningCertificate();
+        }
+        else
+        {
+            var signingCertificatePath = builder.Configuration["OpenIddict:SigningCertificate:Path"];
+            var signingCertificatePassword = builder.Configuration["OpenIddict:SigningCertificate:Password"];
+
+            if (string.IsNullOrWhiteSpace(signingCertificatePath))
+            {
+                throw new InvalidOperationException("OpenIddict signing certificate path is not configured for production.");
+            }
+
+            var signingCertificate = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12FromFile(
+                signingCertificatePath,
+                signingCertificatePassword,
+                System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.MachineKeySet);
+
+            options.AddSigningCertificate(signingCertificate);
+        }
+
+        options.UseAspNetCore().EnableTokenEndpointPassthrough();
 
         options.AddEventHandler<OpenIddictServerEvents.ProcessSignInContext>(builder =>
         {
@@ -260,3 +287,5 @@ if (args.Contains("register-client", StringComparer.OrdinalIgnoreCase))
 }
 
 await app.RunAsync();
+
+

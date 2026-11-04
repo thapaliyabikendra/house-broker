@@ -34,4 +34,10 @@
     <PackageReference Include="OpenIddict.EntityFrameworkCore" />
   </ItemGroup>
 
+  
+  <ItemGroup><PackageReference Include="System.Security.Cryptography.Pkcs" /></ItemGroup>
 </Project>
+
+
+
+

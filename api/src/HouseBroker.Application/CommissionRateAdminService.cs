@@ -33,6 +33,8 @@ public sealed class CommissionRateAdminService(
         var now = _clock.GetUtcNow().UtcDateTime;
         var effectiveFrom = request.EffectiveFrom == default ? now : request.EffectiveFrom;
 
+        await using var createTransaction = await _unitOfWork.BeginTransactionAsync(TransactionIsolationLevel.Serializable, cancellationToken);
+
         var rates = (await _repository.GetAllAsync(cancellationToken)).ToList();
         var candidate = CommissionRate.Create(request.MinPrice, request.MinInclusive, request.MaxPrice, request.MaxInclusive, request.RatePercent, request.IsActive, effectiveFrom);
         rates.Add(candidate);
@@ -63,7 +65,13 @@ public sealed class CommissionRateAdminService(
             JsonSerializer.Serialize(new { request.MinPrice, request.MinInclusive, request.MaxPrice, request.MaxInclusive, request.RatePercent, request.IsActive, effectiveFrom })),
             cancellationToken);
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var createSave = await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!createSave.IsSuccess)
+        {
+            return Result.Failure<CommissionRateDto>(createSave.Error!);
+        }
+
+        await createTransaction.CommitAsync(cancellationToken);
         await _cache.InvalidateCommissionRatesAsync(cancellationToken);
 
         return Result.Success<CommissionRateDto>(Map(candidate));
@@ -91,6 +99,8 @@ public sealed class CommissionRateAdminService(
 
         var now = _clock.GetUtcNow().UtcDateTime;
         var effectiveFrom = request.EffectiveFrom == default ? rate.EffectiveFrom : request.EffectiveFrom;
+
+        await using var updateTransaction = await _unitOfWork.BeginTransactionAsync(TransactionIsolationLevel.Serializable, cancellationToken);
 
         var rates = (await _repository.GetAllAsync(cancellationToken)).ToList();
         var proposed = CommissionRate.Create(request.MinPrice, request.MinInclusive, request.MaxPrice, request.MaxInclusive, request.RatePercent, request.IsActive, effectiveFrom);
@@ -131,7 +141,13 @@ public sealed class CommissionRateAdminService(
             oldValues,
             JsonSerializer.Serialize(Map(rate))), cancellationToken);
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var updateSave = await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!updateSave.IsSuccess)
+        {
+            return Result.Failure<CommissionRateDto>(updateSave.Error!);
+        }
+
+        await updateTransaction.CommitAsync(cancellationToken);
         await _cache.InvalidateCommissionRatesAsync(cancellationToken);
 
         return Result.Success<CommissionRateDto>(Map(rate));
@@ -151,3 +167,6 @@ public sealed class CommissionRateAdminService(
             Version = Convert.ToBase64String(rate.RowVersion),
         };
 }
+
+
+

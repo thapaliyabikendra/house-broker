@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -20,4 +20,5 @@
     <ProjectReference Include="..\..\tests\HouseBroker.TestSupport\HouseBroker.TestSupport.csproj" />
   </ItemGroup>
 
+  <ItemGroup><PackageReference Include="System.Security.Cryptography.Pkcs" /></ItemGroup>
 </Project>

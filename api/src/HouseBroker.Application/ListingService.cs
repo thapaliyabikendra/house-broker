@@ -451,9 +451,9 @@ public sealed class ListingService(
         var email = _currentUser.Email;
         var phone = _currentUser.PhoneNumber;
 
-        if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email))
+        if (string.IsNullOrEmpty(fullName))
         {
-            _logger.LogWarning("Broker profile synchronization failed for broker {BrokerId} due to missing required claims.", brokerId);
+            _logger.LogWarning("Broker profile synchronization failed for broker {BrokerId} due to missing required name claim.", brokerId);
             return Result.Failure(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden, null, "insufficient_scope"));
         }
 

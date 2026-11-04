@@ -16,7 +16,6 @@ public static class InfrastructureExtensions
         var connectionString = configuration.GetConnectionString("HouseBroker")
             ?? throw new InvalidOperationException("Connection string 'HouseBroker' is not configured.");
 
-        services.AddMemoryCache();
         services.AddScoped<AuditSaveChangesInterceptor>();
         services.AddDbContext<AppDbContext>((provider, options) =>
         {
@@ -24,7 +23,23 @@ public static class InfrastructureExtensions
             options.AddInterceptors(provider.GetRequiredService<AuditSaveChangesInterceptor>());
         });
 
-        services.AddScoped<ICacheService, MemoryCacheService>();
+        var cacheProvider = configuration["Cache:Provider"];
+        if (string.Equals(cacheProvider, "Redis", StringComparison.OrdinalIgnoreCase))
+        {
+            services.AddStackExchangeRedisCache(options =>
+            {
+                options.Configuration = configuration["Cache:Redis:Configuration"]
+                    ?? configuration.GetConnectionString("Redis")
+                    ?? "localhost:6379";
+            });
+            services.AddScoped<ICacheService, RedisCacheService>();
+        }
+        else
+        {
+            services.AddMemoryCache();
+            services.AddScoped<ICacheService, MemoryCacheService>();
+        }
+
         services.AddScoped<IUnitOfWork>(provider => new CacheInvalidatingUnitOfWork(provider.GetRequiredService<AppDbContext>(), provider.GetRequiredService<ICacheService>()));
         services.AddScoped<IListingRepository, ListingRepository>();
         services.AddScoped<IImageStorage, SqlImageStorage>();

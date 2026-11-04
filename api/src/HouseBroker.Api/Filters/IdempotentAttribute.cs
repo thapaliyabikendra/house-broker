@@ -30,6 +30,7 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
         var services = context.HttpContext.RequestServices;
         var idempotencyService = services.GetRequiredService<IIdempotencyService>();
         var currentUser = services.GetRequiredService<ICurrentUserService>();
+        var dbContext = services.GetRequiredService<HouseBroker.Infrastructure.Persistence.AppDbContext>();
         var scope = currentUser.UserId.HasValue
             ? $"user:{currentUser.UserId.Value}"
             : (string.IsNullOrWhiteSpace(currentUser.ClientId) ? "anonymous" : $"client:{currentUser.ClientId}");
@@ -37,10 +38,15 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
         var serializedArguments = JsonSerializer.Serialize(context.ActionArguments);
         var requestHash = HouseBroker.Infrastructure.IdempotencyService.ComputeHash(serializedArguments);
 
+        // Keep idempotency record and business write in one database transaction.
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(context.HttpContext.RequestAborted);
+
         var begin = await idempotencyService.BeginAsync(key, scope, requestHash, context.HttpContext.RequestAborted);
 
         if (begin.Status == IdempotencyStatus.Replay)
         {
+            // Replay does not modify state; commit is not required for the existing record.
+            await transaction.CommitAsync(context.HttpContext.RequestAborted);
             context.HttpContext.Response.Headers["Idempotent-Replayed"] = "true";
             context.Result = new ContentResult
             {
@@ -53,12 +59,14 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
 
         if (begin.Status == IdempotencyStatus.Conflict)
         {
+            await transaction.RollbackAsync(context.HttpContext.RequestAborted);
             context.Result = conflictProblem(context, ErrorCodes.IdempotencyConflict, "The idempotency key was already used with a different request.");
             return;
         }
 
         if (begin.Status == IdempotencyStatus.InProgress)
         {
+            await transaction.RollbackAsync(context.HttpContext.RequestAborted);
             context.Result = conflictProblem(context, ErrorCodes.IdempotencyInProgress, "The idempotency key is already being processed.");
             return;
         }
@@ -72,6 +80,7 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
             var executed = await next();
             if (executed.Result is null)
             {
+                await transaction.CommitAsync(context.HttpContext.RequestAborted);
                 return;
             }
 
@@ -95,16 +104,19 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
             if (statusCode >= 200 && statusCode < 300)
             {
                 await idempotencyService.CompleteAsync(key, scope, statusCode, responseBody, context.HttpContext.RequestAborted);
+                await transaction.CommitAsync(context.HttpContext.RequestAborted);
                 completed = true;
             }
             else
             {
                 await idempotencyService.ReleaseAsync(key, scope, context.HttpContext.RequestAborted);
+                await transaction.RollbackAsync(context.HttpContext.RequestAborted);
             }
         }
         catch
         {
             await idempotencyService.ReleaseAsync(key, scope, context.HttpContext.RequestAborted);
+            await transaction.RollbackAsync(context.HttpContext.RequestAborted);
             throw;
         }
 

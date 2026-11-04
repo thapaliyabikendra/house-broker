@@ -19,4 +19,11 @@ public sealed class CacheInvalidatingUnitOfWork(IUnitOfWork inner, ICacheService
 
         return result;
     }
+
+    /// <inheritdoc />
+    public Task<ITransactionScope> BeginTransactionAsync(HouseBroker.Application.Contracts.TransactionIsolationLevel isolationLevel = HouseBroker.Application.Contracts.TransactionIsolationLevel.Serializable, CancellationToken cancellationToken = default)
+        => _inner.BeginTransactionAsync(isolationLevel, cancellationToken);
 }
+
+
+

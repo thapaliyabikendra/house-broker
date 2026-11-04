@@ -33,4 +33,7 @@
     <ProjectReference Include="..\..\src\HouseBroker.ServiceDefaults\HouseBroker.ServiceDefaults.csproj" />
   </ItemGroup>
 
+  <ItemGroup><PackageReference Include="System.Security.Cryptography.Pkcs" /></ItemGroup>
 </Project>
+
+
