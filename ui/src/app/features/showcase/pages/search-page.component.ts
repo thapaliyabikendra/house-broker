@@ -63,6 +63,7 @@ import type { PageEvent } from '@angular/material/paginator';
                 id="search-min-price"
                 name="minPrice"
                 type="number"
+                min="0"
                 formControlName="minPrice"
                 [attr.placeholder]="'search.minPrice' | transloco"
               />
@@ -75,6 +76,7 @@ import type { PageEvent } from '@angular/material/paginator';
                 id="search-max-price"
                 name="maxPrice"
                 type="number"
+                min="0"
                 formControlName="maxPrice"
                 [attr.placeholder]="'search.maxPrice' | transloco"
               />
@@ -101,6 +103,7 @@ import type { PageEvent } from '@angular/material/paginator';
                 id="search-bedrooms"
                 name="bedrooms"
                 type="number"
+                min="0"
                 formControlName="bedrooms"
                 [attr.placeholder]="'search.bedrooms' | transloco"
               />

@@ -108,11 +108,11 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
                 @if (listing.images?.length) {
                   <div class="images">
-                    @for (image of listing.images; track image.id) {
+                    @for (image of listing.images; track image.id; let i = $index) {
                       <figure class="image-item">
                         <img
                           [src]="imageUrl(listing.id ?? '', image.id ?? '')"
-                          [alt]="listing.title || ('detail.imageAlt' | transloco)"
+                          [alt]="(listing.title || ('detail.imageAlt' | transloco)) + ' ' + (i + 1)"
                           width="128"
                           height="96"
                           loading="lazy"
