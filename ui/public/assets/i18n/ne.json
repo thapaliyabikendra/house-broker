@@ -29,7 +29,23 @@
     "loading": "तपाईंका सम्पत्तिहरू लोड हुँदै छन्...",
     "emptyTitle": "अहिलेसम्म सम्पत्ति छैन",
     "emptyDescription": "पहिलो सम्पत्ति थप्नुहोस्।",
-    "commission": "कमिसन"
+    "commission": "कमिसन",
+    "editor": {
+      "title": "शीर्षक",
+      "description": "विवरण",
+      "price": "मूल्य",
+      "propertyType": "सम्पत्ति प्रकार",
+      "city": "शहर",
+      "locality": "स्थानीय क्षेत्र",
+      "province": "प्रदेश",
+      "postalCode": "पोस्टल कोड",
+      "bedrooms": "शयनकक्ष",
+      "bathrooms": "बाथरूम",
+      "area": "क्षेत्रफल (वर्ग फिट)",
+      "loading": "लोड हुँदै छ...",
+      "save": "सेभ गर्नुहोस्",
+      "saving": "सेभ हुँदै छ..."
+    }
   },
   "admin": {
     "title": "कमिसन दरहरू",

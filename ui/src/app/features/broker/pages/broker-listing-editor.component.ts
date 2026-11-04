@@ -9,6 +9,7 @@ import { LookupsDataService } from '../../../core/data/lookups-data.service';
 import { ApiError } from '../../../core/http/api-error';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
+import { TranslocoPipe } from '@jsverse/transloco';
 import type {
   PropertyTypeDto,
   CreateListingRequest,
@@ -32,13 +33,13 @@ function numberRange(min: number, max: number) {
 @Component({
   selector: 'hb-broker-listing-editor',
   standalone: true,
-  imports: [ReactiveFormsModule, LoadingStateComponent, ErrorStateComponent],
+  imports: [ReactiveFormsModule, LoadingStateComponent, ErrorStateComponent, TranslocoPipe],
   template: `
     <section class="editor">
       <h1>{{ isEdit() ? 'Edit listing' : 'Create listing' }}</h1>
 
       @if (loading()) {
-        <hb-loading-state label="Loading..." />
+        <hb-loading-state [label]="'broker.editor.loading' | transloco" />
       } @else {
         @if (error()) {
           <hb-error-state [title]="error() ?? 'Error'" />
@@ -46,7 +47,7 @@ function numberRange(min: number, max: number) {
 
         <form [formGroup]="form" (ngSubmit)="submit()" class="editor-form">
           <label>
-            Title
+            {{ 'broker.editor.title' | transloco }}
             <input formControlName="title" />
             @if (form.controls.title.invalid && form.controls.title.touched) {
               <small>Title is required or too long.</small>
@@ -54,12 +55,12 @@ function numberRange(min: number, max: number) {
           </label>
 
           <label>
-            Description
+            {{ 'broker.editor.description' | transloco }}
             <textarea formControlName="description"></textarea>
           </label>
 
           <label>
-            Price
+            {{ 'broker.editor.price' | transloco }}
             <input type="number" formControlName="price" />
             @if (form.controls.price.invalid && form.controls.price.touched) {
               <small>Price is required and must be valid.</small>
@@ -67,7 +68,7 @@ function numberRange(min: number, max: number) {
           </label>
 
           <label>
-            Property type
+            {{ 'broker.editor.propertyType' | transloco }}
             <select formControlName="propertyTypeId">
               @for (type of propertyTypes(); track type.id) {
                 <option [value]="type.id">{{ type.name }}</option>
@@ -76,7 +77,7 @@ function numberRange(min: number, max: number) {
           </label>
 
           <label>
-            City
+            {{ 'broker.editor.city' | transloco }}
             <input formControlName="city" />
             @if (form.controls.city.invalid && form.controls.city.touched) {
               <small>City is required.</small>
@@ -84,17 +85,17 @@ function numberRange(min: number, max: number) {
           </label>
 
           <label>
-            Locality
+            {{ 'broker.editor.locality' | transloco }}
             <input formControlName="locality" />
           </label>
 
           <label>
-            Province
+            {{ 'broker.editor.province' | transloco }}
             <input formControlName="province" />
           </label>
 
           <label>
-            Postal code
+            {{ 'broker.editor.postalCode' | transloco }}
             <input formControlName="postalCode" />
             @if (form.controls.postalCode.invalid && form.controls.postalCode.touched) {
               <small>Postal code must be 5 digits.</small>
@@ -102,22 +103,24 @@ function numberRange(min: number, max: number) {
           </label>
 
           <label>
-            Bedrooms
+            {{ 'broker.editor.bedrooms' | transloco }}
             <input type="number" formControlName="bedrooms" />
           </label>
 
           <label>
-            Bathrooms
+            {{ 'broker.editor.bathrooms' | transloco }}
             <input type="number" formControlName="bathrooms" />
           </label>
 
           <label>
-            Area (sq ft)
+            {{ 'broker.editor.area' | transloco }}
             <input type="number" formControlName="areaSqFt" />
           </label>
 
           <button type="submit" [disabled]="saving() || form.invalid">
-            {{ saving() ? 'Saving...' : 'Save' }}
+            {{
+              saving() ? ('broker.editor.saving' | transloco) : ('broker.editor.save' | transloco)
+            }}
           </button>
         </form>
       }

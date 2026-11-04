@@ -140,10 +140,23 @@ export class BrokerListingsPageComponent {
     }
   }
 
+  private readonly allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  private readonly maxImageSizeBytes = 5 * 1024 * 1024;
+
   async upload(id: string, event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) {
+      return;
+    }
+    if (!this.allowedImageTypes.includes(file.type)) {
+      this.error.set('Only JPEG, PNG, and WebP images are allowed.');
+      input.value = '';
+      return;
+    }
+    if (file.size > this.maxImageSizeBytes) {
+      this.error.set('Image size must be 5 MB or smaller.');
+      input.value = '';
       return;
     }
     this.uploadingId.set(id);

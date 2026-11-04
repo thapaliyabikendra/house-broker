@@ -29,7 +29,23 @@
     "loading": "Loading your listings...",
     "emptyTitle": "No listings yet",
     "emptyDescription": "Create your first listing.",
-    "commission": "Commission"
+    "commission": "Commission",
+    "editor": {
+      "title": "Title",
+      "description": "Description",
+      "price": "Price",
+      "propertyType": "Property type",
+      "city": "City",
+      "locality": "Locality",
+      "province": "Province",
+      "postalCode": "Postal code",
+      "bedrooms": "Bedrooms",
+      "bathrooms": "Bathrooms",
+      "area": "Area (sq ft)",
+      "loading": "Loading...",
+      "save": "Save",
+      "saving": "Saving..."
+    }
   },
   "admin": {
     "title": "Commission rates",

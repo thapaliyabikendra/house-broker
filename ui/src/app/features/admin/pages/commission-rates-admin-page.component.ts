@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminCommissionRatesDataService } from '../../../core/data/admin-commission-rates-data.service';
+import { ApiError } from '../../../core/http/api-error';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
@@ -117,6 +118,7 @@ export class CommissionRatesAdminPageComponent {
   readonly error = signal<string | null>(null);
   readonly rates = signal<CommissionRateDto[]>([]);
   readonly editingId = signal<string | null>(null);
+  readonly editingVersion = signal<string | null>(null);
 
   readonly form = new FormGroup({
     minPrice: new FormControl<number | null>(null, {
@@ -153,6 +155,7 @@ export class CommissionRatesAdminPageComponent {
 
   edit(rate: CommissionRateDto): void {
     this.editingId.set(rate.id ?? null);
+    this.editingVersion.set(rate.version ?? null);
     this.form.patchValue({
       minPrice: rate.minPrice != null ? Number(rate.minPrice) : null,
       minInclusive: rate.minInclusive ?? true,
@@ -184,11 +187,12 @@ export class CommissionRatesAdminPageComponent {
     const id = this.editingId();
     try {
       if (id) {
-        await this.data.update(id, request);
+        await this.data.update(id, request, this.editingVersion());
       } else {
         await this.data.create(request);
       }
       this.editingId.set(null);
+      this.editingVersion.set(null);
       this.form.reset({
         minInclusive: true,
         maxInclusive: false,
@@ -196,6 +200,14 @@ export class CommissionRatesAdminPageComponent {
       });
       await this.load();
     } catch (error) {
+      if (error instanceof ApiError && error.fieldErrors) {
+        for (const [field, messages] of Object.entries(error.fieldErrors)) {
+          const control = this.form.get(field);
+          if (control && messages?.length) {
+            control.setErrors({ server: messages[0] });
+          }
+        }
+      }
       this.error.set(error instanceof Error ? error.message : 'Save failed');
     } finally {
       this.saving.set(false);
