@@ -123,10 +123,10 @@
 - [x] `ListingSearchQuery` (location text, min/max price, property type, bedrooms, features, sort, page/pageSize with a max cap)
 - [~] Query composed with `IQueryable`, projected to summary DTOs (no N+1, `AsNoTracking`); implemented behind `IListingQueries` with small `IQueryable` filter extension methods (no specification framework) *(implemented inline in `ListingQueries`; filter extension methods were not extracted)*
 - [x] Paged response envelope (items, total, page, pageSize)
-- [x] Detail endpoint: description, images, features; broker name/phone/email only when the caller holds `contacts.read`
+- [x] Detail endpoint: description, images, features, broker name/phone/email for every caller (raw R13)
 - [x] Anonymous lookup endpoints `GET /api/v1/lookups/property-types` and `GET /api/v1/lookups/features` returning default-language names (no translation table in MVP); `GET /api/v1/meta` (currency code, supported cultures, default culture, limits); results sorted by `SortOrder` ascending
 - [~] Query validation (min ≤ max, page bounds, text length cap, LIKE wildcards escaped); `search` rate-limit policy; Debug logging of normalized filters *(partial: the `search` rate-limit policy is implemented and verified by `RateLimitingTests` for public search and lookups; query validation and debug logging remain open)*
-- [x] Unit tests for search criteria composition; verify seekers see only `Active` listings; contact hidden without the scope
+- [x] Unit tests for search criteria composition; verify seekers see only `Active` listings; anonymous detail includes broker contact and never commission
 
 **Exit:** search by location + price range + type works with paging and sorting; detail returns images, and broker contact only for permitted callers.
 
@@ -169,7 +169,7 @@
 ### Phase 11: Angular Features (3.3 days)
 **Showcase (1.1 days)**
 - [x] Search page: filters (location, price range with lakh/crore display, property type, bedrooms, features), sorting, paging, debounced input, URL-synced state, skeleton and empty states
-- [x] Listing detail page: image gallery (`NgOptimizedImage`, `@defer`), description, features, price; broker contact shown to signed-in users with `contacts.read`, otherwise a "Sign in to view contact" prompt; anonymous browsing works end to end
+- [x] Listing detail page: image gallery (`NgOptimizedImage`, `@defer`), description, features, price; broker contact shown to every visitor; anonymous browsing works end to end
 
 **Broker area (1.4 days)**
 - [x] My listings: table with status chips and the commission column (shown only here)

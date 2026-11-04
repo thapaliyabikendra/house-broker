@@ -13,8 +13,8 @@ public interface IListingService
     /// <summary>Deletes a listing.</summary>
     Task<Result> DeleteAsync(Guid id, CancellationToken cancellationToken);
 
-    /// <summary>Gets public detail.</summary>
-    Task<Result<ListingDetailDto>> GetDetailAsync(Guid id, bool includeContact, CancellationToken cancellationToken);
+    /// <summary>Gets public detail, including the broker's contact details for anonymous and signed-in callers alike.</summary>
+    Task<Result<ListingDetailDto>> GetDetailAsync(Guid id, CancellationToken cancellationToken);
 
     /// <summary>Searches listings.</summary>
     Task<Result<PagedResult<ListingSummaryDto>>> SearchAsync(ListingSearchQuery query, CancellationToken cancellationToken);

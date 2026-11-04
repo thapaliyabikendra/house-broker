@@ -105,7 +105,7 @@ api validates access tokens with the issuer's discovery document and JWKS (cache
 | Method | Route | Access |
 |--------|-------|--------|
 | GET | `/api/v1/listings` (search + filters + paging) | Anonymous |
-| GET | `/api/v1/listings/{id}` (returns `ETag`) | Anonymous (broker contact: `contacts.read`) |
+| GET | `/api/v1/listings/{id}` (returns `ETag`, includes broker contact) | Anonymous |
 | POST | `/api/v1/listings` (supports `Idempotency-Key`) | Broker, `listings.write` |
 | PUT | `/api/v1/listings/{id}` (requires `If-Match`) | Owning broker, `listings.write` |
 | DELETE | `/api/v1/listings/{id}` (soft delete) | Owning broker, `listings.write` |
@@ -138,7 +138,7 @@ Effective access requires both the user's permission (for user tokens) and the c
 | Permission claim | Required scope | Seeker | Broker | Admin |
 |------------------|----------------|:------:|:------:|:-----:|
 | `listings:view` | `listings.read` | ✔ | ✔ | ✔ |
-| `listings:contact:view` | `contacts.read` | ✔ | ✔ | ✔ |
+| `listings:contact:view` | `contacts.read` | ✔ | ✔ | ✔ | (issued for compatibility; no endpoint requires it) |
 | `listings:create` | `listings.write` | | ✔ | |
 | `listings:update` (own only) | `listings.write` | | ✔ | |
 | `listings:delete` (own only) | `listings.write` | | ✔ | |

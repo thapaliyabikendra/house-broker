@@ -130,7 +130,7 @@ npm --prefix ui run i18n:check
 - Controllers + URL versioning; public URLs are `/api/v1/...` under `UsePathBase("/api")`. Never produce `/api/api/...`.
 - Auth: authorization code + PKCE for users, `client_credentials` for partners. Effective access = user permission ∩ client scope; ownership is checked in the service layer.
 - Default deny; every action has explicit auth metadata. Partners can only read.
-- Search and listing detail are anonymous. Broker contact needs `contacts.read` (and `listings:contact:view` for users).
+- Search and listing detail are anonymous. Listing detail includes broker contact for every caller (raw R13); commission is owner-only.
 - `POST` that creates a resource must support `Idempotency-Key`; `PUT` requires `If-Match` and honors `rowversion` (428 missing, 412 stale).
 - Errors are RFC 7807 `ProblemDetails` with `code`, `correlationId` and field errors. No stack traces outside Development.
 - Document every endpoint with XML comments, `[ProducesResponseType]`, and `ProblemDetails` for error codes; Swagger is the public contract.

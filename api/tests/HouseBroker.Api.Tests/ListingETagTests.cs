@@ -17,7 +17,7 @@ public sealed class ListingETagTests
     {
         var version = Convert.ToBase64String(new byte[] { 1, 2, 3, 4 });
         var service = new Mock<IListingService>();
-        service.Setup(listing => listing.GetDetailAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        service.Setup(listing => listing.GetDetailAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<ListingDetailDto>(new ListingDetailDto { Version = version }));
         var controller = new PublicListingsController(service.Object, Mock.Of<IImageStorage>())
         {
@@ -52,7 +52,7 @@ public sealed class ListingETagTests
     public async Task PublicDetail_WithoutVersion_DoesNotSetETag()
     {
         var service = new Mock<IListingService>();
-        service.Setup(listing => listing.GetDetailAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+        service.Setup(listing => listing.GetDetailAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<ListingDetailDto>(new ListingDetailDto()));
         var controller = new PublicListingsController(service.Object, Mock.Of<IImageStorage>())
         {
@@ -62,6 +62,18 @@ public sealed class ListingETagTests
         await controller.Get(Guid.NewGuid(), CancellationToken.None);
 
         Assert.True(string.IsNullOrEmpty(controller.Response.Headers.ETag));
+    }
+
+    /// <summary>The public detail is rate-limited with the search policy, since it returns contact details.</summary>
+    [Fact]
+    public void PublicDetail_IsRateLimitedWithSearchPolicy()
+    {
+        var method = typeof(PublicListingsController).GetMethod(nameof(PublicListingsController.Get))!;
+        var attribute = method.GetCustomAttributes(typeof(Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute), inherit: false)
+            .Cast<Microsoft.AspNetCore.RateLimiting.EnableRateLimitingAttribute>()
+            .Single();
+
+        Assert.Equal(RateLimiting.RateLimitPolicies.Search, attribute.PolicyName);
     }
 
     private static DefaultHttpContext CreateHttpContext()

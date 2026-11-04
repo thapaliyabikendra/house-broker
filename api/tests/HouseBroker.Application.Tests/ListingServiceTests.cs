@@ -411,9 +411,9 @@ public sealed class ListingServiceTests
         Assert.Equal(ErrorCodes.OutOfRange, result.Error.Code);
     }
 
-    /// <summary>Detail hides contact without scope.</summary>
+    /// <summary>Detail includes broker contact for an anonymous caller (raw R13).</summary>
     [Fact]
-    public async Task GetDetailAsync_WithoutContact_HidesBrokerContact()
+    public async Task GetDetailAsync_Anonymous_IncludesBrokerContact()
     {
         var repository = new Mock<IListingRepository>();
         var queries = new Mock<IListingQueries>();
@@ -424,6 +424,9 @@ public sealed class ListingServiceTests
         var listing = ListingBuilder.Create();
         listing.Publish();
         queries.Setup(q => q.GetPublicAsync(listing.Id, It.IsAny<CancellationToken>())).ReturnsAsync(listing);
+
+        queries.Setup(q => q.GetBrokerProfileAsync(listing.BrokerId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(HouseBroker.Domain.BrokerProfile.Create(listing.BrokerId, "Broker", "broker@example.com", "123"));
 
         var service = new ListingService(
             repository.Object,
@@ -436,15 +439,83 @@ public sealed class ListingServiceTests
             new UpdateListingRequestValidator(),
             new RecordingLogger<ListingService>());
 
-        var result = await service.GetDetailAsync(listing.Id, false, CancellationToken.None);
+        var result = await service.GetDetailAsync(listing.Id, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.Null(result.Value!.BrokerContact);
+        Assert.NotNull(result.Value!.BrokerContact);
     }
 
-    /// <summary>Detail includes contact with scope.</summary>
+    /// <summary>Reading the caller's own listings refreshes the broker profile from the token claims.</summary>
     [Fact]
-    public async Task GetDetailAsync_WithContact_IncludesBrokerContact()
+    public async Task GetMineAsync_RefreshesBrokerProfileFromClaims()
+    {
+        var brokerId = Guid.NewGuid();
+        var repository = new Mock<IListingRepository>();
+        var queries = new Mock<IListingQueries>();
+        var rates = new Mock<ICommissionRateProvider>();
+        var currentUser = new Mock<ICurrentUserService>();
+        var unitOfWork = new Mock<IUnitOfWork>();
+        currentUser.Setup(user => user.UserId).Returns(brokerId);
+        currentUser.Setup(user => user.FullName).Returns("Renamed Broker");
+        currentUser.Setup(user => user.Email).Returns("renamed@example.com");
+        currentUser.Setup(user => user.PhoneNumber).Returns("9800000099");
+        queries.Setup(q => q.GetMineAsync(brokerId, It.IsAny<CancellationToken>())).ReturnsAsync(new List<Listing>());
+
+        var service = new ListingService(
+            repository.Object,
+            queries.Object,
+            rates.Object,
+            currentUser.Object,
+            unitOfWork.Object,
+            TimeProvider.System,
+            new CreateListingRequestValidator(),
+            new UpdateListingRequestValidator(),
+            new RecordingLogger<ListingService>());
+
+        var result = await service.GetMineAsync(CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        queries.Verify(q => q.UpsertBrokerProfileAsync(
+            It.Is<BrokerProfile>(profile => profile.BrokerId == brokerId
+                && profile.FullName == "Renamed Broker"
+                && profile.Email == "renamed@example.com"
+                && profile.PhoneNumber == "9800000099"),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>A missing name claim does not block the broker's own listing read and writes no profile.</summary>
+    [Fact]
+    public async Task GetMineAsync_WithoutNameClaim_StillReturnsListings()
+    {
+        var brokerId = Guid.NewGuid();
+        var repository = new Mock<IListingRepository>();
+        var queries = new Mock<IListingQueries>();
+        var rates = new Mock<ICommissionRateProvider>();
+        var currentUser = new Mock<ICurrentUserService>();
+        var unitOfWork = new Mock<IUnitOfWork>();
+        currentUser.Setup(user => user.UserId).Returns(brokerId);
+        queries.Setup(q => q.GetMineAsync(brokerId, It.IsAny<CancellationToken>())).ReturnsAsync(new List<Listing>());
+
+        var service = new ListingService(
+            repository.Object,
+            queries.Object,
+            rates.Object,
+            currentUser.Object,
+            unitOfWork.Object,
+            TimeProvider.System,
+            new CreateListingRequestValidator(),
+            new UpdateListingRequestValidator(),
+            new RecordingLogger<ListingService>());
+
+        var result = await service.GetMineAsync(CancellationToken.None);
+
+        Assert.True(result.IsSuccess);
+        queries.Verify(q => q.UpsertBrokerProfileAsync(It.IsAny<BrokerProfile>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    /// <summary>Detail exposes no commission fields on the public DTO.</summary>
+    [Fact]
+    public async Task GetDetailAsync_Anonymous_ExcludesCommissionFromPublicDto()
     {
         var repository = new Mock<IListingRepository>();
         var queries = new Mock<IListingQueries>();
@@ -469,10 +540,13 @@ public sealed class ListingServiceTests
             new UpdateListingRequestValidator(),
             new RecordingLogger<ListingService>());
 
-        var result = await service.GetDetailAsync(listing.Id, true, CancellationToken.None);
+        var result = await service.GetDetailAsync(listing.Id, CancellationToken.None);
 
         Assert.True(result.IsSuccess);
-        Assert.NotNull(result.Value!.BrokerContact);
+        Assert.IsNotType<OwnerListingDto>(result.Value);
+        Assert.DoesNotContain(
+            typeof(ListingDetailDto).GetProperties(),
+            property => property.Name.StartsWith("Commission", StringComparison.Ordinal));
     }
 }
 

@@ -242,7 +242,7 @@ public sealed class ListingService(
     }
 
     /// <inheritdoc />
-    public async Task<Result<ListingDetailDto>> GetDetailAsync(Guid id, bool includeContact, CancellationToken cancellationToken)
+    public async Task<Result<ListingDetailDto>> GetDetailAsync(Guid id, CancellationToken cancellationToken)
     {
         var listing = await _queries.GetPublicAsync(id, cancellationToken);
         if (listing is null || listing.Status != ListingStatus.Active)
@@ -250,14 +250,12 @@ public sealed class ListingService(
             return Result.Failure<ListingDetailDto>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
+        // Raw requirement: the showcase detail shows the broker's contact details to any visitor.
         var dto = MapDetail(listing);
-        if (includeContact)
+        var profile = await _queries.GetBrokerProfileAsync(listing.BrokerId, cancellationToken);
+        if (profile is not null)
         {
-            var profile = await _queries.GetBrokerProfileAsync(listing.BrokerId, cancellationToken);
-            if (profile is not null)
-            {
-                dto.BrokerContact = ListingMapper.ToBrokerContact(profile);
-            }
+            dto.BrokerContact = ListingMapper.ToBrokerContact(profile);
         }
 
         return Result.Success<ListingDetailDto>(dto);
@@ -333,6 +331,10 @@ public sealed class ListingService(
             _logger.LogWarning("Listing retrieval was rejected because the caller is not an authenticated broker.");
             return Result.Failure<IReadOnlyList<OwnerListingDto>>(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
+
+        // Keep the public contact current: refresh the profile from the token claims on every broker read.
+        // A failed refresh must not block the read; the warning is logged inside SyncBrokerProfileAsync.
+        _ = await SyncBrokerProfileAsync(brokerId.Value, cancellationToken);
 
         var listings = await _queries.GetMineAsync(brokerId.Value, cancellationToken);
         return Result.Success<IReadOnlyList<OwnerListingDto>>(listings.Select(listing => MapOwner(listing)).ToList());

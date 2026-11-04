@@ -34,19 +34,14 @@ public sealed class PublicListingsController(IListingService listingService, IIm
     /// <summary>Gets a listing.</summary>
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpGet("{id:guid}")]
-    [AllowAnonymous] // Anonymous listing detail per scope.
+    [AllowAnonymous] // Public detail: listing data plus broker contact (raw R13); bulk reads are limited by the search policy.
+    [EnableRateLimiting(RateLimitPolicies.Search)]
     [Tags("Listings")]
     [ProducesResponseType<ListingDetailDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
     {
-        var grantedScopes = User.FindAll("scp").Select(claim => claim.Value)
-            .Concat(User.FindAll("scope").SelectMany(claim => claim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)))
-            .ToHashSet(StringComparer.Ordinal);
-        var hasContactScope = grantedScopes.Contains(Scopes.ContactsRead);
-        var hasContactPermission = User.HasClaim("permission", AppPermissions.ListingsContactView);
-        var includeContact = hasContactScope && (hasContactPermission || !User.HasClaim(claim => claim.Type == "permission"));
-        var result = await listingService.GetDetailAsync(id, includeContact, cancellationToken);
+        var result = await listingService.GetDetailAsync(id, cancellationToken);
         if (result.IsSuccess)
         {
             this.SetETag(result.Value!.Version);

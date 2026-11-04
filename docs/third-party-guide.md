@@ -38,7 +38,7 @@ grant_type=client_credentials
 | Scope | Purpose |
 |------|---------|
 | `listings.read` | Read public listing summaries and details. |
-| `contacts.read` | Read broker contact fields on listing detail. |
+| `contacts.read` | Retained for compatibility; listing detail returns broker contact to every caller. |
 
 ## Common contract
 
@@ -56,7 +56,7 @@ grant_type=client_credentials
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/v1/listings` | Search listings with paging/sorting/filters. |
-| GET | `/api/v1/listings/{id}` | Listing detail. Contact is only returned with `contacts.read`. |
+| GET | `/api/v1/listings/{id}` | Listing detail, including broker contact. |
 | GET | `/api/v1/lookups/property-types` | Property type lookup. |
 | GET | `/api/v1/lookups/features` | Feature lookup. |
 | GET | `/api/v1/meta` | Supported cultures, currency, limits. |

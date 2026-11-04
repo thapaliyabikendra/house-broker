@@ -10,7 +10,7 @@ An MVP for a **property marketplace** where house seekers discover listings and 
 
 | Audience | Need |
 |----------|------|
-| **House seeker** | Browse, search and filter properties; view details and, when signed in, broker contact details |
+| **House seeker** | Browse, search and filter properties; view details, including broker contact details |
 | **Broker** | Create and maintain listings, upload images, and see the commission earned on their own listings |
 | **Admin** | Manage the commission rate tiers that drive broker earnings |
 | **Third-party partner** | Integrate read access to listings and contacts using standard OAuth/OIDC credentials |

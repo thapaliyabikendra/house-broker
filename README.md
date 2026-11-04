@@ -164,7 +164,7 @@ The snapshot (`CommissionAmount`, `CommissionRatePercent`, `CommissionRateId`) i
 - **Users:** authorization code + PKCE (Angular, Swagger, third-party apps); refresh tokens with rotation.
 - **Partners:** `client_credentials`, read scopes only (`listings.read`, `contacts.read`).
 - **Effective access** = the user's permission ∩ the client's granted scope; ownership (`sub` equals the listing's `BrokerId`) is checked in the service layer.
-- **Anonymous:** search, listing detail, lookups and `meta`. Broker contact needs `contacts.read` (and `listings:contact:view` for users).
+- **Anonymous:** search, listing detail (including broker contact, per raw R13), lookups and `meta`.
 - Roles: `Broker`, `Seeker`, `Admin` (Admin manages commission tiers only).
 
 The permission/scope matrix is in [docs/plan/03-architecture.md](docs/plan/03-architecture.md) (3.6).
