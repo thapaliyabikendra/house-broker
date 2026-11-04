@@ -1,4 +1,4 @@
-using HouseBroker.Application.Services;
+using HouseBroker.Application.CommissionRates;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Common;
 using Xunit;

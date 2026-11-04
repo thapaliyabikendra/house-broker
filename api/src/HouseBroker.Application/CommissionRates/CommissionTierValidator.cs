@@ -2,7 +2,7 @@ using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Common;
 
-namespace HouseBroker.Application.Services;
+namespace HouseBroker.Application.CommissionRates;
 
 /// <summary>One broken rule in a commission tier set, with the tier and request field it concerns.</summary>
 /// <param name="Code">The stable error code (for example <c>validation.out_of_range</c>).</param>

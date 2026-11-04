@@ -1,6 +1,7 @@
 using HouseBroker.Application.Contracts.Listings;
 using HouseBroker.Application.Contracts;
-using HouseBroker.Application.Services;
+using HouseBroker.Application.Abstractions;
+using HouseBroker.Application.Listings;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Common;
 using HouseBroker.TestSupport;

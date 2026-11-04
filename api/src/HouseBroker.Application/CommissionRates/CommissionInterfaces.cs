@@ -1,6 +1,6 @@
 using HouseBroker.Domain;
 
-namespace HouseBroker.Application;
+namespace HouseBroker.Application.CommissionRates;
 
 /// <summary>Commission rate repository.</summary>
 public interface ICommissionRateRepository

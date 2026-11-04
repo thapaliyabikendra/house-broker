@@ -1,9 +1,10 @@
+using HouseBroker.Application.Abstractions;
 using HouseBroker.Application.Contracts.Lookups;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Application.Mapping;
 using HouseBroker.Domain.Common;
 
-namespace HouseBroker.Application.Services;
+namespace HouseBroker.Application.Lookups;
 
 /// <summary>Lookup and metadata service implementation.</summary>
 public sealed class LookupService(IListingQueries queries) : ILookupService

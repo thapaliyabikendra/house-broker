@@ -3,7 +3,7 @@ using FluentValidation;
 using HouseBroker.Domain.Common;
 using System.Text.RegularExpressions;
 
-namespace HouseBroker.Application.Services;
+namespace HouseBroker.Application.Listings;
 
 /// <summary>Validator for create listing requests.</summary>
 public sealed class CreateListingRequestValidator : AbstractValidator<CreateListingRequest>

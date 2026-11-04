@@ -38,7 +38,7 @@ public sealed class DependencyRulesTests
     [Fact]
     public void Application_DoesNotReference_Infrastructure()
     {
-        var references = ReferencedAssemblyNames(typeof(HouseBroker.Application.Services.ListingService));
+        var references = ReferencedAssemblyNames(typeof(HouseBroker.Application.Listings.ListingService));
         Assert.DoesNotContain("HouseBroker.Infrastructure", references);
     }
 

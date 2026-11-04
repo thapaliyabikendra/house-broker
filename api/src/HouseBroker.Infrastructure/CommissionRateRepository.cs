@@ -1,4 +1,4 @@
-using HouseBroker.Application;
+using HouseBroker.Application.CommissionRates;
 using HouseBroker.Domain;
 using HouseBroker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;

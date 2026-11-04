@@ -1,7 +1,7 @@
 using HouseBroker.Application.Contracts.Listings;
 using HouseBroker.Domain;
 
-namespace HouseBroker.Application;
+namespace HouseBroker.Application.Abstractions;
 
 /// <summary>Commission rate provider.</summary>
 public interface ICommissionRateProvider

@@ -1,7 +1,7 @@
 using HouseBroker.Domain;
+using HouseBroker.Application.CommissionRates;
 using HouseBroker.Domain.Common;
 using HouseBroker.Infrastructure.Persistence;
-using HouseBroker.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 

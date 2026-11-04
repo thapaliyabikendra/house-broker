@@ -2,7 +2,7 @@ using FluentValidation.Results;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Domain.Common;
 
-namespace HouseBroker.Application.Services;
+namespace HouseBroker.Application.Listings;
 
 /// <summary>Converts FluentValidation failures into an application error that reports every failing field.</summary>
 internal static class ValidationErrors

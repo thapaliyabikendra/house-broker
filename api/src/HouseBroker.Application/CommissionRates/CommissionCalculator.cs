@@ -1,6 +1,6 @@
 using HouseBroker.Domain;
 
-namespace HouseBroker.Application;
+namespace HouseBroker.Application.CommissionRates;
 
 /// <summary>Commission calculation result.</summary>
 public sealed record CommissionResult(decimal Amount, decimal RatePercent, Guid RateId);

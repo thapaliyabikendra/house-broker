@@ -1,4 +1,4 @@
-using HouseBroker.Application;
+using HouseBroker.Application.Abstractions;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
 using Microsoft.Extensions.Configuration;

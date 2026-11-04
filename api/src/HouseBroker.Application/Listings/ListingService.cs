@@ -1,3 +1,5 @@
+using HouseBroker.Application.Abstractions;
+using HouseBroker.Application.CommissionRates;
 using HouseBroker.Application.Contracts.Listings;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Application.Mapping;
@@ -6,7 +8,7 @@ using HouseBroker.Domain.Common;
 using Microsoft.Extensions.Logging;
 using System.Text;
 
-namespace HouseBroker.Application.Services;
+namespace HouseBroker.Application.Listings;
 
 /// <summary>Listing service implementation.</summary>
 public sealed class ListingService(

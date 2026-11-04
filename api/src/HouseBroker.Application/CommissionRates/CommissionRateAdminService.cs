@@ -1,11 +1,12 @@
 using HouseBroker.Application.Contracts.CommissionRates;
 using HouseBroker.Application.Contracts;
+using HouseBroker.Application.Listings;
 using HouseBroker.Application.Mapping;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Common;
 using System.Text.Json;
 
-namespace HouseBroker.Application.Services;
+namespace HouseBroker.Application.CommissionRates;
 
 /// <summary>Commission rate administration service implementation.</summary>
 public sealed class CommissionRateAdminService(

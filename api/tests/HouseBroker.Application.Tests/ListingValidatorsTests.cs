@@ -1,5 +1,5 @@
 using HouseBroker.Application.Contracts.Listings;
-using HouseBroker.Application.Services;
+using HouseBroker.Application.Listings;
 using Xunit;
 
 namespace HouseBroker.Application.Tests;
