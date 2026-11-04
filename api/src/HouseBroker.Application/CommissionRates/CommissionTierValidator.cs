@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Common;
@@ -30,6 +31,40 @@ public sealed record CommissionTierViolation
 
     /// <summary>Gets the message arguments in placeholder order.</summary>
     public IReadOnlyList<object?> Args { get; init; }
+
+    /// <summary>
+    /// Gets the stored tier that actually broke a rule when the violation was re-attributed to another tier
+    /// (for example a neighbour whose boundary moved with the edited tier), or null.
+    /// </summary>
+    public CommissionRate? RelatedTier { get; init; }
+
+    /// <summary>
+    /// Value equality over the code, field, arguments and tier identity. The generated record equality would compare
+    /// <see cref="Args"/> by reference and tiers by the entity's own equality, neither of which is wanted here.
+    /// </summary>
+    public bool Equals(CommissionTierViolation? other)
+        => other is not null
+            && Code == other.Code
+            && Field == other.Field
+            && ReferenceEquals(Tier, other.Tier)
+            && ReferenceEquals(RelatedTier, other.RelatedTier)
+            && Args.SequenceEqual(other.Args);
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        var hash = new HashCode();
+        hash.Add(Code);
+        hash.Add(Field);
+        hash.Add(Tier is null ? 0 : RuntimeHelpers.GetHashCode(Tier));
+        hash.Add(RelatedTier is null ? 0 : RuntimeHelpers.GetHashCode(RelatedTier));
+        foreach (var arg in Args)
+        {
+            hash.Add(arg);
+        }
+
+        return hash.ToHashCode();
+    }
 }
 
 /// <summary>Commission tier validation.</summary>
@@ -77,9 +112,13 @@ public static class CommissionTierValidator
             }
         }
 
+        // An open-ended tier below a bounded top tier is reported once here; the adjacency loop below skips it
+        // so the same tier and field are not reported twice under two codes.
+        CommissionRate? reportedTopOpenEnded = null;
         if (openEnded.Count > 0 && active[^1].MaxPrice is not null)
         {
-            violations.Add(new CommissionTierViolation(ErrorCodes.TierTopOpenEnded, openEnded[0], "MaxPrice", openEnded[0].MinPrice));
+            reportedTopOpenEnded = openEnded[0];
+            violations.Add(new CommissionTierViolation(ErrorCodes.TierTopOpenEnded, reportedTopOpenEnded, "MaxPrice", reportedTopOpenEnded.MinPrice));
         }
 
         for (var index = 1; index < active.Count; index++)
@@ -89,7 +128,11 @@ public static class CommissionTierValidator
 
             if (previous.MaxPrice is null)
             {
-                violations.Add(new CommissionTierViolation(ErrorCodes.TierOpenEndedLast, previous, "MaxPrice", previous.MinPrice));
+                if (!ReferenceEquals(previous, reportedTopOpenEnded))
+                {
+                    violations.Add(new CommissionTierViolation(ErrorCodes.TierOpenEndedLast, previous, "MaxPrice", previous.MinPrice));
+                }
+
                 continue;
             }
 
@@ -113,13 +156,42 @@ public static class CommissionTierValidator
     }
 
     /// <summary>
+    /// Validates the tier set at <paramref name="nowUtc"/> and at every later instant where an active tier becomes effective,
+    /// so a change cannot be valid today and broken the moment a scheduled tier takes effect.
+    /// Identical violations found at several instants are reported once.
+    /// </summary>
+    public static IReadOnlyList<CommissionTierViolation> ValidateTimeline(IEnumerable<CommissionRate> tiers, DateTime nowUtc)
+    {
+        var set = tiers.ToList();
+        var instants = set
+            .Where(tier => tier.IsActive && tier.EffectiveFrom > nowUtc)
+            .Select(tier => tier.EffectiveFrom)
+            .Append(nowUtc)
+            .Distinct()
+            .OrderBy(instant => instant);
+
+        var violations = new List<CommissionTierViolation>();
+        foreach (var instant in instants)
+        {
+            violations.AddRange(Validate(set, instant));
+        }
+
+        return violations.Distinct().ToList();
+    }
+
+    /// <summary>
     /// Builds the validation error for an admin write. Violations on the proposed tier become per-field entries;
     /// violations that only involve existing tiers cannot be fixed by fields of this request, so they produce a
-    /// field-less conflict that names those tiers in <see cref="ApplicationError.RelatedRecords"/>.
+    /// field-less error that names those tiers in <see cref="ApplicationError.RelatedRecords"/>.
     /// </summary>
-    /// <param name="violations">The violations found by <see cref="Validate"/>.</param>
+    /// <param name="violations">The violations found by <see cref="Validate"/> or <see cref="ValidateTimeline"/>.</param>
     /// <param name="proposed">The tier being written.</param>
-    public static ApplicationError ToApplicationError(IEnumerable<CommissionTierViolation> violations, CommissionRate proposed)
+    /// <param name="storedSetInvalid">
+    /// Whether the stored set was already invalid before this write. Only then is a field-less failure a state
+    /// conflict; otherwise this request broke the set and the failure is a validation error. Defaults to true,
+    /// which keeps the previous behaviour for callers that do not compute a baseline.
+    /// </param>
+    public static ApplicationError ToApplicationError(IEnumerable<CommissionTierViolation> violations, CommissionRate proposed, bool storedSetInvalid = true)
     {
         var all = violations.ToList();
         var fieldErrors = all
@@ -128,10 +200,12 @@ public static class CommissionTierValidator
             .Select(violation => new FieldError(violation.Field!, violation.Code, violation.Args.ToArray()))
             .ToList();
 
-        // Existing tiers (not the proposed one) that break the rules. This request cannot repair them.
+        // Existing tiers (not the proposed one) involved in a violation: either the tier that broke a rule, or the
+        // stored neighbour whose cascaded boundary caused a violation reported against the proposed tier.
         var existingTiers = all
-            .Where(violation => violation.Tier is not null && !ReferenceEquals(violation.Tier, proposed))
-            .Select(violation => violation.Tier!)
+            .SelectMany(violation => new[] { violation.Tier, violation.RelatedTier })
+            .Where(tier => tier is not null && !ReferenceEquals(tier, proposed))
+            .Select(tier => tier!)
             .DistinctBy(tier => tier.Id)
             .ToList();
         var existingIds = existingTiers.Select(tier => tier.Id).ToList();
@@ -139,9 +213,9 @@ public static class CommissionTierValidator
             .Select(tier => new RelatedRecord(tier.Id, tier.MinPrice, tier.MinInclusive, tier.MaxPrice, tier.MaxInclusive))
             .ToList();
 
-        if (fieldErrors.Count == 0 && existingIds.Count > 0 && all.All(violation => violation.Tier is not null))
+        if (storedSetInvalid && fieldErrors.Count == 0 && existingIds.Count > 0 && all.All(violation => violation.Tier is not null))
         {
-            // The stored set is already invalid and the proposed tier is not at fault: a state conflict, not a bad request.
+            // The stored set was already invalid and the proposed tier is not at fault: a state conflict, not a bad request.
             return new ApplicationError(ErrorCodes.Conflict, ErrorKind.Conflict) { RelatedIds = existingIds, RelatedRecords = relatedRecords };
         }
 
