@@ -60,9 +60,10 @@ Pinned versions live in `global.json`, `ui/package.json` and the CI workflow.
 # 1. Local infrastructure: SQL Server 2022 (+ Redis in the production compose)
 docker compose up -d
 
-# 2. Apply migrations and the idempotent seed
-dotnet HouseBroker.Api.dll migrate
-dotnet HouseBroker.Auth.dll migrate
+# 2. Apply migrations and the idempotent seed.
+#    (Use the host projects so you do not need to locate the built dll.)
+dotnet run --project api/src/HouseBroker.Api -- migrate
+dotnet run --project api/src/HouseBroker.Auth -- migrate
 
 # 3. Run the services (ports come from launchSettings/appsettings)
 dotnet run --project api/src/HouseBroker.Api

@@ -430,6 +430,20 @@ export class CommissionRatesAdminPageComponent {
     );
   }
 
+  /** First server-provided field message, if the failure carries field errors. */
+  private firstFieldMessage(error: unknown): string | null {
+    if (!(error instanceof ApiError) || !error.fieldErrors) {
+      return null;
+    }
+    for (const messages of Object.values(error.fieldErrors)) {
+      const first = messages?.[0];
+      if (first?.message) {
+        return first.message;
+      }
+    }
+    return null;
+  }
+
   async submit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -481,7 +495,8 @@ export class CommissionRatesAdminPageComponent {
         }
       }
       this.actionError.set(
-        error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed'),
+        this.firstFieldMessage(error) ??
+          (error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed')),
       );
     } finally {
       this.saving.set(false);

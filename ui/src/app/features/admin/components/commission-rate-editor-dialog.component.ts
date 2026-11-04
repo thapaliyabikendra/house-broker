@@ -47,6 +47,11 @@ export interface CommissionRateEditorDialogData {
         <mat-form-field appearance="outline">
           <mat-label>{{ 'admin.minPrice' | transloco }}</mat-label>
           <input matInput type="number" formControlName="minPrice" />
+          @if (form.controls.minPrice.invalid && form.controls.minPrice.touched) {
+            <mat-error>{{
+              form.controls.minPrice.errors?.['server'] ?? ('errors.validation' | transloco)
+            }}</mat-error>
+          }
         </mat-form-field>
 
         <mat-slide-toggle formControlName="minInclusive" color="primary">
@@ -56,6 +61,11 @@ export interface CommissionRateEditorDialogData {
         <mat-form-field appearance="outline">
           <mat-label>{{ 'admin.maxPrice' | transloco }}</mat-label>
           <input matInput type="number" formControlName="maxPrice" />
+          @if (form.controls.maxPrice.invalid && form.controls.maxPrice.touched) {
+            <mat-error>{{
+              form.controls.maxPrice.errors?.['server'] ?? ('errors.validation' | transloco)
+            }}</mat-error>
+          }
         </mat-form-field>
 
         <mat-slide-toggle formControlName="maxInclusive" color="primary">
@@ -66,11 +76,21 @@ export interface CommissionRateEditorDialogData {
           <mat-label>{{ 'admin.ratePercent' | transloco }}</mat-label>
           <input matInput type="number" formControlName="ratePercent" />
           <span matTextSuffix>%</span>
+          @if (form.controls.ratePercent.invalid && form.controls.ratePercent.touched) {
+            <mat-error>{{
+              form.controls.ratePercent.errors?.['server'] ?? ('errors.validation' | transloco)
+            }}</mat-error>
+          }
         </mat-form-field>
 
         <mat-form-field appearance="outline">
           <mat-label>{{ 'admin.effectiveFrom' | transloco }}</mat-label>
           <input matInput type="datetime-local" formControlName="effectiveFrom" />
+          @if (form.controls.effectiveFrom.invalid && form.controls.effectiveFrom.touched) {
+            <mat-error>{{
+              form.controls.effectiveFrom.errors?.['server'] ?? ('errors.validation' | transloco)
+            }}</mat-error>
+          }
         </mat-form-field>
 
         <mat-slide-toggle formControlName="isActive" color="primary">
@@ -211,6 +231,20 @@ export class CommissionRateEditorDialogComponent {
     );
   }
 
+  /** First server-provided field message, if the failure carries field errors. */
+  private firstFieldMessage(error: unknown): string | null {
+    if (!(error instanceof ApiError) || !error.fieldErrors) {
+      return null;
+    }
+    for (const messages of Object.values(error.fieldErrors)) {
+      const first = messages?.[0];
+      if (first?.message) {
+        return first.message;
+      }
+    }
+    return null;
+  }
+
   async submit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -263,7 +297,8 @@ export class CommissionRateEditorDialogComponent {
         }
       }
       this.actionError.set(
-        error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed'),
+        this.firstFieldMessage(error) ??
+          (error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed')),
       );
     } finally {
       this.saving.set(false);
