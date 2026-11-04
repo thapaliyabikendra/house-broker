@@ -1,0 +1,5 @@
+{
+  "lint-staged": {
+    "src/**/*.{ts,html,scss,json}": ["prettier --write", "npm run lint"]
+  }
+}

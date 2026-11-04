@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { AuthService } from '../../core/auth/auth.service';
 import { TranslocoService } from '@jsverse/transloco';
 
 @Component({
@@ -7,13 +8,21 @@ import { TranslocoService } from '@jsverse/transloco';
   template: `
     <header class="shell-header">
       <h1>House Broker</h1>
-      <label class="lang">
-        Language
-        <select [value]="lang()" (change)="setLanguage($event)">
-          <option value="en">English</option>
-          <option value="ne">नेपाली</option>
-        </select>
-      </label>
+      <div class="actions">
+        <label class="lang">
+          Language
+          <select [value]="lang()" (change)="setLanguage($event)">
+            <option value="en">English</option>
+            <option value="ne">नेपाली</option>
+          </select>
+        </label>
+        @if (auth.user(); as user) {
+          <span class="user">{{ user.name ?? user.sub }}</span>
+          <button type="button" (click)="auth.signOut()">Sign out</button>
+        } @else {
+          <button type="button" (click)="auth.signIn()">Sign in</button>
+        }
+      </div>
     </header>
   `,
   styles: `
@@ -22,6 +31,11 @@ import { TranslocoService } from '@jsverse/transloco';
       justify-content: space-between;
       align-items: center;
       padding: 1rem;
+    }
+    .actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
     }
     .lang {
       display: flex;
@@ -32,11 +46,13 @@ import { TranslocoService } from '@jsverse/transloco';
 })
 export class HeaderComponent {
   private readonly transloco = inject(TranslocoService);
+  readonly auth = inject(AuthService);
   readonly lang = signal(this.transloco.getActiveLang());
 
   setLanguage(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
     this.transloco.setActiveLang(value);
     this.lang.set(value);
+    document.documentElement.lang = value;
   }
 }
