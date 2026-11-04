@@ -48,6 +48,24 @@
   <data name="validation.invalid_format" xml:space="preserve">
     <value>मान सही ढाँचामा छैन।</value>
   </data>
+  <data name="validation.tier_boundary_mismatch" xml:space="preserve">
+    <value>सीमा अर्को दरको सीमासँग मेल खाँदैन।</value>
+  </data>
+  <data name="validation.tier_boundary_inclusive_mismatch" xml:space="preserve">
+    <value>साझा सीमामा छिमेकी दरहरूको समावेशिता विपरीत हुनुपर्छ।</value>
+  </data>
+  <data name="validation.tier_open_ended_count" xml:space="preserve">
+    <value>दर सेट मा ठीक एउटा खुल्ल दर हुनुपर्छ।</value>
+  </data>
+  <data name="validation.tier_lowest_inclusive" xml:space="preserve">
+    <value>सबभन्दा दरको न्यूनतम समावेशी हुनुपर्छ।</value>
+  </data>
+  <data name="validation.tier_top_open_ended" xml:space="preserve">
+    <value>सबभन्दा सक्रिय दर खुल्ल हुनुपर्छ।</value>
+  </data>
+  <data name="validation.tier_open_ended_last" xml:space="preserve">
+    <value>खुल्ल दर अन्तिम हुनुपर्छ।</value>
+  </data>
   <data name="idempotency.conflict" xml:space="preserve">
     <value>आइडेम्पोटेन्सी कुञ्जी फरक अनुरोधसँग पहिले प्रयोग भएको छ।</value>
   </data>

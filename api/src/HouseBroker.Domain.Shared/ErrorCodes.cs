@@ -56,4 +56,22 @@ public static class ErrorCodes
 
     /// <summary>A value does not match the expected format (for example the postal code).</summary>
     public const string InvalidFormat = "validation.invalid_format";
+
+    /// <summary>A commission tier boundary does not line up with the adjacent tier's boundary.</summary>
+    public const string TierBoundaryMismatch = "validation.tier_boundary_mismatch";
+
+    /// <summary>Two adjacent commission tiers share a boundary with the same inclusivity.</summary>
+    public const string TierBoundaryInclusiveMismatch = "validation.tier_boundary_inclusive_mismatch";
+
+    /// <summary>The commission tier set must contain exactly one open-ended tier.</summary>
+    public const string TierOpenEndedCount = "validation.tier_open_ended_count";
+
+    /// <summary>The lowest commission tier must be inclusive at its minimum.</summary>
+    public const string TierLowestInclusive = "validation.tier_lowest_inclusive";
+
+    /// <summary>The highest active commission tier must be open-ended.</summary>
+    public const string TierTopOpenEnded = "validation.tier_top_open_ended";
+
+    /// <summary>An open-ended commission tier must be the last tier in the set.</summary>
+    public const string TierOpenEndedLast = "validation.tier_open_ended_last";
 }

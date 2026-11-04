@@ -48,6 +48,24 @@
   <data name="validation.invalid_format" xml:space="preserve">
     <value>The value is not in the expected format.</value>
   </data>
+  <data name="validation.tier_boundary_mismatch" xml:space="preserve">
+    <value>The tier boundary does not match the adjacent tier's boundary.</value>
+  </data>
+  <data name="validation.tier_boundary_inclusive_mismatch" xml:space="preserve">
+    <value>Adjacent tiers must have opposite inclusivity at the shared boundary.</value>
+  </data>
+  <data name="validation.tier_open_ended_count" xml:space="preserve">
+    <value>The tier set must contain exactly one open-ended tier.</value>
+  </data>
+  <data name="validation.tier_lowest_inclusive" xml:space="preserve">
+    <value>The lowest tier's minimum must be inclusive.</value>
+  </data>
+  <data name="validation.tier_top_open_ended" xml:space="preserve">
+    <value>The highest active tier must be open-ended.</value>
+  </data>
+  <data name="validation.tier_open_ended_last" xml:space="preserve">
+    <value>The open-ended tier must be the last tier.</value>
+  </data>
   <data name="idempotency.conflict" xml:space="preserve">
     <value>The idempotency key was already used with a different request.</value>
   </data>

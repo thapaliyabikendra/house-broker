@@ -34,7 +34,7 @@ public static class CommissionTierValidator
         {
             // Point at the open-ended candidate when there is one; otherwise at the top tier.
             var subject = openEnded.Count > 1 ? openEnded[0] : active[^1];
-            violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, subject, "MaxPrice"));
+            violations.Add(new CommissionTierViolation(ErrorCodes.TierOpenEndedCount, subject, "MaxPrice"));
         }
 
         var first = active[0];
@@ -44,7 +44,7 @@ public static class CommissionTierValidator
         }
         else if (!first.MinInclusive)
         {
-            violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, first, "MinInclusive"));
+            violations.Add(new CommissionTierViolation(ErrorCodes.TierLowestInclusive, first, "MinInclusive"));
         }
 
         foreach (var tier in active)
@@ -57,7 +57,7 @@ public static class CommissionTierValidator
 
         if (openEnded.Count > 0 && active[^1].MaxPrice is not null)
         {
-            violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, openEnded[0], "MaxPrice"));
+            violations.Add(new CommissionTierViolation(ErrorCodes.TierTopOpenEnded, openEnded[0], "MaxPrice"));
         }
 
         for (var index = 1; index < active.Count; index++)
@@ -67,21 +67,21 @@ public static class CommissionTierValidator
 
             if (previous.MaxPrice is null)
             {
-                violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, previous, "MaxPrice"));
+                violations.Add(new CommissionTierViolation(ErrorCodes.TierOpenEndedLast, previous, "MaxPrice"));
                 continue;
             }
 
             if (previous.MaxPrice.Value != current.MinPrice)
             {
-                violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, previous, "MaxPrice"));
-                violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, current, "MinPrice"));
+                violations.Add(new CommissionTierViolation(ErrorCodes.TierBoundaryMismatch, previous, "MaxPrice"));
+                violations.Add(new CommissionTierViolation(ErrorCodes.TierBoundaryMismatch, current, "MinPrice"));
                 continue;
             }
 
             if (previous.MaxInclusive == current.MinInclusive)
             {
-                violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, previous, "MaxInclusive"));
-                violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, current, "MinInclusive"));
+                violations.Add(new CommissionTierViolation(ErrorCodes.TierBoundaryInclusiveMismatch, previous, "MaxInclusive"));
+                violations.Add(new CommissionTierViolation(ErrorCodes.TierBoundaryInclusiveMismatch, current, "MinInclusive"));
             }
         }
 
