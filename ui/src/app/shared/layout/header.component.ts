@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
@@ -69,12 +69,11 @@ import { MatSelectModule } from '@angular/material/select';
 export class HeaderComponent {
   private readonly languageService = inject(LanguageService);
   readonly auth = inject(AuthService);
-  readonly lang = signal(this.languageService.currentLang());
+  readonly lang = this.languageService.currentLang;
 
   setLanguage(value: string): void {
     if (value === 'en' || value === 'ne') {
       this.languageService.setLanguage(value as 'en' | 'ne');
     }
-    this.lang.set(this.languageService.currentLang());
   }
 }

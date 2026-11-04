@@ -3,6 +3,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { RuntimeConfigService } from '../config/runtime-config.service';
 import { LanguageService } from '../i18n/language.service';
+import { ClockService } from '../time/clock.service';
 import { TokenStorageService } from './token-storage.service';
 import type { AuthUser } from './auth-user.model';
 
@@ -21,6 +22,7 @@ export class AuthService {
   private readonly config = inject(RuntimeConfigService);
   private readonly storage = inject(TokenStorageService);
   private readonly language = inject(LanguageService);
+  private readonly clock = inject(ClockService);
 
   private readonly userSignal = signal<AuthUser | null>(null);
   readonly user = this.userSignal.asReadonly();
@@ -36,7 +38,7 @@ export class AuthService {
     const token = this.storage.getAccessToken();
     if (token) {
       const claims = this.decodeJwt(this.storage.getIdToken() ?? token);
-      this.userSignal.set(this.buildUser(claims, token));
+      this.userSignal.set(this.buildUser(claims));
     }
   }
 
@@ -182,6 +184,7 @@ export class AuthService {
     }
     const cfg = this.config.value();
     const params = new URLSearchParams();
+    params.set('client_id', cfg.clientId);
     params.set('post_logout_redirect_uri', window.location.origin);
     if (idToken) {
       params.set('id_token_hint', idToken);
@@ -212,7 +215,7 @@ export class AuthService {
     if (expiresAt === null) {
       return false;
     }
-    return Date.now() >= expiresAt - 30_000;
+    return this.clock.now().getTime() >= expiresAt - 30_000;
   }
 
   private async loadUser(): Promise<void> {
@@ -240,10 +243,10 @@ export class AuthService {
       // fall back to token claims
     }
 
-    this.userSignal.set(this.buildUser(claims, accessToken));
+    this.userSignal.set(this.buildUser(claims));
   }
 
-  private buildUser(claims: Record<string, unknown>, accessToken: string): AuthUser {
+  private buildUser(claims: Record<string, unknown>): AuthUser {
     const scopeClaim = claims['scope'] ?? claims['scp'];
     const roles = this.toStringArray(claims['role'] ?? claims['roles']);
     const permissions = this.toStringArray(claims['permission'] ?? claims['permissions']);
@@ -251,11 +254,6 @@ export class AuthService {
       typeof scopeClaim === 'string'
         ? scopeClaim.split(' ').filter(Boolean)
         : this.toStringArray(scopeClaim);
-
-    // If no permissions claim present (should not happen), we leave empty.
-    if (roles.length === 0 && accessToken) {
-      // try to parse role from token again
-    }
 
     return {
       sub: String(claims['sub'] ?? ''),

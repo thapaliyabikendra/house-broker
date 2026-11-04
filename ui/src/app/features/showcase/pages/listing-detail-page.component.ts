@@ -39,13 +39,7 @@ import { MatChipsModule } from '@angular/material/chips';
           [actionLabel]="'common.retry' | transloco"
           (retry)="retry()"
         />
-      } @else if (!listing()) {
-        <hb-empty-state
-          [title]="'detail.emptyTitle' | transloco"
-          [description]="'detail.emptyDescription' | transloco"
-        />
-      } @else {
-        @let item = listing()!;
+      } @else if (listing(); as item) {
         <mat-card appearance="outlined" class="overview">
           <mat-card-header>
             <mat-card-title>{{ item.title }}</mat-card-title>
@@ -113,6 +107,11 @@ import { MatChipsModule } from '@angular/material/chips';
             }
           </mat-card-content>
         </mat-card>
+      } @else {
+        <hb-empty-state
+          [title]="'detail.emptyTitle' | transloco"
+          [description]="'detail.emptyDescription' | transloco"
+        />
       }
     </section>
   `,
@@ -159,6 +158,7 @@ export class ListingDetailPageComponent {
   readonly error = signal<string | null>(null);
   readonly listing = signal<ListingDetailDto | null>(null);
   readonly lastId = signal<string | null>(null);
+  private loadSeq = 0;
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
@@ -189,17 +189,27 @@ export class ListingDetailPageComponent {
   }
 
   private async load(id: string): Promise<void> {
+    // Only the most recent load may update state; responses for earlier ids are discarded.
+    const seq = ++this.loadSeq;
     this.loading.set(true);
     this.error.set(null);
     try {
-      this.listing.set(await this.listingsData.getById(id));
+      const listing = await this.listingsData.getById(id);
+      if (seq === this.loadSeq) {
+        this.listing.set(listing);
+      }
     } catch (error) {
+      if (seq !== this.loadSeq) {
+        return;
+      }
       this.error.set(
         error instanceof Error ? error.message : this.transloco.translate('errors.loadFailed'),
       );
       this.listing.set(null);
     } finally {
-      this.loading.set(false);
+      if (seq === this.loadSeq) {
+        this.loading.set(false);
+      }
     }
   }
 }

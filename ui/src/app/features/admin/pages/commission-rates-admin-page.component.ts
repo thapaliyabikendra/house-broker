@@ -5,6 +5,9 @@ import { ApiError } from '../../../core/http/api-error';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
+import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
+import { HbNumberPipe } from '../../../shared/pipes/hb-number.pipe';
+import { HbDateTimePipe } from '../../../shared/pipes/hb-date-time.pipe';
 import type { CommissionRateDto, CommissionRateRequest } from '../../../api/models';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -25,6 +28,9 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     LoadingStateComponent,
     ErrorStateComponent,
     TranslocoPipe,
+    HbPricePipe,
+    HbNumberPipe,
+    HbDateTimePipe,
     MatCardModule,
     MatButtonModule,
     MatFormFieldModule,
@@ -55,7 +61,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
                 <ng-container matColumnDef="min">
                   <th mat-header-cell *matHeaderCellDef>{{ 'admin.min' | transloco }}</th>
                   <td mat-cell *matCellDef="let rate">
-                    {{ rate.minPrice }} ({{
+                    {{ rate.minPrice | hbPrice }} ({{
                       rate.minInclusive
                         ? ('admin.inclusive' | transloco)
                         : ('admin.exclusive' | transloco)
@@ -66,7 +72,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
                   <th mat-header-cell *matHeaderCellDef>{{ 'admin.max' | transloco }}</th>
                   <td mat-cell *matCellDef="let rate">
                     @if (rate.maxPrice !== null && rate.maxPrice !== undefined) {
-                      {{ rate.maxPrice }} ({{
+                      {{ rate.maxPrice | hbPrice }} ({{
                         rate.maxInclusive
                           ? ('admin.inclusive' | transloco)
                           : ('admin.exclusive' | transloco)
@@ -78,11 +84,13 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
                 </ng-container>
                 <ng-container matColumnDef="rate">
                   <th mat-header-cell *matHeaderCellDef>{{ 'admin.ratePercent' | transloco }}</th>
-                  <td mat-cell *matCellDef="let rate">{{ rate.ratePercent }}</td>
+                  <td mat-cell *matCellDef="let rate">
+                    {{ rate.ratePercent | hbNumber: percentOptions }}%
+                  </td>
                 </ng-container>
                 <ng-container matColumnDef="effective">
                   <th mat-header-cell *matHeaderCellDef>{{ 'admin.effectiveFrom' | transloco }}</th>
-                  <td mat-cell *matCellDef="let rate">{{ rate.effectiveFrom }}</td>
+                  <td mat-cell *matCellDef="let rate">{{ rate.effectiveFrom | hbDateTime }}</td>
                 </ng-container>
                 <ng-container matColumnDef="active">
                   <th mat-header-cell *matHeaderCellDef>{{ 'admin.active' | transloco }}</th>
@@ -113,6 +121,9 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
             </mat-card-title>
           </mat-card-header>
           <mat-card-content>
+            @if (actionError()) {
+              <p class="action-error" role="alert">{{ actionError() }}</p>
+            }
             <form [formGroup]="form" (ngSubmit)="submit()" class="rate-form">
               <mat-form-field appearance="outline">
                 <mat-label>{{ 'admin.minPrice' | transloco }}</mat-label>
@@ -193,6 +204,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
       display: flex;
       justify-content: flex-end;
     }
+    .action-error {
+      color: var(--mat-sys-error, #b3261e);
+      margin: 0;
+    }
   `,
 })
 export class CommissionRatesAdminPageComponent {
@@ -206,7 +221,10 @@ export class CommissionRatesAdminPageComponent {
   readonly rates = signal<CommissionRateDto[]>([]);
   readonly editingId = signal<string | null>(null);
   readonly editingVersion = signal<string | null>(null);
+  /** Failure of the last save; shown inline so the form and its field errors stay visible. */
+  readonly actionError = signal<string | null>(null);
 
+  readonly percentOptions: Intl.NumberFormatOptions = { maximumFractionDigits: 2 };
   readonly displayedColumns = ['min', 'max', 'rate', 'effective', 'active', 'actions'];
 
   readonly form = new FormGroup({
@@ -263,9 +281,26 @@ export class CommissionRatesAdminPageComponent {
       maxPrice: rate.maxPrice != null ? Number(rate.maxPrice) : null,
       maxInclusive: rate.maxInclusive ?? false,
       ratePercent: rate.ratePercent != null ? Number(rate.ratePercent) : null,
-      effectiveFrom: typeof rate.effectiveFrom === 'string' ? rate.effectiveFrom.slice(0, 16) : '',
+      effectiveFrom:
+        typeof rate.effectiveFrom === 'string' ? this.toLocalInputValue(rate.effectiveFrom) : '',
       isActive: rate.isActive ?? true,
     });
+  }
+
+  /**
+   * Converts a stored UTC instant to the `YYYY-MM-DDTHH:mm` local value a datetime-local
+   * input expects, so a round-trip through submit() keeps the same instant.
+   */
+  private toLocalInputValue(isoUtc: string): string {
+    const date = new Date(isoUtc);
+    if (Number.isNaN(date.getTime())) {
+      return '';
+    }
+    const pad = (n: number): string => String(n).padStart(2, '0');
+    return (
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+      `T${pad(date.getHours())}:${pad(date.getMinutes())}`
+    );
   }
 
   async submit(): Promise<void> {
@@ -274,7 +309,7 @@ export class CommissionRatesAdminPageComponent {
       return;
     }
     this.saving.set(true);
-    this.error.set(null);
+    this.actionError.set(null);
     const value = this.form.getRawValue();
     const request: CommissionRateRequest = {
       minPrice: value.minPrice ?? 0,
@@ -312,7 +347,7 @@ export class CommissionRatesAdminPageComponent {
           }
         }
       }
-      this.error.set(
+      this.actionError.set(
         error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed'),
       );
     } finally {

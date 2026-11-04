@@ -1,4 +1,5 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
+import { ClockService } from '../time/clock.service';
 
 const ACCESS_TOKEN_KEY = 'hb.access_token';
 const REFRESH_TOKEN_KEY = 'hb.refresh_token';
@@ -9,6 +10,8 @@ const STATE_KEY = 'hb.state';
 
 @Injectable({ providedIn: 'root' })
 export class TokenStorageService {
+  private readonly clock = inject(ClockService);
+
   getAccessToken(): string | null {
     return sessionStorage.getItem(ACCESS_TOKEN_KEY);
   }
@@ -40,7 +43,10 @@ export class TokenStorageService {
       sessionStorage.setItem(ID_TOKEN_KEY, tokens.idToken);
     }
     if (tokens.expiresIn !== undefined) {
-      sessionStorage.setItem(EXPIRES_AT_KEY, String(Date.now() + tokens.expiresIn * 1000));
+      sessionStorage.setItem(
+        EXPIRES_AT_KEY,
+        String(this.clock.now().getTime() + tokens.expiresIn * 1000),
+      );
     }
   }
 

@@ -42,6 +42,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
         }}</a>
       </div>
 
+      @if (actionError()) {
+        <p class="action-error" role="alert">{{ actionError() }}</p>
+      }
+
       @if (loading()) {
         <hb-loading-state [label]="'broker.loading' | transloco" />
       } @else if (error()) {
@@ -218,6 +222,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     .upload-label {
       font-weight: 500;
     }
+    .action-error {
+      color: var(--mat-sys-error, #b3261e);
+      margin: 0;
+    }
   `,
 })
 export class BrokerListingsPageComponent {
@@ -228,7 +236,10 @@ export class BrokerListingsPageComponent {
   private readonly snack = inject(MatSnackBar);
 
   readonly loading = signal(false);
+  /** Failure of the last load; replaces the list. */
   readonly error = signal<string | null>(null);
+  /** Failure of the last action (publish, delete, upload...); shown inline, list stays visible. */
+  readonly actionError = signal<string | null>(null);
   readonly listings = signal<OwnerListingDto[]>([]);
   readonly uploadingId = signal<string | null>(null);
   readonly uploadProgress = signal<number | null>(null);
@@ -277,12 +288,13 @@ export class BrokerListingsPageComponent {
     if (!window.confirm(this.transloco.translate('broker.deleteConfirm'))) {
       return;
     }
+    this.actionError.set(null);
     try {
       await this.listingsData.delete(id);
       this.listings.update((items) => items.filter((item) => item.id !== id));
       this.snack.open(this.transloco.translate('common.saved'), undefined, { duration: 3000 });
     } catch (error) {
-      this.error.set(
+      this.actionError.set(
         error instanceof Error ? error.message : this.transloco.translate('errors.deleteFailed'),
       );
     }
@@ -300,11 +312,12 @@ export class BrokerListingsPageComponent {
       return;
     }
     this.deletingImageId.set(imageId);
+    this.actionError.set(null);
     try {
       await this.listingsData.deleteImage(listingId, imageId);
       await this.load();
     } catch (error) {
-      this.error.set(
+      this.actionError.set(
         error instanceof Error ? error.message : this.transloco.translate('errors.deleteFailed'),
       );
     } finally {
@@ -321,13 +334,14 @@ export class BrokerListingsPageComponent {
     if (!file) {
       return;
     }
+    this.actionError.set(null);
     if (!this.allowedImageTypes.includes(file.type)) {
-      this.error.set(this.transloco.translate('broker.uploadTypeError'));
+      this.actionError.set(this.transloco.translate('broker.uploadTypeError'));
       input.value = '';
       return;
     }
     if (file.size > this.maxImageSizeBytes) {
-      this.error.set(this.transloco.translate('broker.uploadSizeError'));
+      this.actionError.set(this.transloco.translate('broker.uploadSizeError'));
       input.value = '';
       return;
     }
@@ -343,16 +357,11 @@ export class BrokerListingsPageComponent {
         }
       },
       error: (error: unknown) => {
-        if (error instanceof ApiError && error.fieldErrors) {
-          for (const messages of Object.values(error.fieldErrors)) {
-            const first = messages?.[0];
-            if (first) {
-              this.error.set(first.message || this.transloco.translate('errors.uploadFailed'));
-            }
-          }
-        }
-        this.error.set(
-          error instanceof Error ? error.message : this.transloco.translate('errors.uploadFailed'),
+        this.actionError.set(
+          this.firstFieldMessage(error) ??
+            (error instanceof Error
+              ? error.message
+              : this.transloco.translate('errors.uploadFailed')),
         );
         this.uploadingId.set(null);
         this.uploadProgress.set(null);
@@ -371,15 +380,30 @@ export class BrokerListingsPageComponent {
     id: string,
     action: (listing: OwnerListingDto) => Promise<OwnerListingDto>,
   ): Promise<void> {
+    this.actionError.set(null);
     try {
       const listing = await this.listingsData.getMineById(id);
       await action(listing);
       this.snack.open(this.transloco.translate('common.saved'), undefined, { duration: 3000 });
       await this.load();
     } catch (error) {
-      this.error.set(
+      this.actionError.set(
         error instanceof Error ? error.message : this.transloco.translate('errors.statusFailed'),
       );
     }
+  }
+
+  /** First server-provided field message, if the failure carries field errors. */
+  private firstFieldMessage(error: unknown): string | null {
+    if (!(error instanceof ApiError) || !error.fieldErrors) {
+      return null;
+    }
+    for (const messages of Object.values(error.fieldErrors)) {
+      const first = messages?.[0];
+      if (first?.message) {
+        return first.message;
+      }
+    }
+    return null;
   }
 }

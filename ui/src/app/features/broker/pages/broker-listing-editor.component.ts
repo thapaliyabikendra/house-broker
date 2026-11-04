@@ -10,12 +10,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import type {
-  PropertyTypeDto,
-  FeatureDto,
-  CreateListingRequest,
-  UpdateListingRequest,
-} from '../../../api/models';
+import type { PropertyTypeDto, FeatureDto, CreateListingRequest } from '../../../api/models';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -216,7 +211,8 @@ export class BrokerListingEditorComponent {
   readonly propertyTypes = signal<PropertyTypeDto[]>([]);
   readonly features = signal<FeatureDto[]>([]);
   readonly version = signal<string | null>(null);
-  readonly idempotencyKey = crypto.randomUUID();
+  /** Key and serialized body of the last create attempt; a changed body gets a fresh key. */
+  private idempotency: { key: string; body: string } | null = null;
 
   readonly form = new FormGroup({
     title: new FormControl('', {
@@ -234,7 +230,7 @@ export class BrokerListingEditorComponent {
     city: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
     locality: new FormControl(''),
     province: new FormControl(''),
-    postalCode: new FormControl('', { validators: [Validators.pattern(/^\\d{5}$/)] }),
+    postalCode: new FormControl('', { validators: [Validators.pattern(/^\d{5}$/)] }),
     bedrooms: new FormControl<number | null>(null, { validators: [numberRange(0, 20)] }),
     bathrooms: new FormControl<number | null>(null, { validators: [numberRange(0, 20)] }),
     areaSqFt: new FormControl<number | null>(null, { validators: [Validators.min(0)] }),
@@ -291,6 +287,14 @@ export class BrokerListingEditorComponent {
     }
   }
 
+  private idempotencyKeyFor(payload: CreateListingRequest): string {
+    const body = JSON.stringify(payload);
+    if (this.idempotency?.body !== body) {
+      this.idempotency = { key: crypto.randomUUID(), body };
+    }
+    return this.idempotency.key;
+  }
+
   async submit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -300,7 +304,7 @@ export class BrokerListingEditorComponent {
     this.error.set(null);
     const value = this.form.getRawValue();
     const selectedFeatures = value.featureIds ?? [];
-    const payload = {
+    const payload: CreateListingRequest = {
       title: value.title,
       description: value.description,
       price: value.price ?? 0,
@@ -313,18 +317,14 @@ export class BrokerListingEditorComponent {
       bathrooms: value.bathrooms ?? undefined,
       areaSqFt: value.areaSqFt ?? undefined,
       featureIds: selectedFeatures,
-    } as CreateListingRequest;
+    };
 
     try {
       const id = this.route.snapshot.paramMap.get('id');
       if (this.isEdit() && id) {
-        await this.listingsData.update(
-          id,
-          payload as UpdateListingRequest,
-          this.version() ?? undefined,
-        );
+        await this.listingsData.update(id, payload, this.version() ?? undefined);
       } else {
-        await this.listingsData.create(payload as CreateListingRequest, this.idempotencyKey);
+        await this.listingsData.create(payload, this.idempotencyKeyFor(payload));
       }
       this.snack.open(this.transloco.translate('common.saved'), undefined, { duration: 3000 });
       await this.router.navigate(['/broker/listings']);

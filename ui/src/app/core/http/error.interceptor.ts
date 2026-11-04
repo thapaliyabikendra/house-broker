@@ -5,9 +5,11 @@ import { catchError, from, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import type { ProblemDetails } from './api-error';
 import { ApiError } from './api-error';
+import { TranslocoService } from '@jsverse/transloco';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
+  const transloco = inject(TranslocoService, { optional: true });
 
   return next(req).pipe(
     catchError((error: unknown) => {
@@ -22,7 +24,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             if (!refreshed) {
               auth.signOut(false);
               void auth.signIn(undefined, `${window.location.pathname}${window.location.search}`);
-              return throwError(() => toApiError(error));
+              return throwError(() => toApiError(error, transloco));
             }
             const retryReq = req.clone({
               setHeaders: { Authorization: `Bearer ${auth.getAccessToken() ?? ''}` },
@@ -32,12 +34,12 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         );
       }
 
-      return throwError(() => toApiError(error));
+      return throwError(() => toApiError(error, transloco));
     }),
   );
 };
 
-function toApiError(error: HttpErrorResponse): ApiError {
+function toApiError(error: HttpErrorResponse, transloco?: TranslocoService | null): ApiError {
   const problem = error.error as ProblemDetails | null;
   const correlationId =
     error.headers.get('X-Correlation-Id') ?? problem?.correlationId ?? undefined;
@@ -45,26 +47,48 @@ function toApiError(error: HttpErrorResponse): ApiError {
 
   let message = problem?.title ?? problem?.detail ?? undefined;
   if (!message) {
+    const translate = (key: string, fallback: string): string => {
+      const value = transloco?.translate(key);
+      return value && value !== key ? value : fallback;
+    };
     if (error.status === 0) {
-      message = 'Network error. Please check your connection and try again.';
+      message = translate(
+        'errors.network',
+        'Network error. Please check your connection and try again.',
+      );
     } else if (error.status === 401) {
-      message = 'Your session expired. Please sign in again.';
+      message = translate('errors.sessionExpired', 'Your session expired. Please sign in again.');
     } else if (error.status === 403) {
-      message = 'You are not allowed to perform this action.';
+      message = translate('errors.forbidden', 'You are not allowed to perform this action.');
     } else if (error.status === 404) {
-      message = 'The requested resource was not found.';
+      message = translate('errors.notFound', 'The requested resource was not found.');
     } else if (error.status === 409) {
-      message = 'The request conflicts with the current state. Please refresh and try again.';
+      message = translate(
+        'errors.conflict',
+        'The request conflicts with the current state. Please refresh and try again.',
+      );
     } else if (error.status === 412) {
-      message = 'This record was changed by someone else. Please refresh and try again.';
+      message = translate(
+        'errors.stale',
+        'This record was changed by someone else. Please refresh and try again.',
+      );
     } else if (error.status === 422) {
-      message = 'Please correct the highlighted fields and try again.';
+      message = translate(
+        'errors.validation',
+        'Please correct the highlighted fields and try again.',
+      );
     } else if (error.status === 428) {
-      message = 'A version (If-Match) is required for this change.';
+      message = translate(
+        'errors.preconditionRequired',
+        'A version (If-Match) is required for this change.',
+      );
     } else if (error.status >= 500) {
-      message = 'Something went wrong on the server. Please try again later.';
+      message = translate(
+        'errors.server',
+        'Something went wrong on the server. Please try again later.',
+      );
     } else {
-      message = error.message || 'Unexpected error.';
+      message = translate('errors.unexpected', error.message || 'Unexpected error.');
     }
   }
 
