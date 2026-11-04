@@ -21,7 +21,7 @@ api/
     HouseBroker.ServiceDefaults/      Host-level cross-cutting code shared by Api and Auth: Serilog setup,
                                       correlation id, ProblemDetails/IExceptionHandler registration,
                                       security headers (`NetEscapades.AspNetCore.SecurityHeaders`), forwarded headers,
-FusionCache (`ZiggyCreatures.FusionCache` + `.Serialization.SystemTextJson`; Redis backplane added in Phase 14) DI registration,
+ICacheService DI registration over in-memory or IDistributedCache (`Microsoft.Extensions.Caching.StackExchangeRedis`),
                                       PathBase, request localization, UTC JSON settings, health checks, rate-limit
                                       helpers, OpenTelemetry.
                                       Depends on Domain.Shared only.
@@ -163,7 +163,7 @@ Effective access requires both the user's permission (for user tokens) and the c
 |-----------|-------------------|
 | Single responsibility | Thin controllers; one service per use case; separate validators; pure `CommissionCalculator` |
 | Open/closed | Commission tiers are DB data; cache and image storage have swappable providers |
-| Liskov substitution | The FusionCache Memory and Redis-backed cache configurations behave identically behind `ICacheService`; one contract-test suite runs against both |
+| Liskov substitution | The in-memory and `IDistributedCache`-backed cache configurations behave identically behind `ICacheService`; one contract-test suite runs against both |
 | Interface segregation | Small interfaces: `IListingRepository` (aggregate writes), `IListingQueries` (reads), `ICommissionRateProvider`, `ICacheService`, `IImageStorage`, `ICurrentUserService` |
 | Dependency inversion | Application defines the interfaces, Infrastructure implements them; enforced by architecture tests |
 
@@ -175,7 +175,7 @@ Effective access requires both the user's permission (for user tokens) and the c
 | Builder | Tests only | `ListingBuilder` and request builders in `HouseBroker.TestSupport` |
 | Decorator | Use | `CachedListingQueries` wraps `IListingQueries`; `CachedCommissionRateProvider` wraps `ICommissionRateProvider` |
 | Repository + unit of work | Use | One repository per aggregate; reads go through `IListingQueries` |
-| Adapter | Use | `IImageStorage` and `ICacheService` (FusionCache-backed) implementations |
+| Adapter | Use | `IImageStorage` and `ICacheService` (in-memory / `IDistributedCache`-backed) implementations |
 | Object mapping | Use | Mapperly source-generated profiles in Application for entity ↔ DTO mapping; explicit owner/public mappings protect commission fields |
 | Strategy | Seam only | A single `ICommissionCalculator`; a strategy only if a marginal-slab model is ever added |
 | Options pattern | Use | Typed configuration with startup validation |

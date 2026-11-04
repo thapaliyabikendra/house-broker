@@ -9,6 +9,29 @@ using OpenIddict.Server;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var secretOverrides = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+foreach (System.Collections.DictionaryEntry variable in Environment.GetEnvironmentVariables())
+{
+    var name = (string)variable.Key!;
+    if (!name.EndsWith("_FILE", StringComparison.OrdinalIgnoreCase))
+    {
+        continue;
+    }
+
+    var path = (string)variable.Value!;
+    if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+    {
+        continue;
+    }
+
+    secretOverrides[name[..^5].Replace("__", Microsoft.Extensions.Configuration.ConfigurationPath.KeyDelimiter, StringComparison.Ordinal)] = File.ReadAllText(path).Trim();
+}
+
+if (secretOverrides.Count > 0)
+{
+    builder.Configuration.AddInMemoryCollection(secretOverrides);
+}
+
 builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(30));
 
 builder.WebHost.ConfigureKestrel(options =>
@@ -40,6 +63,19 @@ var connectionString = builder.Configuration.GetConnectionString("HouseBroker")
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<AuthDbContext>(options => options.UseSqlServer(connectionString));
+
+builder.Services.AddOptions<DatabaseOptions>()
+    .Bind(builder.Configuration.GetSection(DatabaseOptions.SectionName))
+    .Validate(options => !string.IsNullOrWhiteSpace(options.HouseBroker), "A House Broker database connection string is required.")
+    .ValidateOnStart();
+
+builder.Services.AddHealthChecks().Add(new Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration(
+    "database",
+    serviceProvider => new HouseBroker.Auth.HealthChecks.DatabaseHealthCheck(
+        connectionString,
+        serviceProvider.GetRequiredService<TimeProvider>()),
+    failureStatus: null,
+    tags: null));
 
 if (builder.Environment.IsDevelopment())
 {
@@ -81,6 +117,9 @@ builder.Services
             .SetUserInfoEndpointUris("/connect/userinfo")
             .SetEndSessionEndpointUris("/connect/logout")
             .SetIssuer(new Uri(builder.Configuration["Auth:Issuer"] ?? "http://localhost:5000/sso"));
+
+        options.SetAccessTokenLifetime(TimeSpan.FromMinutes(15));
+        options.SetRefreshTokenLifetime(TimeSpan.FromDays(7));
 
         options.AllowAuthorizationCodeFlow().RequireProofKeyForCodeExchange();
         options.AllowClientCredentialsFlow();
@@ -203,6 +242,32 @@ app.Use(async (context, next) =>
     await next();
 });
 app.UseServiceDefaults();
+app.UseHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        if (app.Environment.IsDevelopment())
+        {
+            await context.Response.WriteAsJsonAsync(new
+            {
+                status = report.Status.ToString(),
+                checks = report.Entries.ToDictionary(
+                    entry => entry.Key,
+                    entry => new
+                    {
+                        status = entry.Value.Status.ToString(),
+                        description = entry.Value.Description,
+                        data = entry.Value.Data
+                    })
+            });
+        }
+        else
+        {
+            await context.Response.WriteAsync($"{{\"status\":\"{report.Status}\"}}");
+        }
+    }
+});
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

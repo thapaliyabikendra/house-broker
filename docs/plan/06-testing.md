@@ -15,7 +15,7 @@
 | Controllers | Unit (mocked services) | Status codes, 403/404/412/428 mapping, correct service call |
 | Auth service | Unit | Claim destinations, registration role allowlist, `returnUrl`, `register-client` |
 | Cache | Unit | Hit/miss, invalidation, flag bypass, provider failure falls through |
-| Cache providers | Contract tests | The same suite passes for the Memory and Redis providers; FusionCache contract tests verify `ICacheService` integration, stampede protection, fail-safe, and auto-recovery. Keys include the request culture wherever the value is localized. |
+| Cache providers | Contract tests | The same suite passes for the Memory and Redis providers; cache contract tests verify `ICacheService` integration and token-based invalidation. Keys include the request culture wherever the value is localized. |
 | Idempotency | Unit, test-first | Replay, body mismatch 422, in-flight 409, expiry, per-user scope, failure releases key |
 | Concurrency | Unit + scripted checks | `If-Match` parsing, 412/428 mapping; parallel-request scripts against SQL Server |
 | Search | Unit / SQLite in-memory | Filter combinations, paging, Active-only |

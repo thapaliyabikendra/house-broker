@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,6 +8,9 @@ using Microsoft.FeatureManagement;
 using System.Globalization;
 using Serilog;
 using Asp.Versioning;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 
 namespace HouseBroker.ServiceDefaults;
 
@@ -52,6 +56,43 @@ public static class ServiceDefaultsExtensions
             options.GroupNameFormat = "'v'VERSION";
             options.SubstituteApiVersionInUrl = true;
         });
+
+        var otlpEndpoint = Environment.GetEnvironmentVariable("OTEL_EXPORTER_OTLP_ENDPOINT");
+        if (!string.IsNullOrWhiteSpace(otlpEndpoint))
+        {
+            builder.Services.AddOpenTelemetry()
+                .ConfigureResource(resource => resource.AddService(builder.Environment.ApplicationName))
+                .WithTracing(tracing =>
+                {
+                    tracing.AddAspNetCoreInstrumentation();
+                    tracing.AddHttpClientInstrumentation();
+                    tracing.AddOtlpExporter(exporter => exporter.Endpoint = new Uri(otlpEndpoint));
+                })
+                .WithMetrics(metrics =>
+                {
+                    metrics.AddAspNetCoreInstrumentation();
+                    metrics.AddHttpClientInstrumentation();
+                    metrics.AddRuntimeInstrumentation();
+                    metrics.AddOtlpExporter(exporter => exporter.Endpoint = new Uri(otlpEndpoint));
+                });
+        }
+        else
+        {
+            // Keep tracing/metrics available with no exporter when OTLP is not configured.
+            builder.Services.AddOpenTelemetry()
+                .ConfigureResource(resource => resource.AddService(builder.Environment.ApplicationName))
+                .WithTracing(tracing =>
+                {
+                    tracing.AddAspNetCoreInstrumentation();
+                    tracing.AddHttpClientInstrumentation();
+                })
+                .WithMetrics(metrics =>
+                {
+                    metrics.AddAspNetCoreInstrumentation();
+                    metrics.AddHttpClientInstrumentation();
+                    metrics.AddRuntimeInstrumentation();
+                });
+        }
 
         builder.Services.Configure<RequestLocalizationOptions>(options =>
         {
@@ -119,7 +160,15 @@ public static class ServiceDefaultsExtensions
             options.AddReferrerPolicyStrictOriginWhenCrossOrigin();
         });
 
-        app.UseHealthChecks("/health/live");
+        app.UseHealthChecks("/health/live", new HealthCheckOptions
+        {
+            Predicate = _ => false,
+            ResponseWriter = async (context, report) =>
+            {
+                context.Response.ContentType = "application/json";
+                await context.Response.WriteAsync($"{{\"status\":\"{report.Status}\"}}");
+            }
+        });
         return app;
     }
 }

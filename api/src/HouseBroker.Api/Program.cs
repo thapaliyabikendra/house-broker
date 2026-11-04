@@ -15,6 +15,29 @@ using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var secretOverrides = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+foreach (System.Collections.DictionaryEntry variable in Environment.GetEnvironmentVariables())
+{
+    var name = (string)variable.Key!;
+    if (!name.EndsWith("_FILE", StringComparison.OrdinalIgnoreCase))
+    {
+        continue;
+    }
+
+    var path = (string)variable.Value!;
+    if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+    {
+        continue;
+    }
+
+    secretOverrides[name[..^5].Replace("__", Microsoft.Extensions.Configuration.ConfigurationPath.KeyDelimiter, StringComparison.Ordinal)] = File.ReadAllText(path).Trim();
+}
+
+if (secretOverrides.Count > 0)
+{
+    builder.Configuration.AddInMemoryCollection(secretOverrides);
+}
+
 builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options => options.ShutdownTimeout = TimeSpan.FromSeconds(30));
 
 builder.WebHost.ConfigureKestrel(options =>
@@ -65,6 +88,20 @@ builder.Services.AddHouseBrokerJsonOptions();
 builder.Services.AddHouseBrokerRateLimiting(builder.Configuration);
 builder.Services.AddHouseBrokerOpenApi();
 
+if (string.Equals(builder.Configuration["Cache:Provider"], "Redis", StringComparison.OrdinalIgnoreCase))
+{
+    var redisConfiguration = builder.Configuration["Cache:Redis:Configuration"]
+        ?? builder.Configuration.GetConnectionString("Redis")
+        ?? "localhost:6379";
+    builder.Services.AddHealthChecks().Add(new Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration(
+        "redis",
+        _ => new HouseBroker.Api.HealthChecks.RedisHealthCheck(redisConfiguration),
+        failureStatus: null,
+        tags: null));
+}
+
+var authIssuer = builder.Configuration["Auth:Issuer"] ?? builder.Configuration["Auth:Authority"] ?? "http://localhost:5000/sso";
+
 // Swagger UI Configuration
 builder.Services.AddSwaggerGen(options =>
 {
@@ -93,8 +130,8 @@ builder.Services.AddSwaggerGen(options =>
         {
             AuthorizationCode = new OpenApiOAuthFlow
             {
-                AuthorizationUrl = new Uri((builder.Configuration["Auth:Authority"] ?? "http://localhost:5000/sso") + "/connect/authorize"),
-                TokenUrl = new Uri((builder.Configuration["Auth:Authority"] ?? "http://localhost:5000/sso") + "/connect/token"),
+                AuthorizationUrl = new Uri(authIssuer + "/connect/authorize"),
+                TokenUrl = new Uri(authIssuer + "/connect/token"),
                 Scopes = new Dictionary<string, string>
                 {
                     ["openid"] = "OpenID Connect",
@@ -123,9 +160,30 @@ if (string.IsNullOrWhiteSpace(connectionString))
     connectionString = "Server=localhost,1433;Database=HouseBroker;User Id=sa;Password=Your_password123;TrustServerCertificate=True";
 }
 
+builder.Services.AddHealthChecks()
+    .Add(new Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration(
+        "database",
+        serviceProvider => new HouseBroker.Api.HealthChecks.DatabaseHealthCheck(
+            connectionString,
+            serviceProvider.GetRequiredService<TimeProvider>()),
+        failureStatus: null,
+        tags: null));
+
+if (string.Equals(builder.Configuration["Cache:Provider"], "Redis", StringComparison.OrdinalIgnoreCase))
+{
+    var redisConfiguration = builder.Configuration["Cache:Redis:Configuration"]
+        ?? builder.Configuration.GetConnectionString("Redis")
+        ?? "localhost:6379";
+    builder.Services.AddHealthChecks().Add(new Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration(
+        "redis",
+        _ => new HouseBroker.Api.HealthChecks.RedisHealthCheck(redisConfiguration),
+        failureStatus: null,
+        tags: null));
+}
+
 builder.Services.AddInfrastructure(builder.Configuration);
 
-var issuer = builder.Configuration["Auth:Authority"] ?? "http://localhost:5000/sso";
+var issuer = builder.Configuration["Auth:Issuer"] ?? builder.Configuration["Auth:Authority"] ?? "http://localhost:5000/sso";
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -166,6 +224,32 @@ app.UsePathBase(pathBase);
 app.UseCors();
 
 app.UseServiceDefaults();
+app.UseHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        if (app.Environment.IsDevelopment())
+        {
+            await context.Response.WriteAsJsonAsync(new
+            {
+                status = report.Status.ToString(),
+                checks = report.Entries.ToDictionary(
+                    entry => entry.Key,
+                    entry => new
+                    {
+                        status = entry.Value.Status.ToString(),
+                        description = entry.Value.Description,
+                        data = entry.Value.Data
+                    })
+            });
+        }
+        else
+        {
+            await context.Response.WriteAsync($"{{\"status\":\"{report.Status}\"}}");
+        }
+    }
+});
 
 if (app.Environment.IsDevelopment())
 {

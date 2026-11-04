@@ -66,6 +66,7 @@ services:
       ConnectionStrings__HouseBroker: "Server=sqlserver,1433;Database=HouseBroker;User Id=sa;Password=Your_password123;TrustServerCertificate=True"
       ConnectionStrings__Redis: "redis:6379"
       PathBase: "/api"
+      Auth__Issuer: "http://localhost/sso"
       Cache__Provider: "Redis"
       Cache__Redis__Configuration: "redis:6379"
       ASPNETCORE_URLS: "http://+:8080"

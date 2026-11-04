@@ -12,7 +12,7 @@ A property marketplace MVP: seekers search listings, brokers manage their own li
 
 | Component | Purpose |
 |-----------|---------|
-| `HouseBroker.Api` | Business API: listings, search, images, commission, admin. Path base `/api`. Cache: `ZiggyCreatures.FusionCache` (L1 memory, L2 Redis, backplane). |
+| `HouseBroker.Api` | Business API: listings, search, images, commission, admin. Path base `/api`. Cache: `ICacheService` over in-memory or `IDistributedCache` (`Microsoft.Extensions.Caching.StackExchangeRedis` when `Cache:Provider=Redis`). |
 | `HouseBroker.Auth` | OIDC / OAuth 2.0 SSO (ASP.NET Core Identity + OpenIddict). Path base `/sso`. |
 | Angular SPA (`ui/`) | Browser client using authorization code + PKCE. Served at `/`. |
 | nginx gateway (`deploy/`) | Single origin: `/`, `/api`, `/sso`; TLS termination point. |
@@ -163,7 +163,7 @@ The permission/scope matrix is in [docs/plan/03-architecture.md](docs/plan/03-ar
 - Not translated: broker-written titles/descriptions and locations (documented limitation).
 - **Angular i18n:** Transloco JSON — root `ui/src/assets/i18n/en.json` / `ne.json` plus feature-scoped `features/<name>/i18n/en.json` / `ne.json`, lazy-loaded, fallback `en`. Server uses `.resx` files (`Errors.resx` + `Errors.ne.resx`) with `IStringLocalizer`. NOT `en.json`.
 - `npm run i18n:check` runs `@jsverse/transloco-keys-manager` to fail on missing or unused keys and on translation drift; a separate check fails on use of the built-in `date`, `currency`, `number` and `percent` pipes.
-- FusionCache cache keys include culture for localized values and separate public from owner/contact responses.
+- Cache keys include culture for localized values and separate public from owner/contact responses.
 
 ## Testing
 

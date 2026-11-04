@@ -137,7 +137,7 @@
 
 | Area | Decision |
 |------|----------|
-| Caching | Tier 1 ships the in-memory provider only; the Redis L2 and backplane are added in Phase 14 (Tier 3) behind the same abstraction. `ICacheService` abstraction implemented over `ZiggyCreatures.FusionCache`: L1 memory plus optional Redis L2 (`Microsoft.Extensions.Caching.StackExchangeRedis`) and a Redis backplane for multi-instance invalidation, chosen by `Cache:Provider`; FusionCache provides stampede protection, fail-safe and auto-recovery. The plan keeps the culture-aware key convention and token-based invalidation. Cache failures never fail a request (see 4.9) |
+| Caching | Tier 1 ships the in-memory provider only; the Redis L2 is added in Phase 14 (Tier 3) behind the same abstraction. `ICacheService` is implemented over the in-memory cache or `IDistributedCache` (`Microsoft.Extensions.Caching.StackExchangeRedis`), chosen by `Cache:Provider`; single-flight stampede protection is provided in the cache services, and token-based invalidation keeps the culture-aware key convention. Cache failures never fail a request (see 4.9) |
 | Logging | Serilog in both services; Console (human-readable in Development, compact JSON to stdout elsewhere) + optional rolling file (off in containers); standard in 4.2 |
 | Feature flags | `Microsoft.FeatureManagement`, config-backed, 3 flags: `ListingCache` and `ImageUploads` (API), `BrokerSelfRegistration` (SSO) |
 | API documentation | Swashbuckle.AspNetCore with XML-comment summaries/remarks, examples, and an OAuth2 (authorization code + PKCE) security scheme; compatibility with .NET 10 verified in the Phase 1 spike, with built-in `Microsoft.AspNetCore.OpenApi` + Scalar or Swagger UI as the fallback |
