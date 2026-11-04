@@ -36,6 +36,8 @@ import { MatChipsModule } from '@angular/material/chips';
         <hb-error-state
           [title]="'detail.errorTitle' | transloco"
           [description]="error() ?? undefined"
+          [actionLabel]="'common.retry' | transloco"
+          (retry)="retry()"
         />
       } @else if (!listing()) {
         <hb-empty-state
@@ -100,10 +102,14 @@ import { MatChipsModule } from '@angular/material/chips';
                 <p>{{ item.brokerContact.phoneNumber }}</p>
               }
             } @else {
-              <p>{{ 'detail.contactPrompt' | transloco }}</p>
-              <button mat-raised-button color="primary" type="button" (click)="auth.signIn()">
-                {{ 'detail.signIn' | transloco }}
-              </button>
+              @if (auth.isAuthenticated()) {
+                <p>{{ 'detail.contactDenied' | transloco }}</p>
+              } @else {
+                <p>{{ 'detail.contactPrompt' | transloco }}</p>
+                <button mat-raised-button color="primary" type="button" (click)="auth.signIn()">
+                  {{ 'detail.signIn' | transloco }}
+                </button>
+              }
             }
           </mat-card-content>
         </mat-card>
@@ -152,14 +158,23 @@ export class ListingDetailPageComponent {
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly listing = signal<ListingDetailDto | null>(null);
+  readonly lastId = signal<string | null>(null);
 
   constructor() {
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const id = params.get('id');
       if (id) {
+        this.lastId.set(id);
         void this.load(id);
       }
     });
+  }
+
+  retry(): void {
+    const id = this.lastId();
+    if (id) {
+      void this.load(id);
+    }
   }
 
   canViewContact(): boolean {

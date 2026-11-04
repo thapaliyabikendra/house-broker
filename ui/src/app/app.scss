@@ -14,7 +14,9 @@
 
 .shell-main {
   min-block-size: 60vh;
-  padding: 1rem;
+  max-inline-size: 1100px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
 }
 
 .shell-main:focus {

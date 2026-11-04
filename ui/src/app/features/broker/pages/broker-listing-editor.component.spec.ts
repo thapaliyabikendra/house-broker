@@ -25,6 +25,7 @@ describe('BrokerListingEditorComponent', () => {
     };
     const lookupsData = {
       propertyTypes: vi.fn().mockResolvedValue([{ id: 't1', name: 'House' }]),
+      features: vi.fn().mockResolvedValue([]),
     };
 
     await TestBed.configureTestingModule({

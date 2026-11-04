@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import type { OnInit } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -16,6 +16,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatPaginatorModule } from '@angular/material/paginator';
+import type { PageEvent } from '@angular/material/paginator';
 
 @Component({
   selector: 'hb-search-page',
@@ -35,13 +37,14 @@ import { MatSelectModule } from '@angular/material/select';
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatPaginatorModule,
   ],
   template: `
     <section class="search-page">
       <h1>{{ 'search.title' | transloco }}</h1>
       <mat-card appearance="outlined" class="filters-card">
         <mat-card-content>
-          <form [formGroup]="criteriaForm" (ngSubmit)="applyFilters()" class="filters">
+          <form [formGroup]="criteriaForm" (ngSubmit)="applyFilters(true)" class="filters">
             <mat-form-field appearance="outline">
               <mat-label>{{ 'search.location' | transloco }}</mat-label>
               <input
@@ -103,6 +106,15 @@ import { MatSelectModule } from '@angular/material/select';
               />
             </mat-form-field>
 
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'search.sort' | transloco }}</mat-label>
+              <mat-select formControlName="sort">
+                <mat-option value="">{{ 'search.sortDefault' | transloco }}</mat-option>
+                <mat-option value="priceAsc">{{ 'search.sortPriceAsc' | transloco }}</mat-option>
+                <mat-option value="priceDesc">{{ 'search.sortPriceDesc' | transloco }}</mat-option>
+              </mat-select>
+            </mat-form-field>
+
             <div class="actions">
               <button mat-raised-button color="primary" type="submit" [disabled]="store.loading()">
                 {{ 'search.submit' | transloco }}
@@ -118,6 +130,8 @@ import { MatSelectModule } from '@angular/material/select';
         <hb-error-state
           [title]="'search.errorTitle' | transloco"
           [description]="store.error() ?? undefined"
+          [actionLabel]="'common.retry' | transloco"
+          (retry)="store.search(store.criteria())"
         />
       } @else if (store.results().length === 0) {
         <hb-empty-state
@@ -140,6 +154,13 @@ import { MatSelectModule } from '@angular/material/select';
             </mat-card>
           }
         </div>
+        <mat-paginator
+          [length]="store.total() ?? 0"
+          [pageSize]="store.pageSize() ?? 10"
+          [pageIndex]="(store.page() ?? 1) - 1"
+          (page)="onPage($event)"
+          showFirstLastButtons
+        />
       }
     </section>
   `,
@@ -184,12 +205,15 @@ export class SearchPageComponent implements OnInit {
   private readonly router = inject(Router);
   readonly store = inject(SearchStore);
 
+  readonly pageIndex = signal(0);
+
   readonly criteriaForm = new FormGroup({
     location: new FormControl<string>('', { nonNullable: true }),
     minPrice: new FormControl<number | null>(null),
     maxPrice: new FormControl<number | null>(null),
     propertyTypeId: new FormControl<string>('', { nonNullable: true }),
     bedrooms: new FormControl<number | null>(null),
+    sort: new FormControl<string>('', { nonNullable: true }),
   });
 
   constructor() {
@@ -202,16 +226,23 @@ export class SearchPageComponent implements OnInit {
           propertyTypeId:
             typeof params['propertyTypeId'] === 'string' ? params['propertyTypeId'] : '',
           bedrooms: this.toNumber(params['bedrooms']),
+          sort: typeof params['sort'] === 'string' ? params['sort'] : '',
         },
         { emitEvent: false },
       );
+      const pageParam = this.toNumber(params['page']);
+      if (pageParam && pageParam > 0) {
+        this.pageIndex.set(pageParam - 1);
+      } else {
+        this.pageIndex.set(0);
+      }
       void this.executeSearch(this.formToCriteria());
     });
 
     this.criteriaForm.controls.location.valueChanges
       .pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed())
       .subscribe(() => {
-        void this.applyFilters();
+        void this.applyFilters(true);
       });
   }
 
@@ -219,7 +250,10 @@ export class SearchPageComponent implements OnInit {
     void this.store.init();
   }
 
-  async applyFilters(): Promise<void> {
+  async applyFilters(resetPage = false): Promise<void> {
+    if (resetPage) {
+      this.pageIndex.set(0);
+    }
     const criteria = this.formToCriteria();
     await this.router.navigate([], {
       relativeTo: this.route,
@@ -227,6 +261,11 @@ export class SearchPageComponent implements OnInit {
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
+  }
+
+  onPage(event: PageEvent): void {
+    this.pageIndex.set(event.pageIndex);
+    void this.applyFilters(false);
   }
 
   private formToCriteria(): ListingSearchCriteria {
@@ -237,6 +276,9 @@ export class SearchPageComponent implements OnInit {
       maxPrice: value.maxPrice ?? undefined,
       propertyTypeId: value.propertyTypeId || undefined,
       bedrooms: value.bedrooms ?? undefined,
+      sort: value.sort || undefined,
+      page: this.pageIndex() + 1,
+      pageSize: 10,
     };
   }
 

@@ -5,7 +5,9 @@
   },
   "common": {
     "error": "Error",
-    "retry": "Retry"
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "saved": "Saved."
   },
   "authCallback": {
     "working": "Completing sign in...",
@@ -45,7 +47,11 @@
     "loading": "Loading listings...",
     "errorTitle": "Could not load listings",
     "emptyTitle": "No listings found",
-    "emptyDescription": "Try adjusting your filters."
+    "emptyDescription": "Try adjusting your filters.",
+    "sort": "Sort",
+    "sortDefault": "Default",
+    "sortPriceAsc": "Price: low to high",
+    "sortPriceDesc": "Price: high to low"
   },
   "detail": {
     "loading": "Loading listing...",
@@ -58,7 +64,8 @@
     "bedrooms": "bedrooms",
     "bathrooms": "bathrooms",
     "sqft": "sq ft",
-    "imageAlt": "Listing image"
+    "imageAlt": "Listing image",
+    "contactDenied": "You do not have permission to view broker contact details."
   },
   "broker": {
     "listingsTitle": "My listings",
@@ -100,8 +107,12 @@
       "titleError": "Title is required or too long.",
       "priceError": "Price is required and must be valid.",
       "cityError": "City is required.",
-      "postalCodeError": "Postal code must be 5 digits."
-    }
+      "postalCodeError": "Postal code must be 5 digits.",
+      "features": "Features"
+    },
+    "publishConfirm": "Publish this listing?",
+    "sellConfirm": "Mark this listing as sold?",
+    "archiveConfirm": "Archive this listing?"
   },
   "admin": {
     "title": "Commission rates",

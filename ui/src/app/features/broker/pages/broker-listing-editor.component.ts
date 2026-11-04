@@ -12,6 +12,7 @@ import { LoadingStateComponent } from '../../../shared/ui/loading-state.componen
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import type {
   PropertyTypeDto,
+  FeatureDto,
   CreateListingRequest,
   UpdateListingRequest,
 } from '../../../api/models';
@@ -21,6 +22,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 function numberRange(min: number, max: number) {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -51,6 +53,7 @@ function numberRange(min: number, max: number) {
     MatInputModule,
     MatSelectModule,
     MatProgressSpinnerModule,
+    MatSnackBarModule,
   ],
   template: `
     <section class="editor">
@@ -144,6 +147,15 @@ function numberRange(min: number, max: number) {
                 <input matInput type="number" formControlName="areaSqFt" />
               </mat-form-field>
 
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'broker.editor.features' | transloco }}</mat-label>
+                <mat-select formControlName="featureIds" multiple>
+                  @for (feature of features(); track feature.id) {
+                    <mat-option [value]="feature.id">{{ feature.name || feature.code }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
               <div class="actions">
                 <button
                   mat-raised-button
@@ -195,12 +207,14 @@ export class BrokerListingEditorComponent {
   private readonly lookupsData = inject(LookupsDataService);
   private readonly transloco = inject(TranslocoService);
   readonly auth = inject(AuthService);
+  private readonly snack = inject(MatSnackBar);
 
   readonly isEdit = signal(false);
   readonly loading = signal(false);
   readonly saving = signal(false);
   readonly error = signal<string | null>(null);
   readonly propertyTypes = signal<PropertyTypeDto[]>([]);
+  readonly features = signal<FeatureDto[]>([]);
   readonly version = signal<string | null>(null);
   readonly idempotencyKey = crypto.randomUUID();
 
@@ -224,6 +238,7 @@ export class BrokerListingEditorComponent {
     bedrooms: new FormControl<number | null>(null, { validators: [numberRange(0, 20)] }),
     bathrooms: new FormControl<number | null>(null, { validators: [numberRange(0, 20)] }),
     areaSqFt: new FormControl<number | null>(null, { validators: [Validators.min(0)] }),
+    featureIds: new FormControl<string[]>([], { nonNullable: true }),
   });
 
   constructor() {
@@ -231,6 +246,10 @@ export class BrokerListingEditorComponent {
       .propertyTypes()
       .then((types) => this.propertyTypes.set(types))
       .catch(() => this.propertyTypes.set([]));
+    this.lookupsData
+      .features()
+      .then((items) => this.features.set(items))
+      .catch(() => this.features.set([]));
 
     this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
       const id = params.get('id');
@@ -261,6 +280,7 @@ export class BrokerListingEditorComponent {
         bedrooms: listing.bedrooms != null ? Number(listing.bedrooms) : null,
         bathrooms: listing.bathrooms != null ? Number(listing.bathrooms) : null,
         areaSqFt: listing.areaSqFt != null ? Number(listing.areaSqFt) : null,
+        featureIds: listing.features?.map((f) => f.id ?? '').filter(Boolean) ?? [],
       });
     } catch (error) {
       this.error.set(
@@ -279,7 +299,7 @@ export class BrokerListingEditorComponent {
     this.saving.set(true);
     this.error.set(null);
     const value = this.form.getRawValue();
-    const selectedFeatures: string[] = [];
+    const selectedFeatures = value.featureIds ?? [];
     const payload = {
       title: value.title,
       description: value.description,
@@ -306,6 +326,7 @@ export class BrokerListingEditorComponent {
       } else {
         await this.listingsData.create(payload as CreateListingRequest, this.idempotencyKey);
       }
+      this.snack.open(this.transloco.translate('common.saved'), undefined, { duration: 3000 });
       await this.router.navigate(['/broker/listings']);
     } catch (error) {
       if (error instanceof ApiError && error.fieldErrors) {
@@ -313,6 +334,7 @@ export class BrokerListingEditorComponent {
           const control = this.form.get(field);
           if (control && messages?.length) {
             control.setErrors({ server: messages[0] });
+            control.markAsTouched();
           }
         }
       }

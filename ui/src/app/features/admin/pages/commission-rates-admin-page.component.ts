@@ -14,6 +14,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'hb-commission-rates-admin-page',
@@ -32,6 +33,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
     MatSlideToggleModule,
     MatTableModule,
     MatProgressSpinnerModule,
+    MatSnackBarModule,
   ],
   template: `
     <section class="admin-page">
@@ -145,6 +147,11 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
               </mat-slide-toggle>
 
               <div class="actions">
+                @if (editingId()) {
+                  <button mat-button type="button" (click)="cancelEdit()">
+                    {{ 'common.cancel' | transloco }}
+                  </button>
+                }
                 <button
                   mat-raised-button
                   color="primary"
@@ -191,6 +198,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 export class CommissionRatesAdminPageComponent {
   private readonly data = inject(AdminCommissionRatesDataService);
   private readonly transloco = inject(TranslocoService);
+  private readonly snack = inject(MatSnackBar);
 
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -234,6 +242,16 @@ export class CommissionRatesAdminPageComponent {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  cancelEdit(): void {
+    this.editingId.set(null);
+    this.editingVersion.set(null);
+    this.form.reset({
+      minInclusive: true,
+      maxInclusive: false,
+      isActive: true,
+    });
   }
 
   edit(rate: CommissionRateDto): void {
@@ -282,6 +300,7 @@ export class CommissionRatesAdminPageComponent {
         isActive: true,
       });
       await this.load();
+      this.snack.open(this.transloco.translate('common.saved'), undefined, { duration: 3000 });
     } catch (error) {
       if (error instanceof ApiError && error.fieldErrors) {
         for (const [field, messages] of Object.entries(error.fieldErrors)) {

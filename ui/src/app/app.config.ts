@@ -6,6 +6,7 @@ import {
   inject,
 } from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter } from '@angular/router';
 import { Api } from './api/api';
 import { provideApiConfiguration } from './api/api-configuration';
@@ -27,6 +28,7 @@ import { AppTranslocoLoader } from './core/i18n/app-transloco.loader';
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
+    provideAnimationsAsync(),
     provideHttpClient(
       withInterceptors([
         correlationIdInterceptor,

@@ -14,6 +14,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'hb-broker-listings-page',
@@ -30,6 +31,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
     MatButtonModule,
     MatChipsModule,
     MatProgressBarModule,
+    MatSnackBarModule,
   ],
   template: `
     <section class="my-listings">
@@ -76,20 +78,29 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
                   <a mat-stroked-button [routerLink]="['/broker/listings', listing.id, 'edit']">{{
                     'broker.edit' | transloco
                   }}</a>
-                  <button
-                    mat-flat-button
-                    color="primary"
-                    type="button"
-                    (click)="publish(listing.id ?? '')"
-                  >
-                    {{ 'broker.publish' | transloco }}
-                  </button>
-                  <button mat-stroked-button type="button" (click)="markSold(listing.id ?? '')">
-                    {{ 'broker.sell' | transloco }}
-                  </button>
-                  <button mat-stroked-button type="button" (click)="archive(listing.id ?? '')">
-                    {{ 'broker.archive' | transloco }}
-                  </button>
+                  @if ((listing.status ?? '').toLowerCase() === 'draft') {
+                    <button
+                      mat-flat-button
+                      color="primary"
+                      type="button"
+                      (click)="publish(listing.id ?? '')"
+                    >
+                      {{ 'broker.publish' | transloco }}
+                    </button>
+                  }
+                  @if ((listing.status ?? '').toLowerCase() === 'active') {
+                    <button mat-stroked-button type="button" (click)="markSold(listing.id ?? '')">
+                      {{ 'broker.sell' | transloco }}
+                    </button>
+                    <button mat-stroked-button type="button" (click)="archive(listing.id ?? '')">
+                      {{ 'broker.archive' | transloco }}
+                    </button>
+                  }
+                  @if ((listing.status ?? '').toLowerCase() === 'sold') {
+                    <button mat-stroked-button type="button" (click)="archive(listing.id ?? '')">
+                      {{ 'broker.archive' | transloco }}
+                    </button>
+                  }
                   <button mat-button color="warn" type="button" (click)="remove(listing.id ?? '')">
                     {{ 'broker.delete' | transloco }}
                   </button>
@@ -214,6 +225,7 @@ export class BrokerListingsPageComponent {
   private readonly config = inject(RuntimeConfigService);
   private readonly transloco = inject(TranslocoService);
   readonly router = inject(Router);
+  private readonly snack = inject(MatSnackBar);
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
@@ -247,14 +259,23 @@ export class BrokerListingsPageComponent {
   }
 
   async publish(id: string): Promise<void> {
+    if (!window.confirm(this.transloco.translate('broker.publishConfirm'))) {
+      return;
+    }
     await this.transition(id, (listing) => this.listingsData.publish(id, listing.version));
   }
 
   async markSold(id: string): Promise<void> {
+    if (!window.confirm(this.transloco.translate('broker.sellConfirm'))) {
+      return;
+    }
     await this.transition(id, (listing) => this.listingsData.markSold(id, listing.version));
   }
 
   async archive(id: string): Promise<void> {
+    if (!window.confirm(this.transloco.translate('broker.archiveConfirm'))) {
+      return;
+    }
     await this.transition(id, (listing) => this.listingsData.archive(id, listing.version));
   }
 
@@ -265,6 +286,7 @@ export class BrokerListingsPageComponent {
     try {
       await this.listingsData.delete(id);
       this.listings.update((items) => items.filter((item) => item.id !== id));
+      this.snack.open(this.transloco.translate('common.saved'), undefined, { duration: 3000 });
     } catch (error) {
       this.error.set(
         error instanceof Error ? error.message : this.transloco.translate('errors.deleteFailed'),
@@ -357,6 +379,7 @@ export class BrokerListingsPageComponent {
     try {
       const listing = await this.listingsData.getMineById(id);
       await action(listing);
+      this.snack.open(this.transloco.translate('common.saved'), undefined, { duration: 3000 });
       await this.load();
     } catch (error) {
       this.error.set(
