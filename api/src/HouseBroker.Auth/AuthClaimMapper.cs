@@ -6,6 +6,12 @@ namespace HouseBroker.Auth;
 /// <summary>Maps roles to permission claims and classifies claims for token destinations.</summary>
 public static class AuthClaimMapper
 {
+    /// <summary>Claim type carrying one permission per value (read by the API).</summary>
+    public const string PermissionClaimType = "permission";
+
+    /// <summary>Claim type carrying one granted scope per value (read by the API).</summary>
+    public const string ScopeClaimType = "scp";
+
     /// <summary>Roles a user may choose during self-registration.</summary>
     public static readonly string[] RegistrationRoles = [Roles.Seeker, Roles.Broker];
 

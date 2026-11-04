@@ -81,7 +81,8 @@ builder.Services.AddHouseBrokerOpenApi(builder.Configuration);
 builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
 builder.Services.AddRequestTimeouts();
 
-var authIssuer = builder.Configuration["Auth:Issuer"] ?? builder.Configuration["Auth:Authority"] ?? "http://localhost:5000/sso";
+var authIssuer = builder.Configuration["Auth:Issuer"] ?? builder.Configuration["Auth:Authority"]
+    ?? throw new InvalidOperationException("Auth:Issuer (or Auth:Authority) must be configured.");
 
 // Swagger UI Configuration
 builder.Services.AddSwaggerGen(options =>
@@ -161,7 +162,8 @@ if (string.Equals(builder.Configuration["Cache:Provider"], "Redis", StringCompar
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
-var issuer = builder.Configuration["Auth:Issuer"] ?? builder.Configuration["Auth:Authority"] ?? "http://localhost:5000/sso";
+var issuer = builder.Configuration["Auth:Issuer"] ?? builder.Configuration["Auth:Authority"]
+    ?? throw new InvalidOperationException("Auth:Issuer (or Auth:Authority) must be configured.");
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

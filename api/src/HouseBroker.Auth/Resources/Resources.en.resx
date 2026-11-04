@@ -114,4 +114,7 @@
   <data name="AuthCallback_Working" xml:space="preserve">Completing sign in...</data>
   <data name="AuthCallback_Error" xml:space="preserve">We could not complete sign in. Please try again.</data>
   <data name="AuthCallback_Retry" xml:space="preserve">Try again</data>
+  <data name="Login_Subtitle" xml:space="preserve">Sign in to manage listings and your account.</data>
+  <data name="Login_ShowPassword" xml:space="preserve">Show password</data>
+  <data name="Login_HidePassword" xml:space="preserve">Hide password</data>
 </root>

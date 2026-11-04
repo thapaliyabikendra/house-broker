@@ -26,8 +26,11 @@ public class LoginModel(
     public string ButtonText => L["Login_Button"];
     public string PasswordHint => L["Login_PasswordHint"];
     public string CreateAccountLabel => L["Login_CreateAccount"];
-    public string ForgotPasswordLabel => L["Login_ForgotPassword"];
     public string SubmittingText => L["Login_Submitting"];
+    public string SubtitleText => L["Login_Subtitle"];
+    public string BrandName => L["Brand_Name"];
+    public string ShowPasswordLabel => L["Login_ShowPassword"];
+    public string HidePasswordLabel => L["Login_HidePassword"];
 
     public class InputModel
     {

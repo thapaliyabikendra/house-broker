@@ -4,35 +4,50 @@
     ViewData["Title"] = Model.Title;
 }
 
-<div class="container mt-5">
-    <div class="card mx-auto" style="max-width: 400px;">
-        <div class="card-header">
-            <h3 class="text-center">@Model.Title</h3>
+<section class="auth-card" aria-labelledby="login-title">
+    <header class="auth-card__brand">
+        <span class="auth-card__mark" aria-hidden="true">HB</span>
+        <span class="auth-card__brand-name">@Model.BrandName</span>
+    </header>
+
+    <h1 id="login-title" class="auth-card__title">@Model.Title</h1>
+    <p class="auth-card__subtitle">@Model.SubtitleText</p>
+
+    <form method="post" id="login-form" class="auth-form">
+        <div asp-validation-summary="All" class="auth-alert" role="alert" aria-live="assertive"></div>
+
+        <div class="auth-field">
+            <label asp-for="Input.Email" class="form-label">@Model.EmailLabel</label>
+            <input asp-for="Input.Email" class="form-control" type="email" autocomplete="username" inputmode="email"
+                   spellcheck="false" required aria-describedby="email-error" />
+            <span asp-validation-for="Input.Email" class="auth-field__error" id="email-error"></span>
         </div>
-        <div class="card-body">
-            <form method="post" id="login-form">
-                <div asp-validation-summary="All" class="text-danger mb-3" aria-live="assertive" role="alert"></div>
-                <div class="mb-3">
-                    <label asp-for="Input.Email" class="form-label">@Model.EmailLabel</label>
-                    <input asp-for="Input.Email" class="form-control" type="email" autocomplete="username" inputmode="email" required aria-describedby="email-error" />
-                    <span asp-validation-for="Input.Email" class="text-danger" id="email-error"></span>
-                </div>
-                <div class="mb-3">
-                    <label asp-for="Input.Password" class="form-label">@Model.PasswordLabel</label>
-                    <input asp-for="Input.Password" class="form-control" type="password" autocomplete="current-password" required aria-describedby="password-help password-error" />
-                    <div id="password-help" class="form-text">@Model.PasswordHint</div>
-                    <span asp-validation-for="Input.Password" class="text-danger" id="password-error"></span>
-                </div>
-                <div class="mb-3 form-check">
-                    <input asp-for="Input.RememberMe" class="form-check-input" />
-                    <label asp-for="Input.RememberMe" class="form-check-label">@Model.RememberMeLabel</label>
-                </div>
-                <button type="submit" class="btn btn-primary w-100" data-submitting-text="@Model.SubmittingText">@Model.ButtonText</button>
-            </form>
-            <div class="d-flex justify-content-between mt-3 small">
-                <a asp-page="/Register" asp-route-returnUrl="@Model.ReturnUrl">@Model.CreateAccountLabel</a>
-                <span class="text-muted">@Model.ForgotPasswordLabel</span>
+
+        <div class="auth-field">
+            <label asp-for="Input.Password" class="form-label">@Model.PasswordLabel</label>
+            <div class="auth-password">
+                <input asp-for="Input.Password" class="form-control" type="password" autocomplete="current-password"
+                       required aria-describedby="password-error" />
+                <button type="button" class="auth-password__toggle" id="password-toggle"
+                        aria-controls="Input_Password" aria-pressed="false"
+                        data-show-label="@Model.ShowPasswordLabel" data-hide-label="@Model.HidePasswordLabel">
+                    @Model.ShowPasswordLabel
+                </button>
+            </div>
+            <span asp-validation-for="Input.Password" class="auth-field__error" id="password-error"></span>
+        </div>
+
+        <div class="auth-row">
+            <div class="form-check">
+                <input asp-for="Input.RememberMe" class="form-check-input" />
+                <label asp-for="Input.RememberMe" class="form-check-label">@Model.RememberMeLabel</label>
             </div>
         </div>
-    </div>
-</div>
+
+        <button type="submit" class="btn btn-primary auth-submit" data-submitting-text="@Model.SubmittingText">@Model.ButtonText</button>
+    </form>
+
+    <footer class="auth-card__footer">
+        <a asp-page="/Register" asp-route-returnUrl="@Model.ReturnUrl">@Model.CreateAccountLabel</a>
+    </footer>
+</section>

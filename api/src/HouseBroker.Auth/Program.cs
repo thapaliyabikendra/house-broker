@@ -46,7 +46,10 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.AddServiceDefaults();
 builder.Services.AddRazorPages();
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+// ServiceDefaults sets ResourcesPath for the API. Auth resources are embedded under their type name
+// (HouseBroker.Auth.Resources.Resources), so clear the path for this host.
+builder.Services.AddLocalization();
+builder.Services.Configure<Microsoft.Extensions.Localization.LocalizationOptions>(options => options.ResourcesPath = string.Empty);
 builder.Services.Configure<RequestLocalizationOptions>(options =>
 {
     var supported = new[] { "en", "ne" };
@@ -153,7 +156,8 @@ builder.Services
             .SetTokenEndpointUris($"{pathBase}/connect/token")
             .SetUserInfoEndpointUris($"{pathBase}/connect/userinfo")
             .SetEndSessionEndpointUris($"{pathBase}/connect/logout")
-            .SetIssuer(new Uri(builder.Configuration["Auth:Issuer"] ?? "http://localhost:5000/sso"));
+            .SetIssuer(new Uri(builder.Configuration["Auth:Issuer"]
+                ?? throw new InvalidOperationException("Auth:Issuer must be configured.")));
 
         options.SetAccessTokenLifetime(TimeSpan.FromMinutes(15));
         options.SetRefreshTokenLifetime(TimeSpan.FromDays(7));
@@ -219,7 +223,8 @@ builder.Services
         // Authorization and token requests are handled by AuthorizationController and TokenController.
         var aspNetCoreBuilder = options.UseAspNetCore()
             .EnableAuthorizationEndpointPassthrough()
-            .EnableTokenEndpointPassthrough();
+            .EnableTokenEndpointPassthrough()
+            .EnableEndSessionEndpointPassthrough();
         if (builder.Environment.IsDevelopment())
         {
             aspNetCoreBuilder.DisableTransportSecurityRequirement();
@@ -309,6 +314,8 @@ app.Use(async (context, next) =>
     context.Response.Headers.Append("X-Frame-Options", "DENY");
     await next();
 });
+// Static files come after the header middleware so css/js responses carry the same headers.
+app.UseStaticFiles();
 app.UseServiceDefaults();
 app.UseHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
 {

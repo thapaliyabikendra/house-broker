@@ -19,9 +19,6 @@ public sealed class AuthorizationController(
     UserManager<ApplicationUser> userManager,
     IConfiguration configuration) : ControllerBase
 {
-    private static readonly System.Collections.Immutable.ImmutableArray<string> ApiAudience =
-        System.Collections.Immutable.ImmutableArray.Create("housebroker-api");
-
     /// <summary>Issues an authorization code for an authenticated user, or redirects to sign-in.</summary>
     [HttpGet("~/connect/authorize")]
     public async Task<IActionResult> AuthorizeAsync()
@@ -46,40 +43,14 @@ public sealed class AuthorizationController(
         }
 
         var roles = await userManager.GetRolesAsync(user);
-
-        var identity = new ClaimsIdentity(
+        var identity = AuthTokenClaims.CreateUserIdentity(
             OpenIddictServerAspNetCoreDefaults.AuthenticationScheme,
-            OpenIddictConstants.Claims.Name,
-            OpenIddictConstants.Claims.Role);
+            user.Id,
+            user.UserName,
+            user.Email,
+            roles.ToList(),
+            request.GetScopes());
 
-        // Destinations are set explicitly on each claim so tokens carry them regardless of handler order.
-        identity.AddClaim(OpenIddictConstants.Claims.Subject, user.Id.ToString(), OpenIddictConstants.Destinations.AccessToken);
-        identity.AddClaim(new Claim(OpenIddictConstants.Claims.Name, user.UserName ?? user.Email ?? user.Id.ToString())
-            .SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken));
-        if (!string.IsNullOrWhiteSpace(user.Email))
-        {
-            identity.AddClaim(new Claim(OpenIddictConstants.Claims.Email, user.Email)
-                .SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken));
-        }
-
-        foreach (var role in roles)
-        {
-            identity.AddClaim(new Claim(OpenIddictConstants.Claims.Role, role).SetDestinations(OpenIddictConstants.Destinations.AccessToken));
-        }
-
-        // Permissions are the authorization source for the API (effective access = permission ∩ scope).
-        foreach (var permission in AuthClaimMapper.GetPermissions(roles))
-        {
-            identity.AddClaim(new Claim("permission", permission).SetDestinations(OpenIddictConstants.Destinations.AccessToken));
-        }
-
-        // Granted scopes travel as scp claims (OpenIddict owns the "scope" claim) so the API can intersect them with permissions.
-        foreach (var scope in request.GetScopes())
-        {
-            identity.AddClaim(new Claim("scp", scope).SetDestinations(OpenIddictConstants.Destinations.AccessToken));
-        }
-
-        identity.SetAudiences(ApiAudience);
         var principal = new ClaimsPrincipal(identity);
         principal.SetScopes(request.GetScopes());
 

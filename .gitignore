@@ -22,8 +22,27 @@ ui/.angular/
 ui/dist/
 ui/coverage/
 
-# Docker
+# Logs (root scratch logs and Serilog file sinks)
 *.log
+*.log.*
+logs/
+api/**/logs/
+
+# Test results and coverage
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+
+# Temporary and backup files
+*.tmp
+*.temp
+*.bak
+*.orig
+*~
+
+# Docker
 
 # Secrets and environment
 appsettings.*.Secrets.json

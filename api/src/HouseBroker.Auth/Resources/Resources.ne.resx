@@ -114,4 +114,7 @@
   <data name="AuthCallback_Working" xml:space="preserve">साइन इन पूरा हुँदैछ...</data>
   <data name="AuthCallback_Error" xml:space="preserve">हामी साइन इन पूरा गर्न सकेनौं। कृपया पुन: प्रयास गर्नुहोस्।</data>
   <data name="AuthCallback_Retry" xml:space="preserve">पुन: प्रयास गर्नुहोस्</data>
+  <data name="Login_Subtitle" xml:space="preserve">लिस्टिङ र आफ्नो खाता व्यवस्थापन गर्न साइन इन गर्नुहोस्।</data>
+  <data name="Login_ShowPassword" xml:space="preserve">पासवर्ड देखाउनुहोस्</data>
+  <data name="Login_HidePassword" xml:space="preserve">पासवर्ड लुकाउनुहोस्</data>
 </root>

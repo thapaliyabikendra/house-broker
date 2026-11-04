@@ -17,7 +17,8 @@ internal static class OpenApiExtensions
             options.AddDocumentTransformer((document, _, _) =>
             {
                 // Same issuer resolution as the JWT bearer setup, so the documented OAuth URLs match the running SSO.
-                var authIssuer = configuration["Auth:Issuer"] ?? configuration["Auth:Authority"] ?? "http://localhost:5000/sso";
+                var authIssuer = configuration["Auth:Issuer"] ?? configuration["Auth:Authority"]
+                    ?? throw new InvalidOperationException("Auth:Issuer (or Auth:Authority) must be configured.");
 
                 document.Info = new OpenApiInfo
                 {
