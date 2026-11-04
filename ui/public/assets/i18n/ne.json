@@ -5,7 +5,7 @@
     "location": "स्थान",
     "minPrice": "न्यूनतम मूल्य",
     "maxPrice": "अधिकतम मूल्य",
-    "propertyType": "कुनै पनि प्रकार",
+    "propertyType": "प्रकार",
     "bedrooms": "शयनकक्ष",
     "submit": "खोज्नुहोस्",
     "loading": "सम्पत्ति लोड हुँदै छ...",

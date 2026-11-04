@@ -114,11 +114,24 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
             }
             else
             {
-                await idempotencyService.ReleaseAsync(key, scope, context.HttpContext.RequestAborted);
-                await transaction.RollbackAsync(context.HttpContext.RequestAborted);
+                try
+                {
+                    await idempotencyService.ReleaseAsync(key, scope, context.HttpContext.RequestAborted);
+                }
+                catch
+                {
+                }
+
+                try
+                {
+                    await transaction.RollbackAsync(context.HttpContext.RequestAborted);
+                }
+                catch
+                {
+                }
             }
         }
-        catch
+        catch (Exception)
         {
             try
             {
@@ -126,7 +139,6 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
             }
             catch
             {
-                // ignore
             }
 
             try
@@ -135,7 +147,6 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
             }
             catch
             {
-                // ignore
             }
 
             throw;
@@ -143,7 +154,13 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
 
         if (!completed && statusCode >= 400)
         {
-            await idempotencyService.ReleaseAsync(key, scope, context.HttpContext.RequestAborted);
+            try
+            {
+                await idempotencyService.ReleaseAsync(key, scope, context.HttpContext.RequestAborted);
+            }
+            catch
+            {
+            }
         }
     }
 

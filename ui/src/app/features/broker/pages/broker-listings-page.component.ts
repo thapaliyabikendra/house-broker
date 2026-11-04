@@ -9,6 +9,7 @@ import {
 } from '../components/listing-editor-dialog.component';
 import { HttpEventType } from '@angular/common/http';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { AuthService } from '../../../core/auth/auth.service';
 import { ListingsDataService } from '../../../core/data/listings-data.service';
 import { RuntimeConfigService } from '../../../core/config/runtime-config.service';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
@@ -47,9 +48,12 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     <section class="my-listings">
       <div class="header-row">
         <h1>{{ 'broker.listingsTitle' | transloco }}</h1>
-        <button mat-raised-button color="primary" type="button" (click)="openEditor(null)">
-          {{ 'broker.create' | transloco }}
-        </button>
+        @if (canCreateListings()) {
+          <button mat-raised-button color="primary" type="button" (click)="openEditor(null)">
+            {{ 'broker.create' | transloco }}
+          </button>
+        }
+        >
       </div>
 
       @if (actionError()) {
@@ -346,6 +350,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
   `,
 })
 export class BrokerListingsPageComponent implements OnInit {
+  private readonly auth = inject(AuthService, { optional: true });
   private readonly listingsData = inject(ListingsDataService);
   private readonly config = inject(RuntimeConfigService);
   private readonly transloco = inject(TranslocoService);
@@ -376,6 +381,11 @@ export class BrokerListingsPageComponent implements OnInit {
 
   setFilter(value: string): void {
     this.statusFilter.set(value);
+  }
+
+  /** Brokers may create listings; admins and seekers do not see the create action. */
+  canCreateListings(): boolean {
+    return this.auth?.hasPermission('listings:create') ?? true;
   }
 
   constructor() {

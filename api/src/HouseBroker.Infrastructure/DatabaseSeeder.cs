@@ -10,41 +10,8 @@ namespace HouseBroker.Infrastructure;
 /// <summary>Idempotent database seeder.</summary>
 public static class DatabaseSeeder
 {
-    private static readonly Guid[] DemoListingIds =
-    [
-        Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
-        Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
-    ];
-
-    private static readonly Dictionary<string, byte[]> DemoImageByType = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Apartment"] = LoadDemoImageBytes("house-apartment.jpg"),
-        ["House"] = LoadDemoImageBytes("house-house.jpg"),
-        ["Land"] = LoadDemoImageBytes("house-land.jpg"),
-        ["Commercial"] = LoadDemoImageBytes("house-commercial.jpg"),
-    };
-
-    private static byte[] LoadDemoImageBytes(string fileName)
-    {
-        var resourceName = $"HouseBroker.Infrastructure.SeedData.{fileName}";
-        using var stream = typeof(DatabaseSeeder).Assembly.GetManifestResourceStream(resourceName)
-            ?? throw new InvalidOperationException($"Embedded resource '{resourceName}' was not found.");
-        using var memory = new System.IO.MemoryStream();
-        stream.CopyTo(memory);
-        return memory.ToArray();
-    }
-
-    private static byte[] GetDemoImageBytes(string propertyTypeCode)
-        => DemoImageByType.TryGetValue(propertyTypeCode, out var bytes) ? bytes : DemoImageByType.Values.First();
-
-
-    private static readonly (string Code, string Name, int SortOrder)[] PropertyTypeSeeds =
-    [
-        ("Apartment", "Apartment", 1),
-        ("House", "House", 2),
-        ("Land", "Land", 3),
-        ("Commercial", "Commercial", 4),
-    ];
+    private static readonly byte[] DemoImage =
+        Convert.FromBase64String("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAoADQABD1v9RgAAAABJRU5ErkJggg==");
 
     /// <summary>Seeds master and development data.</summary>
     public static async Task SeedAsync(AppDbContext db, IHostEnvironment environment, TimeProvider clock, CancellationToken cancellationToken)
@@ -64,7 +31,13 @@ public static class DatabaseSeeder
 
     private static async Task SeedPropertyTypesAsync(AppDbContext db, CancellationToken cancellationToken)
     {
-        var seeds = PropertyTypeSeeds;
+        var seeds = new (string Code, string Name, int SortOrder)[]
+        {
+            ("Apartment", "Apartment", 1),
+            ("House", "House", 2),
+            ("Land", "Land", 3),
+            ("Commercial", "Commercial", 4),
+        };
 
         foreach (var seed in seeds)
         {
@@ -124,7 +97,6 @@ public static class DatabaseSeeder
 
     private static async Task SeedDemoListingsAsync(AppDbContext db, TimeProvider clock, CancellationToken cancellationToken)
     {
-        var now = clock.GetUtcNow().UtcDateTime;
         var tiers = await db.CommissionRates.AsNoTracking().ToListAsync(cancellationToken);
 
         await EnsureListingAsync(db, clock, tiers, DemoUsers.BrokerOne,
@@ -182,7 +154,7 @@ public static class DatabaseSeeder
             title: "Compact Apartment in Lalitpur",
             description: "Well-lit apartment close to cafes and public transport.",
             propertyTypeCode: "Apartment",
-            price: 4_999_999.50m,
+            price: 4_999_999m,
             province: "Bagmati",
             city: "Lalitpur",
             locality: "Jawalakhel",
@@ -294,10 +266,9 @@ public static class DatabaseSeeder
 
         if (addImage)
         {
-            var imageBytes = GetDemoImageBytes(propertyTypeCode);
-            var image = ListingImage.Create(listing.Id, $"seed-{propertyTypeCode.ToLowerInvariant()}.jpg", "image/jpeg", imageBytes.Length, "seed-image-hash", true);
+            var image = ListingImage.Create(listing.Id, "seed-photo.jpg", "image/jpeg", DemoImage.Length, "seed-image-hash", true);
             db.ListingImages.Add(image);
-            db.ListingImageData.Add(ListingImageData.Create(image.Id, imageBytes));
+            db.ListingImageData.Add(ListingImageData.Create(image.Id, DemoImage));
         }
     }
 }

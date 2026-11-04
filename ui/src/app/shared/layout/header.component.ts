@@ -18,7 +18,9 @@ import { MatSelectModule } from '@angular/material/select';
       <nav class="nav" aria-label="Primary">
         <a mat-button routerLink="/search">{{ 'search.title' | transloco }}</a>
         @if (auth.user(); as user) {
-          <a mat-button routerLink="/broker/listings">{{ 'broker.listingsTitle' | transloco }}</a>
+          @if (auth.hasPermission('listings:create')) {
+            <a mat-button routerLink="/broker/listings">{{ 'broker.listingsTitle' | transloco }}</a>
+          }
           @if (auth.hasPermission('commission:rates:manage')) {
             <a mat-button routerLink="/admin/commission-rates">{{ 'admin.title' | transloco }}</a>
           }

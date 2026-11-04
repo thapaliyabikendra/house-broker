@@ -27,7 +27,7 @@ export const routes: Routes = [
   // Deep links to the editor: the list page opens the create/edit dialog from this data.
   {
     path: 'broker/listings/new',
-    canActivate: [authGuard],
+    canActivate: [authGuard, permissionGuard('listings:create')],
     data: { editor: 'new' },
     loadComponent: () =>
       import('./features/broker/pages/broker-listings-page.component').then(

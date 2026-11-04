@@ -10,6 +10,7 @@ import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
 import { HbNumberPipe } from '../../../shared/pipes/hb-number.pipe';
+import { HbDatePipe } from '../../../shared/pipes/hb-date.pipe';
 import { HbDateTimePipe } from '../../../shared/pipes/hb-date-time.pipe';
 import type { CommissionRateDto, CommissionRateRequest } from '../../../api/models';
 import { MatCardModule } from '@angular/material/card';
@@ -41,6 +42,7 @@ interface BandPreview {
     TranslocoPipe,
     HbPricePipe,
     HbNumberPipe,
+    HbDatePipe,
     HbDateTimePipe,
     MatCardModule,
     MatButtonModule,
@@ -78,14 +80,16 @@ interface BandPreview {
                   <ng-container matColumnDef="min">
                     <th mat-header-cell *matHeaderCellDef>{{ 'admin.min' | transloco }}</th>
                     <td mat-cell *matCellDef="let rate">
-                      {{ rate.minInclusive ? '≥' : '>' }} {{ rate.minPrice | hbPrice }}
+                      <div class="bound-symbol">{{ rate.minInclusive ? '≥' : '>' }}</div>
+                      <div class="bound-amount">{{ rate.minPrice | hbPrice }}</div>
                     </td>
                   </ng-container>
                   <ng-container matColumnDef="max">
                     <th mat-header-cell *matHeaderCellDef>{{ 'admin.max' | transloco }}</th>
                     <td mat-cell *matCellDef="let rate">
                       @if (rate.maxPrice !== null && rate.maxPrice !== undefined) {
-                        {{ rate.maxInclusive ? '≤' : '<' }} {{ rate.maxPrice | hbPrice }}
+                        <div class="bound-symbol">{{ rate.maxInclusive ? '≤' : '<' }}</div>
+                        <div class="bound-amount">{{ rate.maxPrice | hbPrice }}</div>
                       } @else {
                         {{ 'admin.andAbove' | transloco }}
                       }
@@ -101,7 +105,12 @@ interface BandPreview {
                     <th mat-header-cell *matHeaderCellDef>
                       {{ 'admin.effectiveFrom' | transloco }}
                     </th>
-                    <td mat-cell *matCellDef="let rate">{{ rate.effectiveFrom | hbDateTime }}</td>
+                    <td mat-cell *matCellDef="let rate">
+                      <div class="effective-date">{{ rate.effectiveFrom | hbDate }}</div>
+                      <div class="effective-time">
+                        {{ rate.effectiveFrom | hbDateTime: timeOnlyOptions }}
+                      </div>
+                    </td>
                   </ng-container>
                   <ng-container matColumnDef="active">
                     <th mat-header-cell *matHeaderCellDef>{{ 'admin.active' | transloco }}</th>
@@ -212,18 +221,68 @@ interface BandPreview {
       display: flex;
       flex-direction: column;
       gap: 1.5rem;
+      max-inline-size: 110rem;
+      margin-inline: auto;
     }
     .table-scroll {
-      overflow-x: auto;
+      overflow-x: hidden;
     }
     .rates-table {
       width: 100%;
+      border-collapse: separate;
+    }
+    .rates-table th,
+    .rates-table td {
+      padding-inline: 1rem;
+      padding-block: 0.75rem;
+      font-size: 0.95rem;
+    }
+    .effective-date {
+      font-weight: 600;
+    }
+    .effective-time {
+      display: block;
+      font-size: 0.85rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .bound-symbol {
+      font-weight: 700;
+      line-height: 1;
+    }
+    .bound-amount {
+      display: block;
+      white-space: nowrap;
+    }
+    .rates-table .mat-column-min,
+    .rates-table .mat-column-max {
+      min-inline-size: 11rem;
+    }
+    .rates-table .mat-column-effective {
+      min-inline-size: 9rem;
+    }
+    .rates-table .mat-column-rate,
+    .rates-table .mat-column-active {
+      min-inline-size: 7rem;
+    }
+    .rates-table th {
+      font-weight: 700;
     }
     .admin-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+      grid-template-columns: minmax(0, 1.5fr) minmax(20rem, 24rem);
       gap: 1.5rem;
       align-items: start;
+    }
+    .table-scroll {
+      overflow-x: hidden;
+    }
+    .rates-table {
+      table-layout: fixed;
+    }
+    .rates-table th,
+    .rates-table td {
+      white-space: normal;
+      overflow-wrap: anywhere;
     }
     .table-toolbar {
       display: flex;
@@ -290,6 +349,13 @@ export class CommissionRatesAdminPageComponent {
   readonly actionError = signal<string | null>(null);
 
   readonly percentOptions: Intl.NumberFormatOptions = { maximumFractionDigits: 2 };
+  readonly timeOnlyOptions: Intl.DateTimeFormatOptions = {
+    year: undefined,
+    month: undefined,
+    day: undefined,
+    hour: 'numeric',
+    minute: '2-digit',
+  };
   readonly displayedColumns = ['min', 'max', 'rate', 'effective', 'active', 'actions'];
 
   readonly form = new FormGroup({

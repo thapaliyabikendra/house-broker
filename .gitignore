@@ -58,3 +58,7 @@ Thumbs.db
 # Generated
 **/swagger.json
 ui/src/app/api/
+# Playwright E2E outputs
+tests/e2e/test-results/
+tests/e2e/artifacts/
+tests/e2e/playwright-report/

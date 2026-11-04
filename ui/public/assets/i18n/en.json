@@ -58,7 +58,7 @@
     "location": "Location",
     "minPrice": "Min price",
     "maxPrice": "Max price",
-    "propertyType": "Any type",
+    "propertyType": "Type",
     "bedrooms": "Bedrooms",
     "submit": "Search",
     "loading": "Loading listings...",

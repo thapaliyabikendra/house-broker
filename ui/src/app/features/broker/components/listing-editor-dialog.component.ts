@@ -257,15 +257,6 @@ export class ListingEditorDialogComponent {
   });
 
   constructor() {
-    this.lookupsData
-      .propertyTypes()
-      .then((types) => this.propertyTypes.set(types))
-      .catch(() => this.propertyTypes.set([]));
-    this.lookupsData
-      .features()
-      .then((items) => this.features.set(items))
-      .catch(() => this.features.set([]));
-
     // The dialog is opened with disableClose so every exit goes through requestClose(),
     // which asks before discarding edits.
     this.dialogRef
@@ -282,6 +273,9 @@ export class ListingEditorDialogComponent {
 
     if (this.listingId) {
       void this.load(this.listingId);
+    } else {
+      // Create mode still needs property types and features for the selects.
+      void this.loadLookups();
     }
   }
 
@@ -303,11 +297,30 @@ export class ListingEditorDialogComponent {
     this.dialogRef.close(false);
   }
 
+  private async loadLookups(): Promise<void> {
+    try {
+      this.propertyTypes.set(await this.lookupsData.propertyTypes());
+    } catch {
+      this.propertyTypes.set([]);
+    }
+    try {
+      this.features.set(await this.lookupsData.features());
+    } catch {
+      this.features.set([]);
+    }
+  }
+
   private async load(id: string): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const listing = await this.listingsData.getMineById(id);
+      const [propertyTypes, features, listing] = await Promise.all([
+        this.lookupsData.propertyTypes().catch(() => [] as PropertyTypeDto[]),
+        this.lookupsData.features().catch(() => [] as FeatureDto[]),
+        this.listingsData.getMineById(id),
+      ]);
+      this.propertyTypes.set(propertyTypes);
+      this.features.set(features);
       this.version.set(listing.version ?? null);
       this.form.patchValue({
         title: listing.title ?? '',
