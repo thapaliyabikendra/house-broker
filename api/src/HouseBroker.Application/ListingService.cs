@@ -320,6 +320,8 @@ public sealed class ListingService(
             query.PageSize = HouseBroker.Domain.Common.Limits.DefaultPageSize;
         }
 
+        _logger.LogDebug("Listing search normalized. Location {Location}, MinPrice {MinPrice}, MaxPrice {MaxPrice}, PropertyTypeId {PropertyTypeId}, Page {Page}, PageSize {PageSize}.", query.Location, query.MinPrice, query.MaxPrice, query.PropertyTypeId, query.Page, query.PageSize);
+
         var result = await _queries.SearchAsync(query, cancellationToken);
         return Result.Success<PagedResult<ListingSummaryDto>>(result);
     }

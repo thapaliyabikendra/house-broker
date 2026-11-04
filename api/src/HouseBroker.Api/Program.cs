@@ -76,6 +76,8 @@ builder.Services.AddHouseBrokerApi(builder.Configuration);
 builder.Services.AddHouseBrokerJsonOptions();
 builder.Services.AddHouseBrokerRateLimiting(builder.Configuration);
 builder.Services.AddHouseBrokerOpenApi();
+builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
+builder.Services.AddRequestTimeouts();
 
 var authIssuer = builder.Configuration["Auth:Issuer"] ?? builder.Configuration["Auth:Authority"] ?? "http://localhost:5000/sso";
 
@@ -237,6 +239,8 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.UseResponseCompression();
+app.UseRequestTimeouts();
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();

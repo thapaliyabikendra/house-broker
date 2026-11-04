@@ -24,7 +24,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddScoped<AuditSaveChangesInterceptor>();
         services.AddDbContext<AppDbContext>((provider, options) =>
         {
-            options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
+            options.UseSqlServer(connectionString, sql => { sql.EnableRetryOnFailure(); sql.CommandTimeout(30); });
             options.AddInterceptors(provider.GetRequiredService<AuditSaveChangesInterceptor>());
         });
 

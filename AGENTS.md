@@ -211,8 +211,6 @@ npm --prefix ui run i18n:check
 - Never edit generated Angular API files, generated migrations by hand, or seeded data outside the seeder.
 - Never run migrations automatically outside Development.
 
-## Known documentation inconsistencies (resolve before implementing)
+## Known documentation inconsistencies (resolved)
 
-This exists in the plan today. Treat [02-decisions.md](docs/plan/02-decisions.md), [03-architecture.md](docs/plan/03-architecture.md) and [04-standards.md](docs/plan/04-standards.md) as authoritative until the docs are reconciled:
-
-1. **Angular Material vs. Material 3:** decisions say Angular Material + CDK. The final compatible package version and whether the M3 theme is enabled are pinned during scaffolding at Phase 10 and recorded in `ui/package.json` and `ui/README.md`.
+1. **Angular Material vs. Material 3:** decisions say Angular Material + CDK. The final compatible package version and whether the M3 theme is enabled are pinned: Angular Material/CDK `^22.2.5`, M3 theme enabled via `mat.define-theme(...)` in `ui/src/styles.scss` (recorded in `ui/package.json` and `ui/README.md`).

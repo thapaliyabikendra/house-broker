@@ -25,6 +25,13 @@ public sealed class ReferenceDataController(ILookupService lookupService) : Cont
     public async Task<IActionResult> GetPropertyTypes(CancellationToken cancellationToken)
     {
         var result = await lookupService.GetPropertyTypesAsync(cancellationToken);
+        const string etagValue = "\"lookups-v1\"";
+        Response.Headers.ETag = etagValue;
+        Response.Headers.CacheControl = "public, max-age=300";
+        if (Request.Headers.IfNoneMatch == etagValue)
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
         return result.ToActionResult(this);
     }
 
@@ -39,6 +46,13 @@ public sealed class ReferenceDataController(ILookupService lookupService) : Cont
     public async Task<IActionResult> GetFeatures(CancellationToken cancellationToken)
     {
         var result = await lookupService.GetFeaturesAsync(cancellationToken);
+        const string etagValue = "\"lookups-v1\"";
+        Response.Headers.ETag = etagValue;
+        Response.Headers.CacheControl = "public, max-age=300";
+        if (Request.Headers.IfNoneMatch == etagValue)
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
         return result.ToActionResult(this);
     }
 

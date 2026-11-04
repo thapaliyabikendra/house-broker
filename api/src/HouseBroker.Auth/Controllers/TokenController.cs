@@ -8,6 +8,7 @@ using System.Security.Claims;
 namespace HouseBroker.Auth.Controllers;
 
 [ApiController]
+[Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
 public sealed class TokenController(IOpenIddictApplicationManager applicationManager) : ControllerBase
 {
     [HttpPost("~/connect/token")]

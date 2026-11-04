@@ -44,6 +44,19 @@ builder.WebHost.ConfigureKestrel(options =>
 
 builder.AddServiceDefaults();
 builder.Services.AddRazorPages();
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supported = new[] { "en", "ne" };
+    var cultures = supported.Select(value => new System.Globalization.CultureInfo(value)).ToList();
+    options.DefaultRequestCulture = new Microsoft.AspNetCore.Localization.RequestCulture("en");
+    options.SupportedCultures = cultures;
+    options.SupportedUICultures = cultures;
+    options.RequestCultureProviders = new List<Microsoft.AspNetCore.Localization.IRequestCultureProvider>
+    {
+        new HouseBroker.Auth.Localization.UiLocalesRequestCultureProvider()
+    }.Concat(options.RequestCultureProviders).ToList();
+});
 builder.Services.AddControllers();
 builder.Services.AddRateLimiter(options =>
 {
@@ -63,7 +76,7 @@ var connectionString = builder.Configuration.GetConnectionString("HouseBroker")
     ?? throw new InvalidOperationException("Connection string 'HouseBroker' is not configured.");
 
 builder.Services.AddHttpContextAccessor();
-builder.Services.AddDbContext<AuthDbContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddDbContext<AuthDbContext>(options => options.UseSqlServer(connectionString, sql => sql.CommandTimeout(30)));
 
 builder.Services.AddOptions<DatabaseOptions>()
     .Bind(builder.Configuration.GetSection(DatabaseOptions.SectionName))
@@ -90,7 +103,9 @@ else
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     options.HttpOnly = Microsoft.AspNetCore.CookiePolicy.HttpOnlyPolicy.Always;
-    options.Secure = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
+    options.Secure = builder.Environment.IsDevelopment()
+        ? Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest
+        : Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
     options.MinimumSameSitePolicy = SameSiteMode.Lax;
 });
 
@@ -119,10 +134,11 @@ builder.Services
     .AddCore(options => options.UseEntityFrameworkCore().UseDbContext<AuthDbContext>())
     .AddServer(options =>
     {
-        options.SetAuthorizationEndpointUris("/connect/authorize")
-            .SetTokenEndpointUris("/connect/token")
-            .SetUserInfoEndpointUris("/connect/userinfo")
-            .SetEndSessionEndpointUris("/connect/logout")
+        var pathBase = builder.Configuration["PathBase"] ?? "/sso";
+        options.SetAuthorizationEndpointUris($"{pathBase}/connect/authorize")
+            .SetTokenEndpointUris($"{pathBase}/connect/token")
+            .SetUserInfoEndpointUris($"{pathBase}/connect/userinfo")
+            .SetEndSessionEndpointUris($"{pathBase}/connect/logout")
             .SetIssuer(new Uri(builder.Configuration["Auth:Issuer"] ?? "http://localhost:5000/sso"));
 
         options.SetAccessTokenLifetime(TimeSpan.FromMinutes(15));
@@ -182,7 +198,11 @@ builder.Services
             options.AddSigningCertificate(signingCertificate);
         }
 
-        options.UseAspNetCore().EnableTokenEndpointPassthrough();
+        var aspNetCoreBuilder = options.UseAspNetCore().EnableTokenEndpointPassthrough();
+        if (builder.Environment.IsDevelopment())
+        {
+            aspNetCoreBuilder.DisableTransportSecurityRequirement();
+        }
 
         options.AddEventHandler<OpenIddictServerEvents.ProcessSignInContext>(builder =>
         {
@@ -296,6 +316,7 @@ app.UseHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.Health
     }
 });
 app.UseRateLimiter();
+app.UseRequestLocalization();
 app.UseAuthentication();
 app.UseAuthorization();
 

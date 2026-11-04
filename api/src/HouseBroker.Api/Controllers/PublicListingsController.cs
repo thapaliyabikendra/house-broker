@@ -50,6 +50,12 @@ public sealed class PublicListingsController(IListingService listingService, IIm
         if (result.IsSuccess)
         {
             this.SetETag(result.Value!.Version);
+            var etag = Response.Headers.ETag.ToString();
+            var ifNoneMatch = Request.Headers.IfNoneMatch.ToString();
+            if (!string.IsNullOrWhiteSpace(etag) && ifNoneMatch == etag)
+            {
+                return StatusCode(StatusCodes.Status304NotModified);
+            }
         }
 
         return result.ToActionResult(this);
@@ -73,6 +79,11 @@ public sealed class PublicListingsController(IListingService listingService, IIm
 
         Response.Headers.ETag = result.Value!.ETag ?? string.Empty;
         Response.Headers.CacheControl = "public, max-age=31536000";
+        var ifNoneMatch = Request.Headers.IfNoneMatch.ToString();
+        if (!string.IsNullOrWhiteSpace(result.Value.ETag) && ifNoneMatch == (result.Value.ETag ?? string.Empty))
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
         return File(result.Value.Stream, result.Value.ContentType);
     }
 }
