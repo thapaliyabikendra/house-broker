@@ -1,5 +1,5 @@
 using HouseBroker.Domain;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using HouseBroker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;

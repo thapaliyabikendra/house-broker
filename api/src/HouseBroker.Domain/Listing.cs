@@ -26,12 +26,12 @@ public sealed class Listing
     {
         if (brokerId == Guid.Empty)
         {
-            throw new Domain.Shared.DomainException(Domain.Shared.ErrorCodes.Required, nameof(brokerId));
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.Required, nameof(brokerId));
         }
 
         if (string.IsNullOrWhiteSpace(title))
         {
-            throw new Domain.Shared.DomainException(Domain.Shared.ErrorCodes.Required, nameof(title));
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.Required, nameof(title));
         }
 
         return new Listing
@@ -49,7 +49,7 @@ public sealed class Listing
             Bedrooms = bedrooms,
             Bathrooms = bathrooms,
             AreaSqFt = areaSqFt,
-            Status = Domain.Shared.ListingStatus.Draft,
+            Status = HouseBroker.Domain.Common.ListingStatus.Draft,
             CommissionRateId = Guid.Empty,
         };
     }
@@ -94,7 +94,7 @@ public sealed class Listing
     public decimal AreaSqFt { get; private set; }
 
     /// <summary>Gets the status.</summary>
-    public Domain.Shared.ListingStatus Status { get; private set; }
+    public HouseBroker.Domain.Common.ListingStatus Status { get; private set; }
 
     /// <summary>Gets the commission amount.</summary>
     public decimal CommissionAmount { get; private set; }
@@ -137,6 +137,7 @@ public sealed class Listing
     public Guid? DeletedBy { get; private set; }
 
     /// <summary>Gets the concurrency token.</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1819:Properties should not return arrays", Justification = "EF Core requires a byte array for rowversion concurrency tokens.")]
     public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
     /// <summary>Adds a feature.</summary>
@@ -225,6 +226,7 @@ public sealed class Listing
         int bathrooms,
         decimal areaSqFt)
     {
+        ArgumentNullException.ThrowIfNull(title);
         Title = title.Trim();
         Description = description?.Trim() ?? string.Empty;
         PropertyTypeId = propertyTypeId;
@@ -245,34 +247,34 @@ public sealed class Listing
     /// <summary>Publishes the listing.</summary>
     public void Publish()
     {
-        if (Status != Domain.Shared.ListingStatus.Draft)
+        if (Status != HouseBroker.Domain.Common.ListingStatus.Draft)
         {
-            throw new Domain.Shared.DomainException(Domain.Shared.ErrorCodes.Conflict, Status);
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.Conflict, Status);
         }
 
-        Status = Domain.Shared.ListingStatus.Active;
+        Status = HouseBroker.Domain.Common.ListingStatus.Active;
     }
 
     /// <summary>Marks the listing as sold.</summary>
     public void MarkSold()
     {
-        if (Status != Domain.Shared.ListingStatus.Active)
+        if (Status != HouseBroker.Domain.Common.ListingStatus.Active)
         {
-            throw new Domain.Shared.DomainException(Domain.Shared.ErrorCodes.Conflict, Status);
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.Conflict, Status);
         }
 
-        Status = Domain.Shared.ListingStatus.Sold;
+        Status = HouseBroker.Domain.Common.ListingStatus.Sold;
     }
 
     /// <summary>Archives the listing.</summary>
     public void Archive()
     {
-        if (Status == Domain.Shared.ListingStatus.Archived)
+        if (Status == HouseBroker.Domain.Common.ListingStatus.Archived)
         {
             return;
         }
 
-        Status = Domain.Shared.ListingStatus.Archived;
+        Status = HouseBroker.Domain.Common.ListingStatus.Archived;
     }
 
     /// <summary>Soft deletes the listing.</summary>
@@ -301,7 +303,7 @@ public sealed class Listing
     {
         if (newPrice < 0)
         {
-            throw new Domain.Shared.DomainException(Domain.Shared.ErrorCodes.OutOfRange, nameof(newPrice));
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.OutOfRange, nameof(newPrice));
         }
 
         Price = newPrice;

@@ -1,7 +1,7 @@
-namespace HouseBroker.Domain.Shared;
+namespace HouseBroker.Domain.Common;
 
 /// <summary>Permission claims carried by user access tokens.</summary>
-public static class Permissions
+public static class AppPermissions
 {
     /// <summary>May view listings.</summary>
     public const string ListingsView = "listings:view";

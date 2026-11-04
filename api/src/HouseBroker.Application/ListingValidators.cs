@@ -1,6 +1,6 @@
 using FluentValidation;
 using HouseBroker.Application.Contracts;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using System.Text.RegularExpressions;
 
 namespace HouseBroker.Application.Services;

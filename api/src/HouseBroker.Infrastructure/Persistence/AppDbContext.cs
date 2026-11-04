@@ -68,7 +68,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.HasKey(listing => listing.Id);
         entity.Property(listing => listing.Id).ValueGeneratedNever();
         entity.Property(listing => listing.BrokerId).IsRequired();
-        entity.Property(listing => listing.Title).IsRequired().HasMaxLength(Domain.Shared.Limits.MaxTitleLength);
+        entity.Property(listing => listing.Title).IsRequired().HasMaxLength(Domain.Common.Limits.MaxTitleLength);
         entity.Property(listing => listing.Description).IsRequired();
         entity.Property(listing => listing.Price).HasPrecision(18, 2);
         entity.Property(listing => listing.Province).IsRequired().HasMaxLength(100);

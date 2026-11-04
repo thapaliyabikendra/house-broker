@@ -1,7 +1,7 @@
 using HouseBroker.Application.Contracts;
 using HouseBroker.Application.Services;
 using HouseBroker.Domain;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using HouseBroker.TestSupport;
 using Moq;
 using Xunit;
@@ -21,7 +21,7 @@ public sealed class ListingFeatureTests
             .ReturnsAsync(Array.Empty<Feature>());
 
         var request = CreateRequest();
-        request.FeatureIds = new List<Guid> { unknownFeatureId };
+        request.FeatureIds.Add(unknownFeatureId);
 
         var result = await service.CreateAsync(request, CancellationToken.None);
 
@@ -40,7 +40,7 @@ public sealed class ListingFeatureTests
             .ReturnsAsync(new[] { feature });
 
         var request = CreateRequest();
-        request.FeatureIds = new List<Guid> { feature.Id };
+        request.FeatureIds.Add(feature.Id);
 
         var result = await service.CreateAsync(request, CancellationToken.None);
 

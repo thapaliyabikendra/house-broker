@@ -10,6 +10,7 @@ public sealed class CorrelationIdMiddleware(RequestDelegate next)
     /// <summary>Invokes the middleware.</summary>
     public async Task InvokeAsync(HttpContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         var incoming = context.Request.Headers["X-Correlation-Id"].FirstOrDefault();
         var correlationId = incoming is not null && ValidCorrelationId.IsMatch(incoming)
             ? incoming
@@ -26,6 +27,6 @@ public sealed class CorrelationIdMiddleware(RequestDelegate next)
             return Task.CompletedTask;
         });
 
-        await next(context);
+        await next(context).ConfigureAwait(false);
     }
 }

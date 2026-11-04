@@ -4,16 +4,20 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.FeatureManagement;
 using System.Globalization;
-
+using Serilog;
+using Asp.Versioning;
 
 namespace HouseBroker.ServiceDefaults;
 
 /// <summary>Service-defaults extensions.</summary>
 public static class ServiceDefaultsExtensions
 {
+    private static readonly string[] SupportedCultureNames = ["en", "ne"];
+
     /// <summary>Adds shared service defaults.</summary>
     public static IHostApplicationBuilder AddServiceDefaults(this IHostApplicationBuilder builder)
     {
+        ArgumentNullException.ThrowIfNull(builder);
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddHealthChecks();
         builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
@@ -21,9 +25,22 @@ public static class ServiceDefaultsExtensions
         builder.Services.AddProblemDetails();
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+        builder.Logging.AddSerilog(new LoggerConfiguration().WriteTo.Console(formatProvider: CultureInfo.InvariantCulture).CreateLogger(), dispose: true);
+
+        builder.Services.AddApiVersioning(options =>
+        {
+            options.DefaultApiVersion = new ApiVersion(1, 0);
+            options.AssumeDefaultVersionWhenUnspecified = true;
+            options.ReportApiVersions = true;
+        }).AddApiExplorer(options =>
+        {
+            options.GroupNameFormat = "'v'VERSION";
+            options.SubstituteApiVersionInUrl = true;
+        });
+
         builder.Services.Configure<RequestLocalizationOptions>(options =>
         {
-            var cultures = new[] { "en", "ne" };
+            var cultures = SupportedCultureNames;
             var supportedCultures = cultures.Select(culture => new CultureInfo(culture)).ToArray();
             options.DefaultRequestCulture = new RequestCulture("en");
             options.SupportedCultures = supportedCultures;
@@ -47,35 +64,9 @@ public static class ServiceDefaultsExtensions
         app.UseMiddleware<CorrelationIdMiddleware>();
         app.UseMiddleware<CultureResponseMiddleware>();
 
-        app.Use(async (context, next) =>
-        {
-            context.Response.OnStarting(() =>
-            {
-                if (!context.Response.Headers.ContainsKey("X-Content-Type-Options"))
-                {
-                    context.Response.Headers["X-Content-Type-Options"] = "nosniff";
-                }
+        app.UseSerilogRequestLogging();
 
-                if (!context.Response.Headers.ContainsKey("X-Frame-Options"))
-                {
-                    context.Response.Headers["X-Frame-Options"] = "DENY";
-                }
-
-                if (!context.Response.Headers.ContainsKey("Referrer-Policy"))
-                {
-                    context.Response.Headers["Referrer-Policy"] = "no-referrer";
-                }
-
-                if (!context.Response.Headers.ContainsKey("Content-Security-Policy"))
-                {
-                    context.Response.Headers["Content-Security-Policy"] = "default-src 'self'";
-                }
-
-                return Task.CompletedTask;
-            });
-
-            await next();
-        });
+        app.UseSecurityHeaders();
 
         app.UseHealthChecks("/health/live");
         return app;

@@ -35,7 +35,10 @@ public sealed class UtcDateTimeJsonConverter : JsonConverter<DateTime>
 
     /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
-        => writer.WriteStringValue(ToUtc(value).ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture));
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.WriteStringValue(ToUtc(value).ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture));
+    }
 
     private static DateTime ToUtc(DateTime value)
         => value.Kind switch
@@ -76,5 +79,8 @@ public sealed class UtcDateTimeOffsetJsonConverter : JsonConverter<DateTimeOffse
 
     /// <inheritdoc />
     public override void Write(Utf8JsonWriter writer, DateTimeOffset value, JsonSerializerOptions options)
-        => writer.WriteStringValue(value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture));
+    {
+        ArgumentNullException.ThrowIfNull(writer);
+        writer.WriteStringValue(value.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture));
+    }
 }

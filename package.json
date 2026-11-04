@@ -1,0 +1,7 @@
+{
+  "name": "house-broker",
+  "private": true,
+  "scripts": {
+    "prepare": "cd ui && husky install"
+  }
+}

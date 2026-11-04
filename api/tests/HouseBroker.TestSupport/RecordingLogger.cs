@@ -2,6 +2,12 @@ using Microsoft.Extensions.Logging;
 
 namespace HouseBroker.TestSupport;
 
+/// <summary>A captured log entry.</summary>
+/// <param name="Level">The log level.</param>
+/// <param name="Message">The formatted message.</param>
+/// <param name="State">The structured log state.</param>
+public sealed record LogEntry(LogLevel Level, string Message, object? State);
+
 /// <summary>Captures log entries for assertions.</summary>
 public sealed class RecordingLogger<T> : ILogger<T>
 {
@@ -23,11 +29,8 @@ public sealed class RecordingLogger<T> : ILogger<T>
         TState state,
         Exception? exception,
         Func<TState, Exception?, string> formatter)
-        => _entries.Add(new LogEntry(logLevel, formatter(state, exception), state));
-
-    /// <summary>A captured log entry.</summary>
-    /// <param name="Level">The log level.</param>
-    /// <param name="Message">The formatted message.</param>
-    /// <param name="State">The structured log state.</param>
-    public sealed record LogEntry(LogLevel Level, string Message, object? State);
+    {
+        ArgumentNullException.ThrowIfNull(formatter);
+        _entries.Add(new LogEntry(logLevel, formatter(state, exception), state));
+    }
 }

@@ -1,4 +1,4 @@
-namespace HouseBroker.Domain.Shared;
+namespace HouseBroker.Domain.Common;
 
 /// <summary>Supported cultures and defaults.</summary>
 public static class SupportedCultures

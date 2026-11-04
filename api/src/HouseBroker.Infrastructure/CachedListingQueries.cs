@@ -64,4 +64,8 @@ public sealed class CachedListingQueries(IListingQueries inner, ICacheService ca
     /// <inheritdoc />
     public Task<IReadOnlyList<HouseBroker.Domain.Feature>> GetFeaturesAsync(CancellationToken cancellationToken)
         => _inner.GetFeaturesAsync(cancellationToken);
+
+    /// <inheritdoc />
+    public Task UpsertBrokerProfileAsync(HouseBroker.Domain.BrokerProfile profile, CancellationToken cancellationToken)
+        => _inner.UpsertBrokerProfileAsync(profile, cancellationToken);
 }

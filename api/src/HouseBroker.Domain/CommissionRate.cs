@@ -100,6 +100,7 @@ public sealed class CommissionRate
     public Guid? UpdatedBy { get; private set; }
 
     /// <summary>Gets the concurrency token.</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1819:Properties should not return arrays", Justification = "EF Core requires a byte array for rowversion concurrency tokens.")]
     public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
     /// <summary>Updates tier values.</summary>

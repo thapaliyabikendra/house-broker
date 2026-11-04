@@ -18,7 +18,7 @@ public sealed class ListingETagTests
         var version = Convert.ToBase64String(new byte[] { 1, 2, 3, 4 });
         var service = new Mock<IListingService>();
         service.Setup(listing => listing.GetDetailAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<ListingDetailDto>.Success(new ListingDetailDto { Version = version }));
+            .ReturnsAsync(Result.Success<ListingDetailDto>(new ListingDetailDto { Version = version }));
         var controller = new PublicListingsController(service.Object, Mock.Of<IImageStorage>())
         {
             ControllerContext = new ControllerContext { HttpContext = CreateHttpContext() },
@@ -36,7 +36,7 @@ public sealed class ListingETagTests
         var version = Convert.ToBase64String(new byte[] { 5, 6, 7, 8 });
         var service = new Mock<IListingService>();
         service.Setup(listing => listing.GetOwnerDetailAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<OwnerListingDto>.Success(new OwnerListingDto { Version = version }));
+            .ReturnsAsync(Result.Success<OwnerListingDto>(new OwnerListingDto { Version = version }));
         var controller = new BrokerListingsController(service.Object, Mock.Of<IImageStorage>())
         {
             ControllerContext = new ControllerContext { HttpContext = CreateHttpContext() },
@@ -53,7 +53,7 @@ public sealed class ListingETagTests
     {
         var service = new Mock<IListingService>();
         service.Setup(listing => listing.GetDetailAsync(It.IsAny<Guid>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<ListingDetailDto>.Success(new ListingDetailDto()));
+            .ReturnsAsync(Result.Success<ListingDetailDto>(new ListingDetailDto()));
         var controller = new PublicListingsController(service.Object, Mock.Of<IImageStorage>())
         {
             ControllerContext = new ControllerContext { HttpContext = CreateHttpContext() },

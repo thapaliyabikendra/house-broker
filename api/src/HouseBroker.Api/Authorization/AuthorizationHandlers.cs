@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using HouseBroker.Domain;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 
 namespace HouseBroker.Api.Authorization;
 
@@ -9,14 +9,14 @@ internal static class PermissionScopeMap
 {
     private static readonly Dictionary<string, string> Map = new(StringComparer.Ordinal)
     {
-        [Permissions.ListingsView] = Scopes.ListingsRead,
-        [Permissions.ListingsContactView] = Scopes.ContactsRead,
-        [Permissions.ListingsCreate] = Scopes.ListingsWrite,
-        [Permissions.ListingsUpdate] = Scopes.ListingsWrite,
-        [Permissions.ListingsDelete] = Scopes.ListingsWrite,
-        [Permissions.ListingsImagesManage] = Scopes.ListingsWrite,
-        [Permissions.CommissionView] = Scopes.CommissionRead,
-        [Permissions.CommissionRatesManage] = Scopes.AdminCommission,
+        [AppPermissions.ListingsView] = Scopes.ListingsRead,
+        [AppPermissions.ListingsContactView] = Scopes.ContactsRead,
+        [AppPermissions.ListingsCreate] = Scopes.ListingsWrite,
+        [AppPermissions.ListingsUpdate] = Scopes.ListingsWrite,
+        [AppPermissions.ListingsDelete] = Scopes.ListingsWrite,
+        [AppPermissions.ListingsImagesManage] = Scopes.ListingsWrite,
+        [AppPermissions.CommissionView] = Scopes.CommissionRead,
+        [AppPermissions.CommissionRatesManage] = Scopes.AdminCommission,
     };
 
     /// <summary>Gets the required scope for a permission.</summary>
@@ -24,7 +24,7 @@ internal static class PermissionScopeMap
 
     /// <summary>Determines whether a permission is read-only.</summary>
     public static bool IsRead(string permission)
-        => permission is Permissions.ListingsView or Permissions.ListingsContactView;
+        => permission is AppPermissions.ListingsView or AppPermissions.ListingsContactView;
 }
 
 /// <summary>Requires a permission.</summary>

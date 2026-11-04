@@ -26,7 +26,7 @@ public static class ResultExtensions
         return ToProblemResult(controller, result.Error!);
     }
 
-    private static IActionResult ToProblemResult(ControllerBase controller, Error error)
+    private static IActionResult ToProblemResult(ControllerBase controller, ApplicationError error)
     {
         var statusCode = error.Kind switch
         {

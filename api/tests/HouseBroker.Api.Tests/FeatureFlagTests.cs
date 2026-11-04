@@ -1,6 +1,6 @@
 using HouseBroker.Api.Controllers;
 using HouseBroker.Api.Filters;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using HouseBroker.ServiceDefaults;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

@@ -14,7 +14,7 @@ public static class CommissionCalculator
         var tier = tiers.FirstOrDefault(tier => tier.IsActive && tier.EffectiveFrom <= nowUtc && tier.Covers(price));
         if (tier is null)
         {
-            throw new Domain.Shared.DomainException(Domain.Shared.ErrorCodes.NotFound, "commission.rate");
+            throw new Domain.Common.DomainException(Domain.Common.ErrorCodes.NotFound, "commission.rate");
         }
 
         var amount = Math.Round(price * tier.RatePercent / 100m, 2, MidpointRounding.AwayFromZero);

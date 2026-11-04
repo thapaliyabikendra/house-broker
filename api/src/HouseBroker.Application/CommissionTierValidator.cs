@@ -43,7 +43,7 @@ public static class CommissionTierValidator
             }
         }
 
-        if (active.Count(tier => tier.MaxPrice is null) > 0 && active[^1].MaxPrice is not null)
+        if (active.Any(tier => tier.MaxPrice is null) && active[^1].MaxPrice is not null)
         {
             errors.Add("The open-ended tier must be the final tier.");
         }

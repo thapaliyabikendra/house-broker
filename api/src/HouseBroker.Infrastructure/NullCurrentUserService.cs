@@ -9,6 +9,15 @@ public sealed class NullCurrentUserService : ICurrentUserService
     public Guid? UserId => null;
 
     /// <inheritdoc />
+    public string? FullName => null;
+
+    /// <inheritdoc />
+    public string? Email => null;
+
+    /// <inheritdoc />
+    public string? PhoneNumber => null;
+
+    /// <inheritdoc />
     public IReadOnlyCollection<string> Roles => Array.Empty<string>();
 
     /// <inheritdoc />

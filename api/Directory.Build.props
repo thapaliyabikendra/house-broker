@@ -3,6 +3,14 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <AnalysisMode>All</AnalysisMode>
+    <NoWarn>CA2007;CA1848;CA1873;CA1707;CA2234</NoWarn>
+    <!-- 
+      NU1902, NU1903, NU1904 are silenced as errors because they currently 
+      refer to transitive framework vulnerabilities in .NET 10 baseline 
+      that are not yet resolvable via top-level version bumps.
+    -->
     <WarningsNotAsErrors>NU1902;NU1903;NU1904</WarningsNotAsErrors>
   </PropertyGroup>
 </Project>

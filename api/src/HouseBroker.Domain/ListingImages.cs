@@ -87,6 +87,7 @@ public sealed class ListingImageData
     public Guid ListingImageId { get; private set; }
 
     /// <summary>Gets the binary content.</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1819:Properties should not return arrays", Justification = "Binary image content is represented as a byte array for storage and streaming.")]
     public byte[] Content { get; private set; } = Array.Empty<byte>();
 }
 

@@ -1,10 +1,10 @@
 namespace HouseBroker.Application.Contracts;
 
 /// <summary>Expected failure details.</summary>
-public sealed record Error
+public sealed record ApplicationError
 {
     /// <summary>Initializes an error.</summary>
-    public Error(string code, ErrorKind kind, string? field = null, params object?[] arguments)
+    public ApplicationError(string code, ErrorKind kind, string? field = null, params object?[] arguments)
     {
         Code = code;
         Kind = kind;

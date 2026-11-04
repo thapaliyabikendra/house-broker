@@ -4,7 +4,7 @@ namespace HouseBroker.Application.Contracts;
 /// <typeparam name="T">The success value type.</typeparam>
 public sealed class Result<T>
 {
-    private Result(bool isSuccess, T? value, Error? error)
+    internal Result(bool isSuccess, T? value, ApplicationError? error)
     {
         IsSuccess = isSuccess;
         Value = value;
@@ -18,11 +18,5 @@ public sealed class Result<T>
     public T? Value { get; }
 
     /// <summary>Gets the failure details.</summary>
-    public Error? Error { get; }
-
-    /// <summary>Creates a successful result.</summary>
-    public static Result<T> Success(T value) => new(true, value, null);
-
-    /// <summary>Creates a failed result.</summary>
-    public static Result<T> Failure(Error error) => new(false, default, error);
+    public ApplicationError? Error { get; }
 }

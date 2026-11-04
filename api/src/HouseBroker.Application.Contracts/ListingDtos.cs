@@ -1,5 +1,7 @@
 namespace HouseBroker.Application.Contracts;
 
+using System.Collections.ObjectModel;
+
 /// <summary>Image DTO.</summary>
 public sealed class ListingImageDto
 {
@@ -122,10 +124,10 @@ public class ListingDetailDto
     public string Status { get; set; } = string.Empty;
 
     /// <summary>Gets or sets the images.</summary>
-    public List<ListingImageDto> Images { get; set; } = new();
+    public Collection<ListingImageDto> Images { get; } = new();
 
     /// <summary>Gets or sets the features.</summary>
-    public List<ListingFeatureDto> Features { get; set; } = new();
+    public Collection<ListingFeatureDto> Features { get; } = new();
 
     /// <summary>Gets or sets the broker contact.</summary>
     public BrokerContactDto? BrokerContact { get; set; }
@@ -185,7 +187,7 @@ public sealed class ListingSearchQuery
     public int? Bedrooms { get; set; }
 
     /// <summary>Gets or sets the feature identifiers.</summary>
-    public List<Guid> FeatureIds { get; set; } = new();
+    public Collection<Guid> FeatureIds { get; } = new();
 
     /// <summary>Gets or sets the page.</summary>
     public int Page { get; set; } = 1;

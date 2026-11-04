@@ -1,6 +1,6 @@
 using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using System.Text.Json;
 
 namespace HouseBroker.Application.Services;
@@ -23,12 +23,13 @@ public sealed class CommissionRateAdminService(
     public async Task<Result<IReadOnlyList<CommissionRateDto>>> GetAllAsync(CancellationToken cancellationToken)
     {
         var rates = await _repository.GetAllAsync(cancellationToken);
-        return Result<IReadOnlyList<CommissionRateDto>>.Success(rates.Select(Map).ToList());
+        return Result.Success<IReadOnlyList<CommissionRateDto>>(rates.Select(Map).ToList());
     }
 
     /// <inheritdoc />
     public async Task<Result<CommissionRateDto>> CreateAsync(CommissionRateRequest request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var now = _clock.GetUtcNow().UtcDateTime;
         var effectiveFrom = request.EffectiveFrom == default ? now : request.EffectiveFrom;
 
@@ -44,7 +45,7 @@ public sealed class CommissionRateAdminService(
 
         if (errors.Count > 0)
         {
-            return Result<CommissionRateDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation));
+            return Result.Failure<CommissionRateDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation));
         }
 
         await _repository.AddAsync(candidate, cancellationToken);
@@ -65,26 +66,27 @@ public sealed class CommissionRateAdminService(
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         await _cache.InvalidateCommissionRatesAsync(cancellationToken);
 
-        return Result<CommissionRateDto>.Success(Map(candidate));
+        return Result.Success<CommissionRateDto>(Map(candidate));
     }
 
     /// <inheritdoc />
     public async Task<Result<CommissionRateDto>> UpdateAsync(Guid id, CommissionRateRequest request, string? ifMatch, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var rate = await _repository.GetByIdAsync(id, cancellationToken);
         if (rate is null)
         {
-            return Result<CommissionRateDto>.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure<CommissionRateDto>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
         if (string.IsNullOrWhiteSpace(ifMatch))
         {
-            return Result<CommissionRateDto>.Failure(new Error(ErrorCodes.PreconditionRequired, ErrorKind.PreconditionRequired));
+            return Result.Failure<CommissionRateDto>(new ApplicationError(ErrorCodes.PreconditionRequired, ErrorKind.PreconditionRequired));
         }
 
         if (!ListingService.MatchesRowVersion(rate.RowVersion, ifMatch))
         {
-            return Result<CommissionRateDto>.Failure(new Error(ErrorCodes.PreconditionFailed, ErrorKind.PreconditionFailed));
+            return Result.Failure<CommissionRateDto>(new ApplicationError(ErrorCodes.PreconditionFailed, ErrorKind.PreconditionFailed));
         }
 
         var now = _clock.GetUtcNow().UtcDateTime;
@@ -110,7 +112,7 @@ public sealed class CommissionRateAdminService(
 
         if (errors.Count > 0)
         {
-            return Result<CommissionRateDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation));
+            return Result.Failure<CommissionRateDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation));
         }
 
         var oldValues = JsonSerializer.Serialize(Map(rate));
@@ -132,7 +134,7 @@ public sealed class CommissionRateAdminService(
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         await _cache.InvalidateCommissionRatesAsync(cancellationToken);
 
-        return Result<CommissionRateDto>.Success(Map(rate));
+        return Result.Success<CommissionRateDto>(Map(rate));
     }
 
     private static CommissionRateDto Map(CommissionRate rate)

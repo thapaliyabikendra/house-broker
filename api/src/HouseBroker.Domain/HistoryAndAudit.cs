@@ -8,7 +8,7 @@ public sealed class ListingStatusHistory
     }
 
     /// <summary>Initializes a status history entry.</summary>
-    public static ListingStatusHistory Create(Guid listingId, Domain.Shared.ListingStatus? fromStatus, Domain.Shared.ListingStatus toStatus, Guid? changedBy, DateTime changedAt, string? reason)
+    public static ListingStatusHistory Create(Guid listingId, HouseBroker.Domain.Common.ListingStatus? fromStatus, HouseBroker.Domain.Common.ListingStatus toStatus, Guid? changedBy, DateTime changedAt, string? reason)
         => new()
         {
             Id = Guid.CreateVersion7(),
@@ -27,10 +27,10 @@ public sealed class ListingStatusHistory
     public Guid ListingId { get; private set; }
 
     /// <summary>Gets the previous status.</summary>
-    public Domain.Shared.ListingStatus? FromStatus { get; private set; }
+    public HouseBroker.Domain.Common.ListingStatus? FromStatus { get; private set; }
 
     /// <summary>Gets the new status.</summary>
-    public Domain.Shared.ListingStatus ToStatus { get; private set; }
+    public HouseBroker.Domain.Common.ListingStatus ToStatus { get; private set; }
 
     /// <summary>Gets the actor.</summary>
     public Guid? ChangedBy { get; private set; }

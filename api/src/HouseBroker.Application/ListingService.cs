@@ -1,6 +1,6 @@
 using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using Microsoft.Extensions.Logging;
 using System.Text;
 
@@ -31,11 +31,12 @@ public sealed class ListingService(
     /// <inheritdoc />
     public async Task<Result<OwnerListingDto>> CreateAsync(CreateListingRequest request, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var brokerId = _currentUser.UserId;
         if (brokerId is null)
         {
             _logger.LogWarning("Listing creation was rejected because the caller is not an authenticated broker.");
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
         // Sync broker profile from token claims
@@ -47,18 +48,18 @@ public sealed class ListingService(
         if (!createValidation.IsValid)
         {
             var failure = createValidation.Errors[0];
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, failure.PropertyName));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation, failure.PropertyName));
         }
 
 
-        var featureIds = (request.FeatureIds ?? new List<Guid>())
+        var featureIds = request.FeatureIds
             .Where(featureId => featureId != Guid.Empty)
             .Distinct()
             .ToList();
         var featureLookup = await GetFeatureLookupAsync(featureIds, cancellationToken);
         if (featureIds.Any(featureId => !featureLookup.ContainsKey(featureId)))
         {
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, nameof(CreateListingRequest.FeatureIds)));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation, nameof(CreateListingRequest.FeatureIds)));
         }
 
         var listing = Listing.Create(
@@ -86,17 +87,18 @@ public sealed class ListingService(
 
         _logger.LogInformation("Listing {ListingId} created by broker {BrokerId}.", listing.Id, brokerId.Value);
 
-        return Result<OwnerListingDto>.Success(MapOwner(listing, featureLookup));
+        return Result.Success<OwnerListingDto>(MapOwner(listing, featureLookup));
     }
 
     /// <inheritdoc />
     public async Task<Result<OwnerListingDto>> UpdateAsync(Guid id, UpdateListingRequest request, string? ifMatch, CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
         var brokerId = _currentUser.UserId;
         if (brokerId is null)
         {
             _logger.LogWarning("Access to listing {ListingId} was rejected because the caller is not an authenticated broker.", id);
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
         // Sync broker profile from token claims
@@ -105,13 +107,13 @@ public sealed class ListingService(
         var listing = await _repository.GetByIdAsync(id, cancellationToken);
         if (listing is null)
         {
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
         if (listing.BrokerId != brokerId.Value)
         {
             _logger.LogWarning("Access to listing {ListingId} by broker {BrokerId} was rejected because the caller is not the owner.", id, brokerId.Value);
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
         NormalizeRequest(request);
@@ -120,29 +122,29 @@ public sealed class ListingService(
         if (!updateValidation.IsValid)
         {
             var failure = updateValidation.Errors[0];
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, failure.PropertyName));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation, failure.PropertyName));
         }
 
-        var featureIds = (request.FeatureIds ?? new List<Guid>())
+        var featureIds = request.FeatureIds
             .Where(featureId => featureId != Guid.Empty)
             .Distinct()
             .ToList();
         var featureLookup = await GetFeatureLookupAsync(featureIds, cancellationToken);
         if (featureIds.Any(featureId => !featureLookup.ContainsKey(featureId)))
         {
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, nameof(UpdateListingRequest.FeatureIds)));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation, nameof(UpdateListingRequest.FeatureIds)));
         }
 
         if (string.IsNullOrWhiteSpace(ifMatch))
         {
             _logger.LogWarning("Update of listing {ListingId} by broker {BrokerId} was rejected because If-Match was missing.", id, brokerId.Value);
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.PreconditionRequired, ErrorKind.PreconditionRequired));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.PreconditionRequired, ErrorKind.PreconditionRequired));
         }
 
         if (!MatchesRowVersion(listing.RowVersion, ifMatch))
         {
             _logger.LogWarning("Update of listing {ListingId} by broker {BrokerId} was rejected because If-Match was stale.", id, brokerId.Value);
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.PreconditionFailed, ErrorKind.PreconditionFailed));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.PreconditionFailed, ErrorKind.PreconditionFailed));
         }
 
         var oldPrice = listing.Price;
@@ -191,7 +193,7 @@ public sealed class ListingService(
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         _logger.LogInformation("Listing {ListingId} updated by broker {BrokerId}.", listing.Id, brokerId.Value);
-        return Result<OwnerListingDto>.Success(MapOwner(listing, featureLookup));
+        return Result.Success<OwnerListingDto>(MapOwner(listing, featureLookup));
     }
 
     /// <inheritdoc />
@@ -201,19 +203,19 @@ public sealed class ListingService(
         if (brokerId is null)
         {
             _logger.LogWarning("Listing deletion was rejected because the caller is not an authenticated broker.");
-            return Result.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
+            return Result.Failure(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
         var listing = await _repository.GetByIdAsync(id, cancellationToken);
         if (listing is null)
         {
-            return Result.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
         if (listing.BrokerId != brokerId.Value)
         {
             _logger.LogWarning("Deletion of listing {ListingId} by broker {BrokerId} was rejected because the caller is not the owner.", id, brokerId.Value);
-            return Result.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
+            return Result.Failure(new ApplicationError(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
         listing.SoftDelete();
@@ -228,7 +230,7 @@ public sealed class ListingService(
         var listing = await _queries.GetPublicAsync(id, cancellationToken);
         if (listing is null || listing.Status != ListingStatus.Active)
         {
-            return Result<ListingDetailDto>.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure<ListingDetailDto>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
         var dto = MapDetail(listing);
@@ -246,7 +248,7 @@ public sealed class ListingService(
             }
         }
 
-        return Result<ListingDetailDto>.Success(dto);
+        return Result.Success<ListingDetailDto>(dto);
     }
 
     /// <inheritdoc />
@@ -256,22 +258,22 @@ public sealed class ListingService(
         if (brokerId is null)
         {
             _logger.LogWarning("Access to listing {ListingId} was rejected because the caller is not an authenticated broker.", id);
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
         var listing = await _repository.GetByIdAsync(id, cancellationToken);
         if (listing is null)
         {
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
         if (listing.BrokerId != brokerId.Value)
         {
             _logger.LogWarning("Access to listing {ListingId} by broker {BrokerId} was rejected because the caller is not the owner.", id, brokerId.Value);
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
-        return Result<OwnerListingDto>.Success(MapOwner(listing));
+        return Result.Success<OwnerListingDto>(MapOwner(listing));
     }
 
     /// <inheritdoc />
@@ -279,12 +281,12 @@ public sealed class ListingService(
     {
         if (query is null)
         {
-            return Result<PagedResult<ListingSummaryDto>>.Failure(new Error(ErrorCodes.Required, ErrorKind.Validation, nameof(query)));
+            return Result.Failure<PagedResult<ListingSummaryDto>>(new ApplicationError(ErrorCodes.Required, ErrorKind.Validation, nameof(query)));
         }
 
         if (query.MinPrice.HasValue && query.MaxPrice.HasValue && query.MinPrice.Value > query.MaxPrice.Value)
         {
-            return Result<PagedResult<ListingSummaryDto>>.Failure(new Error(ErrorCodes.OutOfRange, ErrorKind.Validation, nameof(query.MinPrice)));
+            return Result.Failure<PagedResult<ListingSummaryDto>>(new ApplicationError(ErrorCodes.OutOfRange, ErrorKind.Validation, nameof(query.MinPrice)));
         }
 
         if (query.Location is not null)
@@ -292,20 +294,20 @@ public sealed class ListingService(
             query.Location = NormalizeText(query.Location);
         }
 
-        if (!string.IsNullOrWhiteSpace(query.Location) && query.Location.Trim().Length > HouseBroker.Domain.Shared.Limits.MaxSearchTextLength)
+        if (!string.IsNullOrWhiteSpace(query.Location) && query.Location.Trim().Length > HouseBroker.Domain.Common.Limits.MaxSearchTextLength)
         {
-            return Result<PagedResult<ListingSummaryDto>>.Failure(new Error(ErrorCodes.OutOfRange, ErrorKind.Validation, nameof(query.Location)));
+            return Result.Failure<PagedResult<ListingSummaryDto>>(new ApplicationError(ErrorCodes.OutOfRange, ErrorKind.Validation, nameof(query.Location)));
         }
 
         query.Page = Math.Max(1, query.Page);
-        query.PageSize = Math.Clamp(query.PageSize, 1, HouseBroker.Domain.Shared.Limits.MaxPageSize);
+        query.PageSize = Math.Clamp(query.PageSize, 1, HouseBroker.Domain.Common.Limits.MaxPageSize);
         if (query.PageSize == 0)
         {
-            query.PageSize = HouseBroker.Domain.Shared.Limits.DefaultPageSize;
+            query.PageSize = HouseBroker.Domain.Common.Limits.DefaultPageSize;
         }
 
         var result = await _queries.SearchAsync(query, cancellationToken);
-        return Result<PagedResult<ListingSummaryDto>>.Success(result);
+        return Result.Success<PagedResult<ListingSummaryDto>>(result);
     }
 
     /// <inheritdoc />
@@ -315,11 +317,11 @@ public sealed class ListingService(
         if (brokerId is null)
         {
             _logger.LogWarning("Listing retrieval was rejected because the caller is not an authenticated broker.");
-            return Result<IReadOnlyList<OwnerListingDto>>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
+            return Result.Failure<IReadOnlyList<OwnerListingDto>>(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
         var listings = await _queries.GetMineAsync(brokerId.Value, cancellationToken);
-        return Result<IReadOnlyList<OwnerListingDto>>.Success(listings.Select(listing => MapOwner(listing)).ToList());
+        return Result.Success<IReadOnlyList<OwnerListingDto>>(listings.Select(listing => MapOwner(listing)).ToList());
     }
 
     /// <inheritdoc />
@@ -329,26 +331,26 @@ public sealed class ListingService(
         if (brokerId is null)
         {
             _logger.LogWarning("Access to listing {ListingId} was rejected because the caller is not an authenticated broker.", id);
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
         var listing = await _repository.GetByIdAsync(id, cancellationToken);
         if (listing is null)
         {
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
         if (listing.BrokerId != brokerId.Value)
         {
             _logger.LogWarning("Access to listing {ListingId} by broker {BrokerId} was rejected because the caller is not the owner.", id, brokerId.Value);
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
         var fromStatus = listing.Status;
         listing.Publish();
         await _repository.AddStatusHistoryAsync(ListingStatusHistory.Create(listing.Id, fromStatus, listing.Status, brokerId.Value, _clock.GetUtcNow().UtcDateTime, null), cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return Result<OwnerListingDto>.Success(MapOwner(listing));
+        return Result.Success<OwnerListingDto>(MapOwner(listing));
     }
 
     /// <inheritdoc />
@@ -358,26 +360,26 @@ public sealed class ListingService(
         if (brokerId is null)
         {
             _logger.LogWarning("Access to listing {ListingId} was rejected because the caller is not an authenticated broker.", id);
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
         var listing = await _repository.GetByIdAsync(id, cancellationToken);
         if (listing is null)
         {
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
         if (listing.BrokerId != brokerId.Value)
         {
             _logger.LogWarning("Access to listing {ListingId} by broker {BrokerId} was rejected because the caller is not the owner.", id, brokerId.Value);
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
         var fromStatus = listing.Status;
         listing.MarkSold();
         await _repository.AddStatusHistoryAsync(ListingStatusHistory.Create(listing.Id, fromStatus, listing.Status, brokerId.Value, _clock.GetUtcNow().UtcDateTime, null), cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return Result<OwnerListingDto>.Success(MapOwner(listing));
+        return Result.Success<OwnerListingDto>(MapOwner(listing));
     }
 
     /// <inheritdoc />
@@ -387,19 +389,19 @@ public sealed class ListingService(
         if (brokerId is null)
         {
             _logger.LogWarning("Access to listing {ListingId} was rejected because the caller is not an authenticated broker.", id);
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
         var listing = await _repository.GetByIdAsync(id, cancellationToken);
         if (listing is null)
         {
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
         if (listing.BrokerId != brokerId.Value)
         {
             _logger.LogWarning("Access to listing {ListingId} by broker {BrokerId} was rejected because the caller is not the owner.", id, brokerId.Value);
-            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
+            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
         var fromStatus = listing.Status;
@@ -410,7 +412,7 @@ public sealed class ListingService(
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return Result<OwnerListingDto>.Success(MapOwner(listing));
+        return Result.Success<OwnerListingDto>(MapOwner(listing));
     }
 
     private async Task SyncBrokerProfileAsync(Guid brokerId, CancellationToken cancellationToken)
@@ -426,35 +428,12 @@ public sealed class ListingService(
         }
 
         var profile = BrokerProfile.Create(brokerId, fullName, email, phone);
-        profile.UpdatedAt = _clock.GetUtcNow().UtcDateTime;
-        profile.UpdatedBy = _currentUser.UserId ?? Guid.Empty;
-
         await _queries.UpsertBrokerProfileAsync(profile, cancellationToken);
     }
 
-    private static ListingDetailDto MapDetail(Listing listing) => new()
+    private static ListingDetailDto MapDetail(Listing listing)
     {
-        Id = listing.Id,
-        Title = listing.Title,
-        Description = listing.Description,
-        PropertyTypeId = listing.PropertyTypeId,
-        Price = listing.Price,
-        Province = listing.Province,
-        City = listing.City,
-        Locality = listing.Locality,
-        PostalCode = listing.PostalCode,
-        Bedrooms = listing.Bedrooms,
-        Bathrooms = listing.Bathrooms,
-        AreaSqFt = listing.AreaSqFt,
-        Status = listing.Status.ToString(),
-        Images = listing.Images.Select(MapImage).ToList(),
-        Features = MapFeatures(listing, null),
-        CreatedAt = listing.CreatedAt,
-        Version = Convert.ToBase64String(listing.RowVersion),
-    };
-
-    private static OwnerListingDto MapOwner(Listing listing, IReadOnlyDictionary<Guid, Feature>? featureLookup = null)
-        => new()
+        var dto = new ListingDetailDto
         {
             Id = listing.Id,
             Title = listing.Title,
@@ -469,14 +448,53 @@ public sealed class ListingService(
             Bathrooms = listing.Bathrooms,
             AreaSqFt = listing.AreaSqFt,
             Status = listing.Status.ToString(),
-            Images = listing.Images.Select(MapImage).ToList(),
-            Features = MapFeatures(listing, featureLookup),
+            CreatedAt = listing.CreatedAt,
+            Version = Convert.ToBase64String(listing.RowVersion),
+        };
+        foreach (var image in listing.Images.Select(MapImage))
+        {
+            dto.Images.Add(image);
+        }
+        foreach (var feature in MapFeatures(listing, null))
+        {
+            dto.Features.Add(feature);
+        }
+        return dto;
+    }
+
+    private static OwnerListingDto MapOwner(Listing listing, IReadOnlyDictionary<Guid, Feature>? featureLookup = null)
+    {
+        var dto = new OwnerListingDto
+        {
+            Id = listing.Id,
+            Title = listing.Title,
+            Description = listing.Description,
+            PropertyTypeId = listing.PropertyTypeId,
+            Price = listing.Price,
+            Province = listing.Province,
+            City = listing.City,
+            Locality = listing.Locality,
+            PostalCode = listing.PostalCode,
+            Bedrooms = listing.Bedrooms,
+            Bathrooms = listing.Bathrooms,
+            AreaSqFt = listing.AreaSqFt,
+            Status = listing.Status.ToString(),
             CreatedAt = listing.CreatedAt,
             Version = Convert.ToBase64String(listing.RowVersion),
             CommissionAmount = listing.CommissionAmount,
             CommissionRatePercent = listing.CommissionRatePercent,
             CommissionRateId = listing.CommissionRateId,
         };
+        foreach (var image in listing.Images.Select(MapImage))
+        {
+            dto.Images.Add(image);
+        }
+        foreach (var feature in MapFeatures(listing, featureLookup))
+        {
+            dto.Features.Add(feature);
+        }
+        return dto;
+    }
 
     private static List<ListingFeatureDto> MapFeatures(Listing listing, IReadOnlyDictionary<Guid, Feature>? featureLookup)
         => listing.Features.Select(feature => MapFeature(feature, featureLookup)).ToList();
@@ -498,7 +516,7 @@ public sealed class ListingService(
     }
 
     private async Task<IReadOnlyDictionary<Guid, Feature>> GetFeatureLookupAsync(
-        IReadOnlyCollection<Guid> featureIds,
+        List<Guid> featureIds,
         CancellationToken cancellationToken)
     {
         if (featureIds.Count == 0)

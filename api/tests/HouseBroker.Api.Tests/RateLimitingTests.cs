@@ -3,7 +3,7 @@ using System.Reflection;
 using System.Text.Json;
 using HouseBroker.Api.Controllers;
 using HouseBroker.Api.RateLimiting;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;

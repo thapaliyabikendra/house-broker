@@ -1,9 +1,10 @@
 using System.Security.Claims;
 using HouseBroker.Auth.Data;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using HouseBroker.ServiceDefaults;
 using OpenIddict.Abstractions;
 using OpenIddict.Server;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
@@ -21,7 +22,7 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     options.HttpOnly = Microsoft.AspNetCore.CookiePolicy.HttpOnlyPolicy.Always;
     options.Secure = Microsoft.AspNetCore.Http.CookieSecurePolicy.Always;
-    options.SameSite = SameSiteMode.Lax;
+    options.MinimumSameSitePolicy = SameSiteMode.Lax;
 });
 
 builder.Services.AddScoped<AuthDataSeeder>();
@@ -85,22 +86,22 @@ builder.Services
                     {
                         if (role == Roles.Broker)
                         {
-                            permissions.Add(Permissions.ListingsView);
-                            permissions.Add(Permissions.ListingsContactView);
-                            permissions.Add(Permissions.ListingsCreate);
-                            permissions.Add(Permissions.ListingsUpdate);
-                            permissions.Add(Permissions.ListingsDelete);
-                            permissions.Add(Permissions.ListingsImagesManage);
-                            permissions.Add(Permissions.CommissionView);
+                            permissions.Add(AppPermissions.ListingsView);
+                            permissions.Add(AppPermissions.ListingsContactView);
+                            permissions.Add(AppPermissions.ListingsCreate);
+                            permissions.Add(AppPermissions.ListingsUpdate);
+                            permissions.Add(AppPermissions.ListingsDelete);
+                            permissions.Add(AppPermissions.ListingsImagesManage);
+                            permissions.Add(AppPermissions.CommissionView);
                         }
                         else if (role == Roles.Seeker)
                         {
-                            permissions.Add(Permissions.ListingsView);
-                            permissions.Add(Permissions.ListingsContactView);
+                            permissions.Add(AppPermissions.ListingsView);
+                            permissions.Add(AppPermissions.ListingsContactView);
                         }
                         else if (role == Roles.Admin)
                         {
-                            permissions.Add(Permissions.CommissionRatesManage);
+                            permissions.Add(AppPermissions.CommissionRatesManage);
                         }
                     }
 
@@ -176,4 +177,4 @@ if (args.Contains("migrate", StringComparer.OrdinalIgnoreCase))
     return;
 }
 
-app.Run();
+await app.RunAsync();

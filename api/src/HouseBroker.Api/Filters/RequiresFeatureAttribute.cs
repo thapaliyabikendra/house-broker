@@ -1,5 +1,5 @@
 using HouseBroker.Api.Localization;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using HouseBroker.ServiceDefaults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;

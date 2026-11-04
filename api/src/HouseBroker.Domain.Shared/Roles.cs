@@ -1,4 +1,4 @@
-namespace HouseBroker.Domain.Shared;
+namespace HouseBroker.Domain.Common;
 
 /// <summary>Application user roles.</summary>
 public static class Roles

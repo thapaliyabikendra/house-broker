@@ -1,7 +1,7 @@
 using HouseBroker.Application;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using HouseBroker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
@@ -152,6 +152,22 @@ public sealed class ListingQueries(AppDbContext dbContext) : IListingQueries
     /// <inheritdoc />
     public Task<HouseBroker.Domain.BrokerProfile?> GetBrokerProfileAsync(Guid brokerId, CancellationToken cancellationToken)
         => _dbContext.BrokerProfiles.AsNoTracking().FirstOrDefaultAsync(profile => profile.BrokerId == brokerId, cancellationToken);
+
+    /// <inheritdoc />
+    public async Task UpsertBrokerProfileAsync(HouseBroker.Domain.BrokerProfile profile, CancellationToken cancellationToken)
+    {
+        var existing = await _dbContext.BrokerProfiles.FirstOrDefaultAsync(item => item.BrokerId == profile.BrokerId, cancellationToken);
+        if (existing is null)
+        {
+            await _dbContext.BrokerProfiles.AddAsync(profile, cancellationToken);
+        }
+        else
+        {
+            _dbContext.Entry(existing).CurrentValues.SetValues(profile);
+        }
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
 
     /// <inheritdoc />
     public Task<IReadOnlyList<HouseBroker.Domain.PropertyType>> GetPropertyTypesAsync(CancellationToken cancellationToken)

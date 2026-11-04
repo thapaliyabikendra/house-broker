@@ -1,4 +1,4 @@
-namespace HouseBroker.Domain.Shared;
+namespace HouseBroker.Domain.Common;
 
 /// <summary>Shared operational limits.</summary>
 public static class Limits

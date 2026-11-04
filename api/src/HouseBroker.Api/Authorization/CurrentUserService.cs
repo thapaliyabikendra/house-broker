@@ -19,6 +19,15 @@ public sealed class CurrentUserService(IHttpContextAccessor accessor) : ICurrent
     }
 
     /// <inheritdoc />
+    public string? FullName => User?.FindFirst("name")?.Value ?? User?.FindFirst(ClaimTypes.Name)?.Value;
+
+    /// <inheritdoc />
+    public string? Email => User?.FindFirst("email")?.Value ?? User?.FindFirst(ClaimTypes.Email)?.Value;
+
+    /// <inheritdoc />
+    public string? PhoneNumber => User?.FindFirst("phone_number")?.Value ?? User?.FindFirst(ClaimTypes.MobilePhone)?.Value;
+
+    /// <inheritdoc />
     public IReadOnlyCollection<string> Roles => User?.FindAll("role").Select(claim => claim.Value).ToArray() ?? Array.Empty<string>();
 
     /// <inheritdoc />

@@ -1,5 +1,7 @@
 namespace HouseBroker.Application.Contracts;
 
+using System.Collections.ObjectModel;
+
 /// <summary>Request to create a listing.</summary>
 public sealed class CreateListingRequest
 {
@@ -37,7 +39,7 @@ public sealed class CreateListingRequest
     public decimal AreaSqFt { get; set; }
 
     /// <summary>Gets or sets feature identifiers.</summary>
-    public List<Guid> FeatureIds { get; set; } = new();
+    public Collection<Guid> FeatureIds { get; } = new();
 }
 
 /// <summary>Request to update a listing.</summary>
@@ -77,7 +79,7 @@ public sealed class UpdateListingRequest
     public decimal AreaSqFt { get; set; }
 
     /// <summary>Gets or sets feature identifiers.</summary>
-    public List<Guid> FeatureIds { get; set; } = new();
+    public Collection<Guid> FeatureIds { get; } = new();
 
     /// <summary>Gets or sets the row version.</summary>
     public string? Version { get; set; }

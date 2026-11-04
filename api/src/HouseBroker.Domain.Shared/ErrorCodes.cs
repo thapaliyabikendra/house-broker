@@ -1,4 +1,4 @@
-namespace HouseBroker.Domain.Shared;
+namespace HouseBroker.Domain.Common;
 
 /// <summary>Stable error codes returned by the application layer.</summary>
 public static class ErrorCodes

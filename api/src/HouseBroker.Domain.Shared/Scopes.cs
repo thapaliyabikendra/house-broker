@@ -1,4 +1,4 @@
-namespace HouseBroker.Domain.Shared;
+namespace HouseBroker.Domain.Common;
 
 /// <summary>OAuth scopes granted to clients.</summary>
 public static class Scopes

@@ -7,6 +7,9 @@ using HouseBroker.ServiceDefaults;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using Microsoft.OpenApi;
+using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -25,6 +28,28 @@ builder.Services.AddControllers();
 builder.Services.AddHouseBrokerJsonOptions();
 builder.Services.AddHouseBrokerRateLimiting(builder.Configuration);
 builder.Services.AddHouseBrokerOpenApi();
+
+// Swagger UI Configuration
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo 
+    { 
+        Title = "House Broker API", 
+        Version = "v1" 
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "JWT access token issued by the House Broker identity provider."
+    });
+
+    // Security requirement is attached to endpoints individually where applicable.
+});
 
 var connectionString = builder.Configuration.GetConnectionString("HouseBroker");
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -73,6 +98,16 @@ var pathBase = builder.Configuration["PathBase"] ?? "/api";
 app.UsePathBase(pathBase);
 
 app.UseServiceDefaults();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/api/swagger/v1/swagger.json", "House Broker API v1");
+    });
+}
+
 app.UseAuthentication();
 app.UseRateLimiter();
 app.UseAuthorization();
@@ -86,10 +121,10 @@ if (args.Contains("migrate", StringComparer.OrdinalIgnoreCase))
     using var scope = app.Services.CreateScope();
     var database = scope.ServiceProvider.GetRequiredService<HouseBroker.Infrastructure.Persistence.AppDbContext>();
     await database.Database.MigrateAsync();
-    var environment = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+    var environment = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
     var clock = scope.ServiceProvider.GetRequiredService<TimeProvider>();
     await HouseBroker.Infrastructure.DatabaseSeeder.SeedAsync(database, environment, clock, CancellationToken.None);
     return;
 }
 
-app.Run();
+await app.RunAsync();

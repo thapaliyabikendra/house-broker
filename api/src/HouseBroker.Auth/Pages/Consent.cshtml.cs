@@ -2,14 +2,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Localization;
 using HouseBroker.Auth.Resources;
-using OpenIddict.Abstractions;
-using OpenIddict.Server.AspNetCore;
+using System.Collections.ObjectModel;
 
 namespace HouseBroker.Auth.Pages;
 
-public class ConsentModel(IHttpContextAccessor httpContextAccessor, IStringLocalizer<HouseBroker.Auth.Resources.Resources> L) : PageModel
+public class ConsentModel(IStringLocalizer<HouseBroker.Auth.Resources.Resources> L) : PageModel
 {
-    public List<string> Scopes { get; set; } = new();
+    public Collection<string> Scopes { get; } = new();
 
     public string Title => L["Consent_Title"];
     public string Intro => L["Consent_Intro"];
@@ -18,10 +17,10 @@ public class ConsentModel(IHttpContextAccessor httpContextAccessor, IStringLocal
 
     public void OnGet()
     {
-        var request = httpContextAccessor.HttpContext?.GetOpenIddictServerRequest();
-        if (request != null)
+        var scopes = HttpContext.Request.Query["scope"].ToString();
+        foreach (var scope in scopes.Split(' ', StringSplitOptions.RemoveEmptyEntries))
         {
-            Scopes = request.GetScopes().ToList();
+            Scopes.Add(scope);
         }
     }
 

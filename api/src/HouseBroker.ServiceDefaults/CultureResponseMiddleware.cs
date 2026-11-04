@@ -8,6 +8,7 @@ public sealed class CultureResponseMiddleware(RequestDelegate next)
     /// <summary>Invokes the middleware.</summary>
     public async Task InvokeAsync(HttpContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
         context.Response.OnStarting(() =>
         {
             if (!context.Response.Headers.ContainsKey("Vary"))
@@ -24,6 +25,6 @@ public sealed class CultureResponseMiddleware(RequestDelegate next)
             return Task.CompletedTask;
         });
 
-        await next(context);
+        await next(context).ConfigureAwait(false);
     }
 }

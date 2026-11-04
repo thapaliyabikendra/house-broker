@@ -51,7 +51,7 @@ public sealed class CommissionCalculatorTests
         var now = DateTime.UtcNow;
         var tiers = Array.Empty<CommissionRate>();
 
-        Assert.Throws<HouseBroker.Domain.Shared.DomainException>(() => CommissionCalculator.Calculate(1000m, tiers, now));
+        Assert.Throws<HouseBroker.Domain.Common.DomainException>(() => CommissionCalculator.Calculate(1000m, tiers, now));
     }
 }
 

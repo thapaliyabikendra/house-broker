@@ -1,6 +1,6 @@
 using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using HouseBroker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
@@ -24,27 +24,27 @@ public sealed class SqlImageStorage(AppDbContext dbContext, ICurrentUserService 
 
         if (listing is null)
         {
-            return Result<ListingImageDto>.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure<ListingImageDto>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
         if (!_currentUser.UserId.HasValue || listing.BrokerId != _currentUser.UserId.Value)
         {
-            return Result<ListingImageDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
+            return Result.Failure<ListingImageDto>(new ApplicationError(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
         if (listing.Images.Count >= Limits.MaxImagesPerListing)
         {
-            return Result<ListingImageDto>.Failure(new Error(ErrorCodes.OutOfRange, ErrorKind.Conflict));
+            return Result.Failure<ListingImageDto>(new ApplicationError(ErrorCodes.OutOfRange, ErrorKind.Conflict));
         }
 
         if (string.IsNullOrWhiteSpace(contentType) || !IsAllowedContentType(contentType))
         {
-            return Result<ListingImageDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, "contentType"));
+            return Result.Failure<ListingImageDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation, "contentType"));
         }
 
         if (contentLength <= 0 || contentLength > Limits.MaxImageSizeBytes)
         {
-            return Result<ListingImageDto>.Failure(new Error(ErrorCodes.OutOfRange, ErrorKind.Validation, "contentLength"));
+            return Result.Failure<ListingImageDto>(new ApplicationError(ErrorCodes.OutOfRange, ErrorKind.Validation, "contentLength"));
         }
 
         using var memoryStream = new MemoryStream();
@@ -53,12 +53,12 @@ public sealed class SqlImageStorage(AppDbContext dbContext, ICurrentUserService 
 
         if (bytes.Length == 0 || bytes.Length > Limits.MaxImageSizeBytes)
         {
-            return Result<ListingImageDto>.Failure(new Error(ErrorCodes.OutOfRange, ErrorKind.Validation, "content"));
+            return Result.Failure<ListingImageDto>(new ApplicationError(ErrorCodes.OutOfRange, ErrorKind.Validation, "content"));
         }
 
         if (!HasValidImageSignature(bytes, contentType))
         {
-            return Result<ListingImageDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, "content"));
+            return Result.Failure<ListingImageDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation, "content"));
         }
 
         var extension = contentType.ToLowerInvariant() switch
@@ -86,7 +86,7 @@ public sealed class SqlImageStorage(AppDbContext dbContext, ICurrentUserService 
         await transaction.CommitAsync(cancellationToken);
         await _cache.InvalidateListingsAsync(cancellationToken);
 
-        return Result<ListingImageDto>.Success(new ListingImageDto
+        return Result.Success<ListingImageDto>(new ListingImageDto
         {
             Id = image.Id,
             FileName = image.FileName,
@@ -106,7 +106,7 @@ public sealed class SqlImageStorage(AppDbContext dbContext, ICurrentUserService 
 
         if (image is null)
         {
-            return Result<ImageContent>.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure<ImageContent>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
         var data = await _dbContext.ListingImageData
@@ -115,10 +115,10 @@ public sealed class SqlImageStorage(AppDbContext dbContext, ICurrentUserService 
 
         if (data is null)
         {
-            return Result<ImageContent>.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure<ImageContent>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
-        return Result<ImageContent>.Success(new ImageContent
+        return Result.Success<ImageContent>(new ImageContent
         {
             Stream = new MemoryStream(data.Content),
             ContentType = image.ContentType,
@@ -136,18 +136,18 @@ public sealed class SqlImageStorage(AppDbContext dbContext, ICurrentUserService 
 
         if (listing is null)
         {
-            return Result.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
         if (!_currentUser.UserId.HasValue || listing.BrokerId != _currentUser.UserId.Value)
         {
-            return Result.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
+            return Result.Failure(new ApplicationError(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
         var image = await _dbContext.ListingImages.FirstOrDefaultAsync(item => item.Id == imageId && item.ListingId == listingId, cancellationToken);
         if (image is null)
         {
-            return Result.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+            return Result.Failure(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
         using var transaction = await _dbContext.Database.BeginTransactionAsync(cancellationToken);

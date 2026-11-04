@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Identity;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using OpenIddict.Abstractions;
@@ -23,7 +23,7 @@ public sealed class AuthDataSeeder(
         {
             if (!await roleManager.RoleExistsAsync(role))
             {
-                await roleManager.CreateAsync(new IdentityRole<Guid>(role), ct);
+                await roleManager.CreateAsync(new IdentityRole<Guid>(role));
                 logger.LogInformation("Created role: {Role}", role);
             }
         }
@@ -109,17 +109,31 @@ public sealed class AuthDataSeeder(
 
         foreach (var c in clients)
         {
-            if (await applicationManager.FindByClientIdAsync(c.Id) is null)
+            if (await applicationManager.FindByClientIdAsync(c.Id, ct) is null)
             {
-                var application = new OpenIddictEntityFrameworkCoreApplication
+                var descriptor = new OpenIddictApplicationDescriptor
                 {
                     ClientId = c.Id,
-                    ClientSecret = c.Secret,
                     DisplayName = c.Name,
-                    RedirectUris = c.RedirectUris,
-                    Permissions = c.Permissions
-                };
-                await applicationManager.CreateAsync(application, ct);
+                    ClientType = c.Types.Contains(OpenIddictConstants.ClientTypes.Public)
+                        ? OpenIddictConstants.ClientTypes.Public
+                        : OpenIddictConstants.ClientTypes.Confidential,
+                    };
+                    foreach (var uri in c.RedirectUris)
+                    {
+                        descriptor.RedirectUris.Add(new Uri(uri));
+                    }
+                    foreach (var permission in c.Permissions)
+                    {
+                        descriptor.Permissions.Add(permission);
+                    }
+                if (!c.Types.Contains(OpenIddictConstants.ClientTypes.Public) &&
+                    !string.IsNullOrWhiteSpace(c.Secret))
+                {
+                    descriptor.ClientSecret = c.Secret;
+                }
+
+                await applicationManager.CreateAsync(descriptor, ct);
                 logger.LogInformation("Created client: {ClientId}", c.Id);
             }
         }

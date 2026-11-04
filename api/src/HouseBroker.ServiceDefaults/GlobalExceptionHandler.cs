@@ -4,14 +4,22 @@ using Microsoft.AspNetCore.Mvc;
 namespace HouseBroker.ServiceDefaults;
 
 /// <summary>Maps exceptions to problem details.</summary>
-public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
+public sealed partial class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Domain exception {Code}")]
+    private static partial void LogDomainException(ILogger logger, Exception exception, string code);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Unhandled exception")]
+    private static partial void LogUnhandledException(ILogger logger, Exception exception);
+
     /// <summary>Attempts to handle an exception.</summary>
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        if (exception is Domain.Shared.DomainException domainException)
+        ArgumentNullException.ThrowIfNull(httpContext);
+
+        if (exception is HouseBroker.Domain.Common.DomainException domainException)
         {
-            logger.LogWarning(exception, "Domain exception {Code}", domainException.Code);
+            LogDomainException(logger, exception, domainException.Code);
 
             var problemDetails = new ProblemDetails
             {
@@ -23,11 +31,11 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
             problemDetails.Extensions["correlationId"] = httpContext.GetCorrelationId();
             problemDetails.Extensions["errors"] = domainException.Arguments;
 
-            await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken);
+            await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken).ConfigureAwait(false);
             return true;
         }
 
-        logger.LogError(exception, "Unhandled exception");
+        LogUnhandledException(logger, exception);
 
         var serverProblem = new ProblemDetails
         {
@@ -36,7 +44,7 @@ public sealed class GlobalExceptionHandler(ILogger<GlobalExceptionHandler> logge
         };
         serverProblem.Extensions["correlationId"] = httpContext.GetCorrelationId();
 
-        await httpContext.Response.WriteAsJsonAsync(serverProblem, cancellationToken);
+        await httpContext.Response.WriteAsJsonAsync(serverProblem, cancellationToken).ConfigureAwait(false);
         return true;
     }
 }

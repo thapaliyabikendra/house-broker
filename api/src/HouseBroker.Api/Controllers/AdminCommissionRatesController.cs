@@ -2,7 +2,7 @@ using HouseBroker.Api.Authorization;
 using HouseBroker.Api.Filters;
 using HouseBroker.Api.RateLimiting;
 using HouseBroker.Application.Contracts;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -16,7 +16,7 @@ public sealed class AdminCommissionRatesController(ICommissionRateAdminService s
 {
     /// <summary>Gets all commission rates.</summary>
     [HttpGet]
-    [HasPermission(Permissions.CommissionRatesManage)]
+    [HasPermission(AppPermissions.CommissionRatesManage)]
     [Tags("Admin: Commission Rates")]
     [ProducesResponseType<IReadOnlyList<CommissionRateDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -29,7 +29,7 @@ public sealed class AdminCommissionRatesController(ICommissionRateAdminService s
 
     /// <summary>Creates a commission rate.</summary>
     [HttpPost]
-    [HasPermission(Permissions.CommissionRatesManage)]
+    [HasPermission(AppPermissions.CommissionRatesManage)]
     [Idempotent]
     [EnableRateLimiting(RateLimitPolicies.Write)]
     [Tags("Admin: Commission Rates")]
@@ -46,7 +46,7 @@ public sealed class AdminCommissionRatesController(ICommissionRateAdminService s
 
     /// <summary>Updates a commission rate.</summary>
     [HttpPut("{id:guid}")]
-    [HasPermission(Permissions.CommissionRatesManage)]
+    [HasPermission(AppPermissions.CommissionRatesManage)]
     [EnableRateLimiting(RateLimitPolicies.Write)]
     [Tags("Admin: Commission Rates")]
     [ProducesResponseType<CommissionRateDto>(StatusCodes.Status200OK)]

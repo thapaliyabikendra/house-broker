@@ -1,6 +1,6 @@
 using HouseBroker.Api.RateLimiting;
 using HouseBroker.Application.Contracts;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -34,7 +34,7 @@ public sealed class PublicListingsController(IListingService listingService, IIm
     public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
     {
         var hasContactScope = User.HasClaim("scope", Scopes.ContactsRead) || User.FindAll("scp").Any(claim => claim.Value == Scopes.ContactsRead);
-        var hasContactPermission = User.HasClaim("permission", Permissions.ListingsContactView);
+        var hasContactPermission = User.HasClaim("permission", AppPermissions.ListingsContactView);
         var includeContact = hasContactScope && (hasContactPermission || !User.HasClaim(claim => claim.Type == "permission"));
         var result = await listingService.GetDetailAsync(id, includeContact, cancellationToken);
         if (result.IsSuccess)

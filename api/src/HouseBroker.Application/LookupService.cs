@@ -1,5 +1,5 @@
 using HouseBroker.Application.Contracts;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 
 namespace HouseBroker.Application.Services;
 
@@ -12,7 +12,7 @@ public sealed class LookupService(IListingQueries queries) : ILookupService
     public async Task<Result<IReadOnlyList<PropertyTypeDto>>> GetPropertyTypesAsync(CancellationToken cancellationToken)
     {
         var items = await _queries.GetPropertyTypesAsync(cancellationToken);
-        return Result<IReadOnlyList<PropertyTypeDto>>.Success(items.Select(item => new PropertyTypeDto
+        return Result.Success<IReadOnlyList<PropertyTypeDto>>(items.Select(item => new PropertyTypeDto
         {
             Id = item.Id,
             Code = item.Code,
@@ -25,7 +25,7 @@ public sealed class LookupService(IListingQueries queries) : ILookupService
     public async Task<Result<IReadOnlyList<FeatureDto>>> GetFeaturesAsync(CancellationToken cancellationToken)
     {
         var items = await _queries.GetFeaturesAsync(cancellationToken);
-        return Result<IReadOnlyList<FeatureDto>>.Success(items.Select(item => new FeatureDto
+        return Result.Success<IReadOnlyList<FeatureDto>>(items.Select(item => new FeatureDto
         {
             Id = item.Id,
             Code = item.Code,
@@ -46,6 +46,6 @@ public sealed class LookupService(IListingQueries queries) : ILookupService
             MaxSearchTextLength = Limits.MaxSearchTextLength,
         };
 
-        return Task.FromResult(Result<MetaDto>.Success(meta));
+        return Task.FromResult(Result.Success<MetaDto>(meta));
     }
 }

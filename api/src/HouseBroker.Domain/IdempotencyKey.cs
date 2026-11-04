@@ -55,6 +55,7 @@ public sealed class IdempotencyKey
     public DateTime ExpiresAt { get; private set; }
 
     /// <summary>Gets the concurrency token.</summary>
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1819:Properties should not return arrays", Justification = "EF Core requires a byte array for rowversion concurrency tokens.")]
     public byte[] RowVersion { get; private set; } = Array.Empty<byte>();
 
     /// <summary>Marks processing as complete.</summary>

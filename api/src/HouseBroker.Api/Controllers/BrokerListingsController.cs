@@ -2,7 +2,7 @@ using HouseBroker.Api.Authorization;
 using HouseBroker.Api.Filters;
 using HouseBroker.Api.RateLimiting;
 using HouseBroker.Application.Contracts;
-using HouseBroker.Domain.Shared;
+using HouseBroker.Domain.Common;
 using HouseBroker.ServiceDefaults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -19,7 +19,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     [HttpPost]
     [Idempotent]
     [EnableRateLimiting(RateLimitPolicies.Write)]
-    [HasPermission(Permissions.ListingsCreate)]
+    [HasPermission(AppPermissions.ListingsCreate)]
     [Tags("Listings")]
     [ProducesResponseType<OwnerListingDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -40,7 +40,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <summary>Updates a listing.</summary>
     [HttpPut("{id:guid}")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
-    [HasPermission(Permissions.ListingsUpdate)]
+    [HasPermission(AppPermissions.ListingsUpdate)]
     [Tags("Listings")]
     [ProducesResponseType<OwnerListingDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -59,7 +59,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <summary>Deletes a listing.</summary>
     [HttpDelete("{id:guid}")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
-    [HasPermission(Permissions.ListingsDelete)]
+    [HasPermission(AppPermissions.ListingsDelete)]
     [Tags("Listings")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -74,7 +74,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
 
     /// <summary>Gets owned listings.</summary>
     [HttpGet("mine")]
-    [HasPermission(Permissions.CommissionView)]
+    [HasPermission(AppPermissions.CommissionView)]
     [Tags("Listings")]
     [ProducesResponseType<IReadOnlyList<OwnerListingDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -87,7 +87,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
 
     /// <summary>Gets an owned listing.</summary>
     [HttpGet("mine/{id:guid}")]
-    [HasPermission(Permissions.CommissionView)]
+    [HasPermission(AppPermissions.CommissionView)]
     [Tags("Listings")]
     [ProducesResponseType<OwnerListingDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -108,7 +108,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     [HttpPost("{id:guid}/images")]
     [RequiresFeature(FeatureFlags.ImageUploads)]
     [EnableRateLimiting(RateLimitPolicies.Upload)]
-    [HasPermission(Permissions.ListingsImagesManage)]
+    [HasPermission(AppPermissions.ListingsImagesManage)]
     [Tags("Images")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType<ListingImageDto>(StatusCodes.Status200OK)]
@@ -133,7 +133,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <summary>Deletes an image.</summary>
     [HttpDelete("{id:guid}/images/{imageId:guid}")]
     [RequiresFeature(FeatureFlags.ImageUploads)]
-    [HasPermission(Permissions.ListingsImagesManage)]
+    [HasPermission(AppPermissions.ListingsImagesManage)]
     [Tags("Images")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -149,7 +149,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <summary>Publishes a listing.</summary>
     [HttpPost("{id:guid}/publish")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
-    [HasPermission(Permissions.ListingsUpdate)]
+    [HasPermission(AppPermissions.ListingsUpdate)]
     [Tags("Listings")]
     [ProducesResponseType<OwnerListingDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -165,7 +165,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <summary>Marks a listing as sold.</summary>
     [HttpPost("{id:guid}/sold")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
-    [HasPermission(Permissions.ListingsUpdate)]
+    [HasPermission(AppPermissions.ListingsUpdate)]
     [Tags("Listings")]
     [ProducesResponseType<OwnerListingDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -181,7 +181,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <summary>Archives a listing.</summary>
     [HttpPost("{id:guid}/archive")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
-    [HasPermission(Permissions.ListingsUpdate)]
+    [HasPermission(AppPermissions.ListingsUpdate)]
     [Tags("Listings")]
     [ProducesResponseType<OwnerListingDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
