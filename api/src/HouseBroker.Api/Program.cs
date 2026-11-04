@@ -88,18 +88,6 @@ builder.Services.AddHouseBrokerJsonOptions();
 builder.Services.AddHouseBrokerRateLimiting(builder.Configuration);
 builder.Services.AddHouseBrokerOpenApi();
 
-if (string.Equals(builder.Configuration["Cache:Provider"], "Redis", StringComparison.OrdinalIgnoreCase))
-{
-    var redisConfiguration = builder.Configuration["Cache:Redis:Configuration"]
-        ?? builder.Configuration.GetConnectionString("Redis")
-        ?? "localhost:6379";
-    builder.Services.AddHealthChecks().Add(new Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration(
-        "redis",
-        _ => new HouseBroker.Api.HealthChecks.RedisHealthCheck(redisConfiguration),
-        failureStatus: null,
-        tags: null));
-}
-
 var authIssuer = builder.Configuration["Auth:Issuer"] ?? builder.Configuration["Auth:Authority"] ?? "http://localhost:5000/sso";
 
 // Swagger UI Configuration

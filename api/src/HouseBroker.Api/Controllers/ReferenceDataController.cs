@@ -6,12 +6,15 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace HouseBroker.Api.Controllers;
 
 /// <summary>Shared reference data used by every page.</summary>
+/// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
 [ApiController]
 [Route("v{version:apiVersion}")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
 public sealed class ReferenceDataController(ILookupService lookupService) : ControllerBase
 {
     /// <summary>Gets property types.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
+    /// <response code="200">OK.</response>
     [HttpGet("lookups/property-types")]
     [AllowAnonymous] // Public reference data.
     [EnableRateLimiting(RateLimitPolicies.Search)]
@@ -24,6 +27,8 @@ public sealed class ReferenceDataController(ILookupService lookupService) : Cont
     }
 
     /// <summary>Gets features.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
+    /// <response code="200">OK.</response>
     [HttpGet("lookups/features")]
     [AllowAnonymous] // Public reference data.
     [EnableRateLimiting(RateLimitPolicies.Search)]
@@ -36,6 +41,8 @@ public sealed class ReferenceDataController(ILookupService lookupService) : Cont
     }
 
     /// <summary>Gets deployment metadata.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
+    /// <response code="200">OK.</response>
     [HttpGet("meta")]
     [AllowAnonymous] // Public metadata.
     [Tags("Lookups")]

@@ -9,12 +9,17 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace HouseBroker.Api.Controllers;
 
 /// <summary>Administrator commission rate management endpoints.</summary>
+/// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
 [ApiController]
 [Route("v{version:apiVersion}/admin/commission-rates")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
 public sealed class AdminCommissionRatesController(ICommissionRateAdminService service) : ControllerBase
 {
     /// <summary>Gets all commission rates.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
+    /// <response code="200">OK.</response>
+    /// <response code="401">Unauthorized.</response>
+    /// <response code="403">Forbidden.</response>
     [HttpGet]
     [HasPermission(AppPermissions.CommissionRatesManage)]
     [Tags("Admin: Commission Rates")]
@@ -28,6 +33,12 @@ public sealed class AdminCommissionRatesController(ICommissionRateAdminService s
     }
 
     /// <summary>Creates a commission rate.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
+    /// <response code="200">OK.</response>
+    /// <response code="400">Bad request.</response>
+    /// <response code="401">Unauthorized.</response>
+    /// <response code="403">Forbidden.</response>
+    /// <response code="409">Conflict.</response>
     [HttpPost]
     [HasPermission(AppPermissions.CommissionRatesManage)]
     [Idempotent]
@@ -45,6 +56,7 @@ public sealed class AdminCommissionRatesController(ICommissionRateAdminService s
     }
 
     /// <summary>Updates a commission rate.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpPut("{id:guid}")]
     [HasPermission(AppPermissions.CommissionRatesManage)]
     [EnableRateLimiting(RateLimitPolicies.Write)]

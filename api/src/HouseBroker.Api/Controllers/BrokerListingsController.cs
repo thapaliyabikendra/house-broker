@@ -10,12 +10,19 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace HouseBroker.Api.Controllers;
 
 /// <summary>Broker listing management endpoints.</summary>
+/// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
 [ApiController]
 [Route("v{version:apiVersion}/listings")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
 public sealed class BrokerListingsController(IListingService listingService, IImageStorage imageStorage) : ControllerBase
 {
     /// <summary>Creates a listing.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
+    /// <response code="201">Created.</response>
+    /// <response code="400">Bad request.</response>
+    /// <response code="401">Unauthorized.</response>
+    /// <response code="403">Forbidden.</response>
+    /// <response code="409">Conflict.</response>
     [HttpPost]
     [Idempotent]
     [EnableRateLimiting(RateLimitPolicies.Write)]
@@ -38,6 +45,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     }
 
     /// <summary>Updates a listing.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpPut("{id:guid}")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
     [HasPermission(AppPermissions.ListingsUpdate)]
@@ -57,6 +65,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     }
 
     /// <summary>Deletes a listing.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpDelete("{id:guid}")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
     [HasPermission(AppPermissions.ListingsDelete)]
@@ -73,6 +82,10 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     }
 
     /// <summary>Gets owned listings.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
+    /// <response code="200">OK.</response>
+    /// <response code="401">Unauthorized.</response>
+    /// <response code="403">Forbidden.</response>
     [HttpGet("mine")]
     [HasPermission(AppPermissions.CommissionView)]
     [Tags("Listings")]
@@ -86,6 +99,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     }
 
     /// <summary>Gets an owned listing.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpGet("mine/{id:guid}")]
     [HasPermission(AppPermissions.CommissionView)]
     [Tags("Listings")]
@@ -105,6 +119,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     }
 
     /// <summary>Uploads an image.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpPost("{id:guid}/images")]
     [RequiresFeature(FeatureFlags.ImageUploads)]
     [EnableRateLimiting(RateLimitPolicies.Upload)]
@@ -131,6 +146,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     }
 
     /// <summary>Deletes an image.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpDelete("{id:guid}/images/{imageId:guid}")]
     [RequiresFeature(FeatureFlags.ImageUploads)]
     [HasPermission(AppPermissions.ListingsImagesManage)]
@@ -147,6 +163,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     }
 
     /// <summary>Publishes a listing.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpPost("{id:guid}/publish")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
     [HasPermission(AppPermissions.ListingsUpdate)]
@@ -163,6 +180,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     }
 
     /// <summary>Marks a listing as sold.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpPost("{id:guid}/sold")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
     [HasPermission(AppPermissions.ListingsUpdate)]
@@ -179,6 +197,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     }
 
     /// <summary>Archives a listing.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpPost("{id:guid}/archive")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
     [HasPermission(AppPermissions.ListingsUpdate)]

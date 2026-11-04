@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using HouseBroker.Application;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
@@ -15,6 +16,8 @@ public sealed class CachedListingQueries(IListingQueries inner, ICacheService ca
 
     private bool CacheEnabled => _configuration.GetValue("ListingCache", true);
 
+    private static string Culture => CultureInfo.CurrentUICulture.Name;
+
     /// <inheritdoc />
     public async Task<Listing?> GetPublicAsync(Guid id, CancellationToken cancellationToken)
     {
@@ -24,7 +27,7 @@ public sealed class CachedListingQueries(IListingQueries inner, ICacheService ca
         }
 
         var token = await _cache.GetOrCreateAsync(MemoryCacheService.ListingCacheTokenKey, _ => Task.FromResult(Guid.NewGuid().ToString("N")), null, cancellationToken);
-        var key = $"listing:{token}:public:{id}";
+        var key = $"listing:{token}:public:{id}:{Culture}";
         return await _cache.GetOrCreateAsync(key, async ct => await _inner.GetPublicAsync(id, ct), TimeSpan.FromMinutes(5), cancellationToken);
     }
 
@@ -37,37 +40,86 @@ public sealed class CachedListingQueries(IListingQueries inner, ICacheService ca
         }
 
         var token = await _cache.GetOrCreateAsync(MemoryCacheService.ListingCacheTokenKey, _ => Task.FromResult(Guid.NewGuid().ToString("N")), null, cancellationToken);
-        var key = $"listing:{token}:mine:{brokerId}";
+        var key = $"listing:{token}:mine:{brokerId}:{Culture}";
         return await _cache.GetOrCreateAsync(key, async ct => await _inner.GetMineAsync(brokerId, ct), TimeSpan.FromMinutes(5), cancellationToken);
     }
 
     /// <inheritdoc />
     public async Task<PagedResult<ListingSummaryDto>> SearchAsync(ListingSearchQuery query, CancellationToken cancellationToken)
     {
+        query ??= new ListingSearchQuery();
         if (!CacheEnabled)
         {
             return await _inner.SearchAsync(query, cancellationToken);
         }
 
         var token = await _cache.GetOrCreateAsync(MemoryCacheService.ListingCacheTokenKey, _ => Task.FromResult(Guid.NewGuid().ToString("N")), null, cancellationToken);
-        var normalizedLocation = string.IsNullOrWhiteSpace(query.Location) ? string.Empty : query.Location.Trim();
-        var key = $"listing:{token}:search:{normalizedLocation}:{query.MinPrice?.ToString("G", CultureInfo.InvariantCulture)}:{query.MaxPrice?.ToString("G", CultureInfo.InvariantCulture)}:{query.PropertyTypeId}:{query.Bedrooms}:{string.Join(",", query.FeatureIds)}:{query.Page}:{query.PageSize}:{query.Sort}";
+        var key = BuildSearchKey(token, query);
         return await _cache.GetOrCreateAsync(key, async ct => await _inner.SearchAsync(query, ct), TimeSpan.FromSeconds(60), cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<HouseBroker.Domain.BrokerProfile?> GetBrokerProfileAsync(Guid brokerId, CancellationToken cancellationToken)
-        => _inner.GetBrokerProfileAsync(brokerId, cancellationToken);
+    public async Task<HouseBroker.Domain.BrokerProfile?> GetBrokerProfileAsync(Guid brokerId, CancellationToken cancellationToken)
+    {
+        if (!CacheEnabled)
+        {
+            return await _inner.GetBrokerProfileAsync(brokerId, cancellationToken);
+        }
+
+        var token = await _cache.GetOrCreateAsync(MemoryCacheService.ListingCacheTokenKey, _ => Task.FromResult(Guid.NewGuid().ToString("N")), null, cancellationToken);
+        var key = $"listing:{token}:broker-profile:{brokerId}:{Culture}";
+        return await _cache.GetOrCreateAsync(key, async ct => await _inner.GetBrokerProfileAsync(brokerId, ct), TimeSpan.FromMinutes(5), cancellationToken);
+    }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<HouseBroker.Domain.PropertyType>> GetPropertyTypesAsync(CancellationToken cancellationToken)
-        => _inner.GetPropertyTypesAsync(cancellationToken);
+    public async Task<IReadOnlyList<HouseBroker.Domain.PropertyType>> GetPropertyTypesAsync(CancellationToken cancellationToken)
+    {
+        if (!CacheEnabled)
+        {
+            return await _inner.GetPropertyTypesAsync(cancellationToken);
+        }
+
+        var token = await _cache.GetOrCreateAsync(MemoryCacheService.ListingCacheTokenKey, _ => Task.FromResult(Guid.NewGuid().ToString("N")), null, cancellationToken);
+        var key = $"listing:{token}:lookup:property-types:{Culture}";
+        return await _cache.GetOrCreateAsync(key, async ct => await _inner.GetPropertyTypesAsync(ct), TimeSpan.FromMinutes(30), cancellationToken);
+    }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<HouseBroker.Domain.Feature>> GetFeaturesAsync(CancellationToken cancellationToken)
-        => _inner.GetFeaturesAsync(cancellationToken);
+    public async Task<IReadOnlyList<HouseBroker.Domain.Feature>> GetFeaturesAsync(CancellationToken cancellationToken)
+    {
+        if (!CacheEnabled)
+        {
+            return await _inner.GetFeaturesAsync(cancellationToken);
+        }
+
+        var token = await _cache.GetOrCreateAsync(MemoryCacheService.ListingCacheTokenKey, _ => Task.FromResult(Guid.NewGuid().ToString("N")), null, cancellationToken);
+        var key = $"listing:{token}:lookup:features:{Culture}";
+        return await _cache.GetOrCreateAsync(key, async ct => await _inner.GetFeaturesAsync(ct), TimeSpan.FromMinutes(30), cancellationToken);
+    }
 
     /// <inheritdoc />
     public Task UpsertBrokerProfileAsync(HouseBroker.Domain.BrokerProfile profile, CancellationToken cancellationToken)
         => _inner.UpsertBrokerProfileAsync(profile, cancellationToken);
+
+    private static string BuildSearchKey(string token, ListingSearchQuery query)
+    {
+        var location = (query.Location ?? string.Empty).Trim().Normalize(NormalizationForm.FormC);
+        if (!string.IsNullOrWhiteSpace(location))
+        {
+            location = location.ToLowerInvariant();
+        }
+
+        var featureIds = string.Join(",", query.FeatureIds.Distinct().OrderBy(id => id));
+        var page = Math.Max(1, query.Page);
+        var pageSize = Math.Clamp(query.PageSize, 1, 100);
+        var sort = (query.Sort ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(sort))
+        {
+            sort = "default";
+        }
+
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"listing:{token}:search:culture={Culture}:location={location}:min={query.MinPrice?.ToString("G", CultureInfo.InvariantCulture)}:max={query.MaxPrice?.ToString("G", CultureInfo.InvariantCulture)}:propertyType={query.PropertyTypeId?.ToString("D")}:bedrooms={query.Bedrooms?.ToString(CultureInfo.InvariantCulture)}:features={featureIds}:page={page}:pageSize={pageSize}:sort={sort}");
+    }
 }

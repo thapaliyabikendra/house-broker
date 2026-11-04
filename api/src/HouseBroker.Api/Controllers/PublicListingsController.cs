@@ -7,12 +7,16 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace HouseBroker.Api.Controllers;
 
 /// <summary>Public listing browse and detail endpoints.</summary>
+/// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
 [ApiController]
 [Route("v{version:apiVersion}/listings")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
 public sealed class PublicListingsController(IListingService listingService, IImageStorage imageStorage) : ControllerBase
 {
     /// <summary>Searches listings.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
+    /// <response code="200">OK.</response>
+    /// <response code="400">Bad request.</response>
     [HttpGet]
     [AllowAnonymous] // Anonymous search per scope.
     [EnableRateLimiting(RateLimitPolicies.Search)]
@@ -26,6 +30,7 @@ public sealed class PublicListingsController(IListingService listingService, IIm
     }
 
     /// <summary>Gets a listing.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpGet("{id:guid}")]
     [AllowAnonymous] // Anonymous listing detail per scope.
     [Tags("Listings")]
@@ -46,6 +51,7 @@ public sealed class PublicListingsController(IListingService listingService, IIm
     }
 
     /// <summary>Gets an image.</summary>
+    /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpGet("{id:guid}/images/{imageId:guid}")]
     [AllowAnonymous] // Public listing image.
     [Tags("Images")]

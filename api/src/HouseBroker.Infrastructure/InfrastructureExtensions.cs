@@ -16,6 +16,11 @@ public static class InfrastructureExtensions
         var connectionString = configuration.GetConnectionString("HouseBroker")
             ?? throw new InvalidOperationException("Connection string 'HouseBroker' is not configured.");
 
+        services.AddOptions<DatabaseOptions>()
+            .Bind(configuration.GetSection(DatabaseOptions.SectionName))
+            .Validate(options => !string.IsNullOrWhiteSpace(options.HouseBroker), "A House Broker database connection string is required.")
+            .ValidateOnStart();
+
         services.AddScoped<AuditSaveChangesInterceptor>();
         services.AddDbContext<AppDbContext>((provider, options) =>
         {
@@ -23,14 +28,36 @@ public static class InfrastructureExtensions
             options.AddInterceptors(provider.GetRequiredService<AuditSaveChangesInterceptor>());
         });
 
-        var cacheProvider = configuration["Cache:Provider"];
+        services.AddOptions<CacheOptions>()
+            .Bind(configuration.GetSection(CacheOptions.SectionName))
+            .Validate(
+                options =>
+                {
+                    if (!string.Equals(options.Provider, "Redis", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+
+                    return !string.IsNullOrWhiteSpace(options.Redis.Configuration)
+                        || !string.IsNullOrWhiteSpace(configuration.GetConnectionString("Redis"));
+                },
+                "Redis cache configuration is required when Cache:Provider is Redis.")
+            .ValidateOnStart();
+
+        var cacheOptions = configuration.GetSection(CacheOptions.SectionName).Get<CacheOptions>() ?? new CacheOptions();
+        var cacheProvider = cacheOptions.Provider;
+        if (string.IsNullOrWhiteSpace(cacheProvider))
+        {
+            cacheProvider = configuration["Cache:Provider"];
+        }
+
         if (string.Equals(cacheProvider, "Redis", StringComparison.OrdinalIgnoreCase))
         {
             services.AddStackExchangeRedisCache(options =>
             {
-                options.Configuration = configuration["Cache:Redis:Configuration"]
-                    ?? configuration.GetConnectionString("Redis")
-                    ?? "localhost:6379";
+                options.Configuration = !string.IsNullOrWhiteSpace(cacheOptions.Redis.Configuration)
+                    ? cacheOptions.Redis.Configuration
+                    : configuration.GetConnectionString("Redis") ?? "localhost:6379";
             });
             services.AddScoped<ICacheService, RedisCacheService>();
         }
