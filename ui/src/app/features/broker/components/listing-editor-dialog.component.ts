@@ -83,13 +83,20 @@ function numberRange(min: number, max: number) {
             <mat-label>{{ 'broker.editor.title' | transloco }}</mat-label>
             <input matInput formControlName="title" />
             @if (form.controls.title.invalid && form.controls.title.touched) {
-              <mat-error>{{ 'broker.editor.titleError' | transloco }}</mat-error>
+              <mat-error>{{
+                form.controls.title.errors?.['server'] ?? ('broker.editor.titleError' | transloco)
+              }}</mat-error>
             }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>{{ 'broker.editor.description' | transloco }}</mat-label>
             <textarea matInput formControlName="description" rows="4"></textarea>
+            @if (form.controls.description.invalid && form.controls.description.touched) {
+              <mat-error>{{
+                form.controls.description.errors?.['server'] ?? ('errors.validation' | transloco)
+              }}</mat-error>
+            }
           </mat-form-field>
 
           <h3 class="group-title">{{ 'broker.editor.groupPriceType' | transloco }}</h3>
@@ -98,7 +105,9 @@ function numberRange(min: number, max: number) {
             <input matInput type="number" formControlName="price" />
             <mat-hint>{{ 'broker.editor.priceHint' | transloco }}</mat-hint>
             @if (form.controls.price.invalid && form.controls.price.touched) {
-              <mat-error>{{ 'broker.editor.priceError' | transloco }}</mat-error>
+              <mat-error>{{
+                form.controls.price.errors?.['server'] ?? ('broker.editor.priceError' | transloco)
+              }}</mat-error>
             }
           </mat-form-field>
 
@@ -109,6 +118,12 @@ function numberRange(min: number, max: number) {
                 <mat-option [value]="type.id">{{ type.name }}</mat-option>
               }
             </mat-select>
+            @if (form.controls.propertyTypeId.invalid && form.controls.propertyTypeId.touched) {
+              <mat-error>{{
+                form.controls.propertyTypeId.errors?.['server'] ??
+                  ('broker.editor.propertyTypeError' | transloco)
+              }}</mat-error>
+            }
           </mat-form-field>
 
           <h3 class="group-title">{{ 'broker.editor.groupLocation' | transloco }}</h3>
@@ -116,25 +131,42 @@ function numberRange(min: number, max: number) {
             <mat-label>{{ 'broker.editor.city' | transloco }}</mat-label>
             <input matInput formControlName="city" />
             @if (form.controls.city.invalid && form.controls.city.touched) {
-              <mat-error>{{ 'broker.editor.cityError' | transloco }}</mat-error>
+              <mat-error>{{
+                form.controls.city.errors?.['server'] ?? ('broker.editor.cityError' | transloco)
+              }}</mat-error>
             }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>{{ 'broker.editor.locality' | transloco }}</mat-label>
             <input matInput formControlName="locality" />
+            @if (form.controls.locality.invalid && form.controls.locality.touched) {
+              <mat-error>{{
+                form.controls.locality.errors?.['server'] ??
+                  ('broker.editor.localityError' | transloco)
+              }}</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>{{ 'broker.editor.province' | transloco }}</mat-label>
             <input matInput formControlName="province" />
+            @if (form.controls.province.invalid && form.controls.province.touched) {
+              <mat-error>{{
+                form.controls.province.errors?.['server'] ??
+                  ('broker.editor.provinceError' | transloco)
+              }}</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>{{ 'broker.editor.postalCode' | transloco }}</mat-label>
             <input matInput formControlName="postalCode" />
             @if (form.controls.postalCode.invalid && form.controls.postalCode.touched) {
-              <mat-error>{{ 'broker.editor.postalCodeError' | transloco }}</mat-error>
+              <mat-error>{{
+                form.controls.postalCode.errors?.['server'] ??
+                  ('broker.editor.postalCodeError' | transloco)
+              }}</mat-error>
             }
           </mat-form-field>
 
@@ -142,16 +174,33 @@ function numberRange(min: number, max: number) {
           <mat-form-field appearance="outline">
             <mat-label>{{ 'broker.editor.bedrooms' | transloco }}</mat-label>
             <input matInput type="number" formControlName="bedrooms" />
+            @if (form.controls.bedrooms.invalid && form.controls.bedrooms.touched) {
+              <mat-error>{{
+                form.controls.bedrooms.errors?.['server'] ??
+                  ('broker.editor.bedroomsError' | transloco)
+              }}</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>{{ 'broker.editor.bathrooms' | transloco }}</mat-label>
             <input matInput type="number" formControlName="bathrooms" />
+            @if (form.controls.bathrooms.invalid && form.controls.bathrooms.touched) {
+              <mat-error>{{
+                form.controls.bathrooms.errors?.['server'] ??
+                  ('broker.editor.bathroomsError' | transloco)
+              }}</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>{{ 'broker.editor.area' | transloco }}</mat-label>
             <input matInput type="number" formControlName="areaSqFt" />
+            @if (form.controls.areaSqFt.invalid && form.controls.areaSqFt.touched) {
+              <mat-error>{{
+                form.controls.areaSqFt.errors?.['server'] ?? ('broker.editor.areaError' | transloco)
+              }}</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field appearance="outline">
@@ -367,6 +416,20 @@ export class ListingEditorDialogComponent {
     return this.idempotency.key;
   }
 
+  /** First server-provided field message, if the failure carries field errors. */
+  private firstFieldMessage(error: unknown): string | null {
+    if (!(error instanceof ApiError) || !error.fieldErrors) {
+      return null;
+    }
+    for (const messages of Object.values(error.fieldErrors)) {
+      const first = messages?.[0];
+      if (first?.message) {
+        return first.message;
+      }
+    }
+    return null;
+  }
+
   async submit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -417,7 +480,8 @@ export class ListingEditorDialogComponent {
         }
       }
       this.error.set(
-        error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed'),
+        this.firstFieldMessage(error) ??
+          (error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed')),
       );
     } finally {
       this.saving.set(false);

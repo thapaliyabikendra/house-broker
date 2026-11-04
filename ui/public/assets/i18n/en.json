@@ -133,6 +133,12 @@
       "priceError": "Price is required and must be valid.",
       "cityError": "City is required.",
       "postalCodeError": "Postal code must be 5 digits.",
+      "propertyTypeError": "Property type is required.",
+      "localityError": "Locality is required.",
+      "provinceError": "Province is required.",
+      "bedroomsError": "Bedrooms must be between 0 and 50.",
+      "bathroomsError": "Bathrooms must be between 0 and 50.",
+      "areaError": "Area must be zero or greater.",
       "features": "Features",
       "staleReload": "Someone else changed this listing. Reload to see their version? Your unsaved edits will be replaced.",
       "groupBasics": "Basics",
@@ -183,8 +189,6 @@
     "maxPrice": "Max price",
     "maxInclusive": "Max inclusive",
     "staleReload": "Someone else changed this rate. Reload to see the latest version? Your unsaved edits will be replaced.",
-    "nonRetroactive": "This rate applies only from its effective date. Commission already stored on listings is not changed; a listing uses the new rate when its price next changes.",
-    "bandPreview": "Band",
     "andAbove": "and above"
   }
 }
