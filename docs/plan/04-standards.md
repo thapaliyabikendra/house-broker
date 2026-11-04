@@ -211,7 +211,7 @@ Controls are mapped to the OWASP Top 10:2025 and the OWASP API Security Top 10:2
 **Lint, format and tooling**
 - `angular-eslint` (recommended + template + accessibility rules), `typescript-eslint` strict, Prettier, `.editorconfig`; `no-console` except warn/error; `innerHTML` and `bypassSecurityTrust*` banned
 - Husky + lint-staged run lint and format on commit; CI gates: lint, `format:check`, tests, build, `api:check` (generated client is current), `npm audit` (no high or critical)
-- Node version pinned (`.nvmrc` and `engines`); `npm ci` only; Angular packages pinned to one version line; build budgets set in `angular.json`
+- Node version pinned (`.nvmrc` and `engines`); `npm ci` only; Angular packages pinned to one version line; build budgets set in `angular.json` (initial bundle: 750 kB raw warning, 1 MB error; the Angular, Material/CDK and Transloco baseline is about 650 kB raw, about 160 kB transferred, so the earlier 500 kB limit could not be met without dropping shared components)
 
 **Testing**
 - TestBed with `HttpTestingController` or provider mocks; test behavior, not implementation; Arrange-Act-Assert; stores, interceptors, guards, pipes and forms are tested first-class; no snapshot-only tests; coverage reported, about 80% on `core/` and `features/*/data` as a guide

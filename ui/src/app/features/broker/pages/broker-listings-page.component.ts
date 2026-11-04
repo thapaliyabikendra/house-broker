@@ -1,3 +1,4 @@
+import { ImageFallbackDirective } from '../../../shared/ui/image-fallback.directive';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -29,6 +30,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ImageFallbackDirective,
     LoadingStateComponent,
     EmptyStateComponent,
     ErrorStateComponent,
@@ -107,6 +109,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
                   alt=""
                   loading="lazy"
                   [src]="imageUrl(listing.id ?? '', imageId)"
+                  hbImageFallback
                 />
               } @else {
                 <div class="cover cover-placeholder" aria-hidden="true"></div>
@@ -114,7 +117,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
               <mat-card-header>
                 <mat-card-title>{{ listing.title }}</mat-card-title>
                 <mat-card-subtitle>
-                  {{ listing.price | hbPrice: wholeAmount }} ·
+                  {{ listing.price | hbPrice: wholeAmount }}
                   <mat-chip-set>
                     <mat-chip>{{ statusLabel(listing.status) }}</mat-chip>
                   </mat-chip-set>
@@ -128,7 +131,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
                 </p>
                 <p class="commission">
                   {{ 'broker.commission' | transloco }}:
-                  <strong>{{ listing.commissionAmount ?? 0 | hbPrice }}</strong>
+                  <strong>{{ listing.commissionAmount ?? 0 | hbPrice: wholeAmount }}</strong>
                 </p>
 
                 <div class="actions">
@@ -187,6 +190,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
                         <figure class="image-item">
                           <img
                             [src]="imageUrl(listing.id ?? '', image.id ?? '')"
+                            hbImageFallback
                             [alt]="
                               'detail.photoAlt'
                                 | transloco
@@ -283,7 +287,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     .cover {
       display: block;
       inline-size: 100%;
-      aspect-ratio: 16 / 9;
+      block-size: 180px;
       object-fit: cover;
     }
     .cover-placeholder {

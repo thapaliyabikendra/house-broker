@@ -1,4 +1,5 @@
-﻿import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ImageFallbackDirective } from '../../../shared/ui/image-fallback.directive';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ListingsDataService } from '../../../core/data/listings-data.service';
@@ -17,6 +18,7 @@ import { MatButtonModule } from '@angular/material/button';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    ImageFallbackDirective,
     LoadingStateComponent,
     EmptyStateComponent,
     ErrorStateComponent,
@@ -90,6 +92,7 @@ import { MatButtonModule } from '@angular/material/button';
                     class="gallery-image"
                     [class.hero-image]="i === 0"
                     [src]="imageUrl(item.id ?? '', image.id ?? '')"
+                    hbImageFallback
                     [alt]="
                       'detail.photoAlt'
                         | transloco

@@ -11,7 +11,10 @@
     <ProjectReference Include="..\..\src\HouseBroker.Application\HouseBroker.Application.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="SeedData\demo-house.jpg" />
+    <EmbeddedResource Include="SeedData\house-apartment.jpg" />
+    <EmbeddedResource Include="SeedData\house-house.jpg" />
+    <EmbeddedResource Include="SeedData\house-land.jpg" />
+    <EmbeddedResource Include="SeedData\house-commercial.jpg" />
   </ItemGroup>
 
   <ItemGroup>

@@ -56,7 +56,7 @@ public class DatabaseSeederTests
         await DatabaseSeeder.SeedAsync(db, environment, TimeProvider.System, CancellationToken.None);
 
         Assert.Equal(2, await db.BrokerProfiles.CountAsync());
-        Assert.Equal(4, await db.Listings.IgnoreQueryFilters().CountAsync());
+        Assert.Equal(6, await db.Listings.IgnoreQueryFilters().CountAsync());
     }
 
     private sealed class FakeHostEnvironment : IHostEnvironment

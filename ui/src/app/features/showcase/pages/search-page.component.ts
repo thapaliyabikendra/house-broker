@@ -1,3 +1,4 @@
+import { ImageFallbackDirective } from '../../../shared/ui/image-fallback.directive';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { OnInit } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -41,6 +42,7 @@ const SORT_LABEL_KEYS: Record<string, string> = {
   changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [SearchStore],
   imports: [
+    ImageFallbackDirective,
     ReactiveFormsModule,
     RouterLink,
     TranslocoPipe,
@@ -190,6 +192,7 @@ const SORT_LABEL_KEYS: Record<string, string> = {
                   alt=""
                   loading="lazy"
                   [src]="imageUrl(listing.id ?? '', listing.primaryImageId)"
+                  hbImageFallback
                 />
               } @else {
                 <div class="thumb thumb-placeholder" aria-hidden="true"></div>

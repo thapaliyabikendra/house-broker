@@ -191,12 +191,12 @@ function numberRange(min: number, max: number) {
     .editor-form {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 0 1rem;
+      gap: 0.5rem 1rem;
       padding-block-start: 0.5rem;
     }
     .group-title {
       grid-column: 1 / -1;
-      margin: 0.75rem 0 0;
+      margin: 1rem 0 0.25rem;
       font-size: 1.05rem;
       font-weight: 500;
     }

@@ -11,7 +11,11 @@ public sealed class CultureResponseMiddleware(RequestDelegate next)
         ArgumentNullException.ThrowIfNull(context);
         context.Response.OnStarting(() =>
         {
-            if (!context.Response.Headers.ContainsKey("Vary"))
+            var varyValues = (context.Response.Headers.Vary.ToString() ?? string.Empty)
+                .Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            if (!varyValues.Contains("Accept-Language"))
             {
                 context.Response.Headers.Append("Vary", "Accept-Language");
             }

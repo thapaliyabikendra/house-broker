@@ -32,21 +32,23 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
         var idempotencyService = services.GetRequiredService<IIdempotencyService>();
         var currentUser = services.GetRequiredService<ICurrentUserService>();
         var dbContext = services.GetRequiredService<HouseBroker.Infrastructure.Persistence.AppDbContext>();
+
+        var jsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        var serializedArguments = JsonSerializer.Serialize(context.ActionArguments
+            .Where(argument => argument.Value is not CancellationToken)
+            .ToDictionary(argument => argument.Key, argument => argument.Value), jsonOptions);
+        var requestHash = HouseBroker.Infrastructure.IdempotencyService.ComputeHash(serializedArguments);
+
         var scope = currentUser.UserId.HasValue
             ? $"user:{currentUser.UserId.Value}"
             : (string.IsNullOrWhiteSpace(currentUser.ClientId) ? "anonymous" : $"client:{currentUser.ClientId}");
 
-        var serializedArguments = JsonSerializer.Serialize(context.ActionArguments);
-        var requestHash = HouseBroker.Infrastructure.IdempotencyService.ComputeHash(serializedArguments);
-
-        // Keep idempotency record and business write in one database transaction.
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(context.HttpContext.RequestAborted);
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, context.HttpContext.RequestAborted);
 
         var begin = await idempotencyService.BeginAsync(key, scope, requestHash, context.HttpContext.RequestAborted);
 
         if (begin.Status == IdempotencyStatus.Replay)
         {
-            // Replay does not modify state; commit is not required for the existing record.
             await transaction.CommitAsync(context.HttpContext.RequestAborted);
             context.HttpContext.Response.Headers["Idempotent-Replayed"] = "true";
             context.Result = new ContentResult
@@ -87,7 +89,9 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
 
             statusCode = executed.Result switch
             {
-                ObjectResult objectResult => objectResult.StatusCode ?? StatusCodes.Status200OK,
+                ObjectResult objectResult => objectResult is CreatedAtActionResult
+                    ? (objectResult.StatusCode ?? StatusCodes.Status201Created)
+                    : (objectResult.StatusCode ?? StatusCodes.Status200OK),
                 StatusCodeResult statusCodeResult => statusCodeResult.StatusCode,
                 ContentResult contentResult => contentResult.StatusCode ?? StatusCodes.Status200OK,
                 _ => StatusCodes.Status200OK,
@@ -95,7 +99,7 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
 
             if (executed.Result is ObjectResult objectResultValue)
             {
-                responseBody = JsonSerializer.Serialize(objectResultValue.Value);
+                responseBody = JsonSerializer.Serialize(objectResultValue.Value, jsonOptions);
             }
             else if (executed.Result is ContentResult contentResultValue)
             {
@@ -116,8 +120,24 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
         }
         catch
         {
-            await idempotencyService.ReleaseAsync(key, scope, context.HttpContext.RequestAborted);
-            await transaction.RollbackAsync(context.HttpContext.RequestAborted);
+            try
+            {
+                await idempotencyService.ReleaseAsync(key, scope, context.HttpContext.RequestAborted);
+            }
+            catch
+            {
+                // ignore
+            }
+
+            try
+            {
+                await transaction.RollbackAsync(context.HttpContext.RequestAborted);
+            }
+            catch
+            {
+                // ignore
+            }
+
             throw;
         }
 
@@ -140,7 +160,6 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
         return new ObjectResult(problem) { StatusCode = StatusCodes.Status422UnprocessableEntity };
     }
 
-    /// <summary>Same key with a different request body: 422 per plan 4.8 (in-flight duplicates stay 409).</summary>
     private static IActionResult unprocessableProblem(ActionExecutingContext context, string code, string detail)
     {
         var problem = new ProblemDetails

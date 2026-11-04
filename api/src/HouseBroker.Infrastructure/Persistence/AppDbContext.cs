@@ -25,6 +25,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     /// <inheritdoc />
     async Task<HouseBroker.Application.Contracts.ITransactionScope> IUnitOfWork.BeginTransactionAsync(HouseBroker.Application.Contracts.TransactionIsolationLevel isolationLevel, CancellationToken cancellationToken)
     {
+        var currentTransaction = base.Database.CurrentTransaction;
+        if (currentTransaction is not null)
+        {
+            return new ReusedTransactionScope(currentTransaction);
+        }
+
         var systemLevel = isolationLevel == HouseBroker.Application.Contracts.TransactionIsolationLevel.ReadUncommitted ? System.Data.IsolationLevel.ReadUncommitted : isolationLevel == HouseBroker.Application.Contracts.TransactionIsolationLevel.ReadCommitted ? System.Data.IsolationLevel.ReadCommitted : isolationLevel == HouseBroker.Application.Contracts.TransactionIsolationLevel.RepeatableRead ? System.Data.IsolationLevel.RepeatableRead : isolationLevel == HouseBroker.Application.Contracts.TransactionIsolationLevel.Snapshot ? System.Data.IsolationLevel.Snapshot : System.Data.IsolationLevel.Serializable;
 
         var transaction = await base.Database.BeginTransactionAsync(systemLevel, cancellationToken);
@@ -140,6 +146,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.HasIndex(listing => listing.Price).HasFilter("[IsDeleted] = 0");
         entity.HasIndex(listing => listing.PropertyTypeId).HasFilter("[IsDeleted] = 0");
         entity.HasIndex(listing => listing.Status).HasFilter("[IsDeleted] = 0");
+        entity.HasIndex(listing => listing.BrokerId);
+        entity.HasIndex(listing => new { listing.Status, listing.CreatedAt }).HasFilter("[IsDeleted] = 0");
         entity.HasIndex(listing => listing.IsDeleted);
     }
 
@@ -179,6 +187,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.Property(feature => feature.Id).ValueGeneratedNever();
         entity.Property(feature => feature.CreatedAt).IsRequired();
         entity.HasIndex(feature => new { feature.ListingId, feature.FeatureId }).IsUnique();
+        entity.HasIndex(feature => feature.FeatureId);
         entity.HasOne<Listing>()
             .WithMany(listing => listing.Features)
             .HasForeignKey(feature => feature.ListingId)
@@ -240,6 +249,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.Property(rate => rate.CreatedAt).IsRequired();
         entity.Property(rate => rate.UpdatedAt).IsRequired();
         entity.Property(rate => rate.RowVersion).IsRowVersion();
+        entity.HasIndex(rate => new { rate.IsActive, rate.EffectiveFrom });
     }
 
     private static void ConfigureHistory(ModelBuilder modelBuilder)

@@ -167,6 +167,8 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IsActive", "EffectiveFrom");
+
                     b.ToTable("CommissionRates", (string)null);
                 });
 
@@ -379,6 +381,8 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BrokerId");
+
                     b.HasIndex("IsDeleted");
 
                     b.HasIndex("Price")
@@ -391,6 +395,9 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("City", "Locality")
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.HasIndex("Status", "CreatedAt")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("Listings", (string)null);

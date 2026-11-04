@@ -1,7 +1,7 @@
-using HouseBroker.Application;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Common;
 using HouseBroker.Infrastructure.Persistence;
+using HouseBroker.Application;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 
@@ -10,17 +10,41 @@ namespace HouseBroker.Infrastructure;
 /// <summary>Idempotent database seeder.</summary>
 public static class DatabaseSeeder
 {
-    private static readonly byte[] DemoImageBytes = LoadDemoImageBytes();
+    private static readonly Guid[] DemoListingIds =
+    [
+        Guid.Parse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+        Guid.Parse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+    ];
 
-    private static byte[] LoadDemoImageBytes()
+    private static readonly Dictionary<string, byte[]> DemoImageByType = new(StringComparer.OrdinalIgnoreCase)
     {
-        const string resourceName = "HouseBroker.Infrastructure.SeedData.demo-house.jpg";
+        ["Apartment"] = LoadDemoImageBytes("house-apartment.jpg"),
+        ["House"] = LoadDemoImageBytes("house-house.jpg"),
+        ["Land"] = LoadDemoImageBytes("house-land.jpg"),
+        ["Commercial"] = LoadDemoImageBytes("house-commercial.jpg"),
+    };
+
+    private static byte[] LoadDemoImageBytes(string fileName)
+    {
+        var resourceName = $"HouseBroker.Infrastructure.SeedData.{fileName}";
         using var stream = typeof(DatabaseSeeder).Assembly.GetManifestResourceStream(resourceName)
             ?? throw new InvalidOperationException($"Embedded resource '{resourceName}' was not found.");
         using var memory = new System.IO.MemoryStream();
         stream.CopyTo(memory);
         return memory.ToArray();
     }
+
+    private static byte[] GetDemoImageBytes(string propertyTypeCode)
+        => DemoImageByType.TryGetValue(propertyTypeCode, out var bytes) ? bytes : DemoImageByType.Values.First();
+
+
+    private static readonly (string Code, string Name, int SortOrder)[] PropertyTypeSeeds =
+    [
+        ("Apartment", "Apartment", 1),
+        ("House", "House", 2),
+        ("Land", "Land", 3),
+        ("Commercial", "Commercial", 4),
+    ];
 
     /// <summary>Seeds master and development data.</summary>
     public static async Task SeedAsync(AppDbContext db, IHostEnvironment environment, TimeProvider clock, CancellationToken cancellationToken)
@@ -40,13 +64,7 @@ public static class DatabaseSeeder
 
     private static async Task SeedPropertyTypesAsync(AppDbContext db, CancellationToken cancellationToken)
     {
-        var seeds = new (string Code, string Name, int SortOrder)[]
-        {
-            ("Apartment", "Apartment", 1),
-            ("House", "House", 2),
-            ("Land", "Land", 3),
-            ("Commercial", "Commercial", 4),
-        };
+        var seeds = PropertyTypeSeeds;
 
         foreach (var seed in seeds)
         {
@@ -106,174 +124,180 @@ public static class DatabaseSeeder
 
     private static async Task SeedDemoListingsAsync(AppDbContext db, TimeProvider clock, CancellationToken cancellationToken)
     {
-        if (await db.Listings.IgnoreQueryFilters().AnyAsync(item => item.BrokerId == DemoUsers.BrokerOne, cancellationToken)
-            || await db.Listings.IgnoreQueryFilters().AnyAsync(item => item.BrokerId == DemoUsers.BrokerTwo, cancellationToken))
+        var now = clock.GetUtcNow().UtcDateTime;
+        var tiers = await db.CommissionRates.AsNoTracking().ToListAsync(cancellationToken);
+
+        await EnsureListingAsync(db, clock, tiers, DemoUsers.BrokerOne,
+            title: "Demo Apartment",
+            description: "A seeded demonstration listing in Thamel.",
+            propertyTypeCode: "Apartment",
+            price: 4_500_000m,
+            province: "Bagmati",
+            city: "Kathmandu",
+            locality: "Thamel",
+            postalCode: "44600",
+            bedrooms: 2,
+            bathrooms: 2,
+            areaSqFt: 1100m,
+            featureCodes: ["Parking", "Security"],
+            status: ListingStatus.Draft,
+            addImage: true,
+            cancellationToken);
+
+        await EnsureListingAsync(db, clock, tiers, DemoUsers.BrokerOne,
+            title: "Family House in Bhaktapur",
+            description: "A spacious house suited to a growing family, within commuting distance of Kathmandu.",
+            propertyTypeCode: "House",
+            price: 8_750_000m,
+            province: "Bagmati",
+            city: "Bhaktapur",
+            locality: "Suryabinayak",
+            postalCode: "44800",
+            bedrooms: 4,
+            bathrooms: 3,
+            areaSqFt: 2200m,
+            featureCodes: ["Parking", "Garden", "Security"],
+            status: ListingStatus.Active,
+            addImage: true,
+            cancellationToken);
+
+        await EnsureListingAsync(db, clock, tiers, DemoUsers.BrokerTwo,
+            title: "Prime Commercial Space in New Road",
+            description: "Ground-floor retail unit in a high-footfall heritage commercial area.",
+            propertyTypeCode: "Commercial",
+            price: 32_000_000m,
+            province: "Bagmati",
+            city: "Kathmandu",
+            locality: "New Road",
+            postalCode: "44600",
+            bedrooms: 0,
+            bathrooms: 2,
+            areaSqFt: 1800m,
+            featureCodes: ["Parking", "Generator", "Security"],
+            status: ListingStatus.Active,
+            addImage: true,
+            cancellationToken);
+
+        await EnsureListingAsync(db, clock, tiers, DemoUsers.BrokerOne,
+            title: "Compact Apartment in Lalitpur",
+            description: "Well-lit apartment close to cafes and public transport.",
+            propertyTypeCode: "Apartment",
+            price: 4_999_999.50m,
+            province: "Bagmati",
+            city: "Lalitpur",
+            locality: "Jawalakhel",
+            postalCode: "44700",
+            bedrooms: 2,
+            bathrooms: 1,
+            areaSqFt: 980m,
+            featureCodes: ["Parking"],
+            status: ListingStatus.Draft,
+            addImage: false,
+            cancellationToken);
+
+        await EnsureListingAsync(db, clock, tiers, DemoUsers.BrokerTwo,
+            title: "Agricultural Land in Chitwan",
+            description: "Fertile land along a paved road, suitable for residential conversion.",
+            propertyTypeCode: "Land",
+            price: 12_500_000m,
+            province: "Bagmati",
+            city: "Bharatpur",
+            locality: "Chitwan",
+            postalCode: "44200",
+            bedrooms: 0,
+            bathrooms: 0,
+            areaSqFt: 5000m,
+            featureCodes: ["Garden"],
+            status: ListingStatus.Active,
+            addImage: true,
+            cancellationToken);
+
+        await EnsureListingAsync(db, clock, tiers, DemoUsers.BrokerOne,
+            title: "Boundary Value Land at Exactly Five Million",
+            description: "Seeded to exercise the inclusive commission-tier boundary at 50,00,000.",
+            propertyTypeCode: "Land",
+            price: 5_000_000m,
+            province: "Bagmati",
+            city: "Kathmandu",
+            locality: "Tokha",
+            postalCode: "44600",
+            bedrooms: 0,
+            bathrooms: 0,
+            areaSqFt: 1000m,
+            featureCodes: [],
+            status: ListingStatus.Draft,
+            addImage: false,
+            cancellationToken);
+    }
+
+    private static async Task EnsureListingAsync(
+        AppDbContext db,
+        TimeProvider clock,
+        List<CommissionRate> tiers,
+        Guid brokerId,
+        string title,
+        string description,
+        string propertyTypeCode,
+        decimal price,
+        string province,
+        string city,
+        string locality,
+        string postalCode,
+        int bedrooms,
+        int bathrooms,
+        decimal areaSqFt,
+        string[] featureCodes,
+        ListingStatus status,
+        bool addImage,
+        CancellationToken cancellationToken)
+    {
+        if (await db.Listings.IgnoreQueryFilters().AnyAsync(item => item.BrokerId == brokerId && item.Title == title, cancellationToken))
         {
             return;
         }
 
-        var now = clock.GetUtcNow().UtcDateTime;
-        var tiers = await db.CommissionRates.AsNoTracking().ToListAsync(cancellationToken);
-
-        var propertyTypes = await db.PropertyTypes.AsNoTracking().ToDictionaryAsync(item => item.Code, item => item, cancellationToken);
-        var features = await db.Features.AsNoTracking().ToDictionaryAsync(item => item.Code, item => item, cancellationToken);
-
-        var seeds = new[]
+        var propertyType = await db.PropertyTypes.AsNoTracking().FirstOrDefaultAsync(item => item.Code == propertyTypeCode, cancellationToken);
+        if (propertyType is null)
         {
-            new DemoListingSeed
-            {
-                BrokerId = DemoUsers.BrokerOne,
-                Title = "Demo Apartment",
-                Description = "A seeded apartment listing below the first commission band.",
-                PropertyTypeCode = "Apartment",
-                Price = 4_000_000m,
-                Province = "Bagmati",
-                City = "Kathmandu",
-                Locality = "Thamel",
-                PostalCode = "44600",
-                Bedrooms = 2,
-                Bathrooms = 2,
-                AreaSqFt = 1100m,
-                FeatureCodes = new[] { "Parking", "Security" },
-                ImageCount = 2,
-            },
-            new DemoListingSeed
-            {
-                BrokerId = DemoUsers.BrokerOne,
-                Title = "Demo Family House",
-                Description = "A seeded family house within the middle commission band.",
-                PropertyTypeCode = "House",
-                Price = 7_500_000m,
-                Province = "Bagmati",
-                City = "Lalitpur",
-                Locality = "Jawalakhel",
-                PostalCode = "44700",
-                Bedrooms = 4,
-                Bathrooms = 3,
-                AreaSqFt = 2200m,
-                FeatureCodes = new[] { "Parking", "Garden" },
-                ImageCount = 2,
-            },
-            new DemoListingSeed
-            {
-                BrokerId = DemoUsers.BrokerTwo,
-                Title = "Demo Commercial Space",
-                Description = "A seeded commercial listing above the top commission band.",
-                PropertyTypeCode = "Commercial",
-                Price = 15_000_000m,
-                Province = "Bagmati",
-                City = "Bhaktapur",
-                Locality = "Suryabinayak",
-                PostalCode = "44800",
-                Bedrooms = 0,
-                Bathrooms = 2,
-                AreaSqFt = 3500m,
-                FeatureCodes = new[] { "Security", "Generator", "Parking" },
-                ImageCount = 2,
-            },
-            new DemoListingSeed
-            {
-                BrokerId = DemoUsers.BrokerTwo,
-                Title = "Demo Land Plot",
-                Description = "A seeded land parcel within the middle commission band.",
-                PropertyTypeCode = "Land",
-                Price = 9_000_000m,
-                Province = "Gandaki",
-                City = "Pokhara",
-                Locality = "Lakeside",
-                PostalCode = "33700",
-                Bedrooms = 0,
-                Bathrooms = 0,
-                AreaSqFt = 4000m,
-                FeatureCodes = new[] { "Parking", "Garden" },
-                ImageCount = 1,
-            },
-        };
-
-        foreach (var seed in seeds)
-        {
-            if (!propertyTypes.TryGetValue(seed.PropertyTypeCode, out var propertyType))
-            {
-                continue;
-            }
-
-            var listing = Listing.Create(
-                seed.BrokerId,
-                seed.Title,
-                seed.Description,
-                propertyType.Id,
-                seed.Price,
-                seed.Province,
-                seed.City,
-                seed.Locality,
-                seed.PostalCode,
-                seed.Bedrooms,
-                seed.Bathrooms,
-                seed.AreaSqFt);
-
-            foreach (var featureCode in seed.FeatureCodes)
-            {
-                if (features.TryGetValue(featureCode, out var feature))
-                {
-                    listing.AddFeature(feature.Id);
-                }
-            }
-
-            var commission = CommissionCalculator.Calculate(seed.Price, tiers, now);
-            listing.ApplyCommission(commission.Amount, commission.RatePercent, commission.RateId);
-
-            for (var index = 0; index < seed.ImageCount; index++)
-            {
-                var image = ListingImage.Create(
-                    listing.Id,
-                    $"demo-image-{index + 1}.jpg",
-                    "image/jpeg",
-                    DemoImageBytes.Length,
-                    "demo-image-hash",
-                    index == 0);
-
-                listing.AddImage(image);
-                db.ListingImageData.Add(ListingImageData.Create(image.Id, DemoImageBytes));
-            }
-
-            var fromStatus = listing.Status;
-            listing.Publish();
-            db.ListingStatusHistories.Add(
-                ListingStatusHistory.Create(listing.Id, fromStatus, listing.Status, null, now, "Seeded demo listing"));
-
-            db.Listings.Add(listing);
+            return;
         }
-    }
 
-    private sealed class DemoListingSeed
-    {
-        public Guid BrokerId { get; init; }
+        var featureIds = await db.Features.AsNoTracking()
+            .Where(item => featureCodes.Contains(item.Code))
+            .Select(item => item.Id)
+            .ToListAsync(cancellationToken);
 
-        public string Title { get; init; } = string.Empty;
+        var listing = Listing.Create(
+            brokerId,
+            title,
+            description,
+            propertyType.Id,
+            price,
+            province,
+            city,
+            locality,
+            postalCode,
+            bedrooms,
+            bathrooms,
+            areaSqFt);
 
-        public string Description { get; init; } = string.Empty;
+        listing.ReplaceFeatures(featureIds);
+        if (status != ListingStatus.Draft)
+        {
+            listing.Publish();
+        }
 
-        public string PropertyTypeCode { get; init; } = string.Empty;
+        var commission = CommissionCalculator.Calculate(price, tiers, clock.GetUtcNow().UtcDateTime);
+        listing.ApplyCommission(commission.Amount, commission.RatePercent, commission.RateId);
 
-        public decimal Price { get; init; }
+        db.Listings.Add(listing);
 
-        public string Province { get; init; } = string.Empty;
-
-        public string City { get; init; } = string.Empty;
-
-        public string Locality { get; init; } = string.Empty;
-
-        public string PostalCode { get; init; } = string.Empty;
-
-        public int Bedrooms { get; init; }
-
-        public int Bathrooms { get; init; }
-
-        public decimal AreaSqFt { get; init; }
-
-        public string[] FeatureCodes { get; init; } = Array.Empty<string>();
-
-
-        public int ImageCount { get; init; }
+        if (addImage)
+        {
+            var imageBytes = GetDemoImageBytes(propertyTypeCode);
+            var image = ListingImage.Create(listing.Id, $"seed-{propertyTypeCode.ToLowerInvariant()}.jpg", "image/jpeg", imageBytes.Length, "seed-image-hash", true);
+            db.ListingImages.Add(image);
+            db.ListingImageData.Add(ListingImageData.Create(image.Id, imageBytes));
+        }
     }
 }
