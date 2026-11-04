@@ -1,1 +1,3 @@
-artifacts/
+artifacts/*
+!artifacts/manual-e2e/
+!artifacts/manual-e2e/**

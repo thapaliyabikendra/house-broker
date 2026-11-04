@@ -18,6 +18,6 @@ test.describe('@ui browser auth', () => {
 
     await page.getByRole('link', { name: 'Search listings' }).first().click();
     await expect(page).toHaveURL(/\/search$/);
-    await expect(page.getByRole('link', { name: /Demo Apartment/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Prime Commercial Space/i })).toBeVisible();
   });
 });

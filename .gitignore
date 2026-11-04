@@ -60,5 +60,7 @@ Thumbs.db
 ui/src/app/api/
 # Playwright E2E outputs
 tests/e2e/test-results/
-tests/e2e/artifacts/
+tests/e2e/artifacts/*
+!tests/e2e/artifacts/manual-e2e/
+!tests/e2e/artifacts/manual-e2e/**
 tests/e2e/playwright-report/
