@@ -44,6 +44,9 @@ public interface IListingQueries
     /// <summary>Gets a broker profile.</summary>
     Task<BrokerProfile?> GetBrokerProfileAsync(Guid brokerId, CancellationToken cancellationToken);
 
+    /// <summary>Upserts a broker profile.</summary>
+    Task UpsertBrokerProfileAsync(BrokerProfile profile, CancellationToken cancellationToken);
+
     /// <summary>Gets property types.</summary>
     Task<IReadOnlyList<PropertyType>> GetPropertyTypesAsync(CancellationToken cancellationToken);
 

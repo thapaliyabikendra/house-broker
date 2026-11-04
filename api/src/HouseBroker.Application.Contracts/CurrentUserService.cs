@@ -6,6 +6,15 @@ public interface ICurrentUserService
     /// <summary>Gets the subject identifier.</summary>
     Guid? UserId { get; }
 
+    /// <summary>Gets the user's full name.</summary>
+    string? FullName { get; }
+
+    /// <summary>Gets the user's email address.</summary>
+    string? Email { get; }
+
+    /// <summary>Gets the user's phone number.</summary>
+    string? PhoneNumber { get; }
+
     /// <summary>Gets the user roles.</summary>
     IReadOnlyCollection<string> Roles { get; }
 

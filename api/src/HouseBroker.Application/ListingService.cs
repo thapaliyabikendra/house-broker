@@ -38,6 +38,9 @@ public sealed class ListingService(
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
+        // Sync broker profile from token claims
+        await SyncBrokerProfileAsync(brokerId.Value, cancellationToken);
+
         NormalizeRequest(request);
 
         var createValidation = await _createValidator.ValidateAsync(request, cancellationToken);
@@ -46,6 +49,7 @@ public sealed class ListingService(
             var failure = createValidation.Errors[0];
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, failure.PropertyName));
         }
+
 
         var featureIds = (request.FeatureIds ?? new List<Guid>())
             .Where(featureId => featureId != Guid.Empty)
@@ -94,6 +98,9 @@ public sealed class ListingService(
             _logger.LogWarning("Access to listing {ListingId} was rejected because the caller is not an authenticated broker.", id);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
+
+        // Sync broker profile from token claims
+        await SyncBrokerProfileAsync(brokerId.Value, cancellationToken);
 
         var listing = await _repository.GetByIdAsync(id, cancellationToken);
         if (listing is null)
@@ -404,6 +411,25 @@ public sealed class ListingService(
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return Result<OwnerListingDto>.Success(MapOwner(listing));
+    }
+
+    private async Task SyncBrokerProfileAsync(Guid brokerId, CancellationToken cancellationToken)
+    {
+        var fullName = _currentUser.FullName;
+        var email = _currentUser.Email;
+        var phone = _currentUser.PhoneNumber;
+
+        if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email))
+        {
+            _logger.LogWarning("Broker profile synchronization failed for broker {BrokerId} due to missing required claims.", brokerId);
+            return;
+        }
+
+        var profile = BrokerProfile.Create(brokerId, fullName, email, phone);
+        profile.UpdatedAt = _clock.GetUtcNow().UtcDateTime;
+        profile.UpdatedBy = _currentUser.UserId ?? Guid.Empty;
+
+        await _queries.UpsertBrokerProfileAsync(profile, cancellationToken);
     }
 
     private static ListingDetailDto MapDetail(Listing listing) => new()
