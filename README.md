@@ -222,11 +222,11 @@ Strict TDD applies to commission calculation, domain invariants, validators, `Li
 - No email confirmation, password reset, MFA or social login.
 - Images are stored in SQL Server (`varbinary(max)`), not object storage (swappable behind `IImageStorage`); this grows the database and its backups.
 - Rate limiting is per instance in the apps, with a global per-IP limit at the gateway in production.
-- SPA tokens live in `sessionStorage`; the BFF pattern is on the roadmap.
+- SPA tokens live in `sessionStorage`; the BFF pattern is on the roadmap (deferred).
 - Nepali translations are drafts; adding a language needs translation files plus a configuration entry.
 - Broker text and locations are not translated; search does not transliterate between scripts.
 - No end-to-end test suite; no stored per-user language; left-to-right layouts only.
-- Roadmap: admin UI for client registration, end-to-end tests, object storage, BFF.
+- Roadmap: admin UI for client registration, end-to-end tests, object storage, BFF (deferred).
 
 ## Deliberate deviation from the brief
 

@@ -5,7 +5,7 @@ using HouseBroker.Domain.Common;
 using HouseBroker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HouseBroker.Infrastructure;
+namespace HouseBroker.Infrastructure.Listings;
 
 /// <summary>Listing repository implementation.</summary>
 public sealed class ListingRepository(AppDbContext dbContext) : IListingRepository

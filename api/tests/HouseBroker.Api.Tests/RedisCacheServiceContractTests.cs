@@ -1,4 +1,4 @@
-using HouseBroker.Infrastructure;
+using HouseBroker.Infrastructure.Caching;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Caching.Memory;

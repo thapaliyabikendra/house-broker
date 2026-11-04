@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 using System.Text;
 
-namespace HouseBroker.Infrastructure;
+namespace HouseBroker.Infrastructure.Idempotency;
 
 /// <summary>Idempotency service implementation.</summary>
 public sealed class IdempotencyService(AppDbContext dbContext, TimeProvider clock) : IIdempotencyService

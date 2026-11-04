@@ -71,10 +71,10 @@ builder.AddServiceDefaults();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddHouseBrokerApplication();
-builder.Services.AddScoped<IIdempotencyService, HouseBroker.Infrastructure.IdempotencyService>();
-builder.Services.AddScoped<HouseBroker.Application.CommissionRates.ICommissionRateRepository, HouseBroker.Infrastructure.CommissionRateRepository>();
+builder.Services.AddScoped<IIdempotencyService, HouseBroker.Infrastructure.Idempotency.IdempotencyService>();
+builder.Services.AddScoped<HouseBroker.Application.CommissionRates.ICommissionRateRepository, HouseBroker.Infrastructure.CommissionRates.CommissionRateRepository>();
 builder.Services.AddScoped<ICommissionRateAdminService, HouseBroker.Application.CommissionRates.CommissionRateAdminService>();
-builder.Services.AddHostedService<HouseBroker.Infrastructure.IdempotencyCleanupService>();
+builder.Services.AddHostedService<HouseBroker.Infrastructure.Idempotency.IdempotencyCleanupService>();
 builder.Services.AddHouseBrokerApi(builder.Configuration);
 builder.Services.AddHouseBrokerJsonOptions();
 builder.Services.AddHouseBrokerRateLimiting(builder.Configuration);
@@ -264,7 +264,7 @@ if (args.Contains("migrate", StringComparer.OrdinalIgnoreCase))
     await database.Database.MigrateAsync();
     var environment = scope.ServiceProvider.GetRequiredService<IHostEnvironment>();
     var clock = scope.ServiceProvider.GetRequiredService<TimeProvider>();
-    await HouseBroker.Infrastructure.DatabaseSeeder.SeedAsync(database, environment, clock, CancellationToken.None);
+    await HouseBroker.Infrastructure.Seeding.DatabaseSeeder.SeedAsync(database, environment, clock, CancellationToken.None);
     return;
 }
 

@@ -5,7 +5,7 @@ using HouseBroker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
 
-namespace HouseBroker.Infrastructure;
+namespace HouseBroker.Infrastructure.Seeding;
 
 /// <summary>Idempotent database seeder.</summary>
 public static class DatabaseSeeder

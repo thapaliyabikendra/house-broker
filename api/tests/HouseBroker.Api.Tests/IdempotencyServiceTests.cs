@@ -1,5 +1,5 @@
 using HouseBroker.Application.Contracts;
-using HouseBroker.Infrastructure;
+using HouseBroker.Infrastructure.Idempotency;
 using HouseBroker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Xunit;

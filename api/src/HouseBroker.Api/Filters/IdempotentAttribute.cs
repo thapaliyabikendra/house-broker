@@ -37,7 +37,7 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
         var serializedArguments = JsonSerializer.Serialize(context.ActionArguments
             .Where(argument => argument.Value is not CancellationToken)
             .ToDictionary(argument => argument.Key, argument => argument.Value), jsonOptions);
-        var requestHash = HouseBroker.Infrastructure.IdempotencyService.ComputeHash(serializedArguments);
+        var requestHash = HouseBroker.Infrastructure.Idempotency.IdempotencyService.ComputeHash(serializedArguments);
 
         var scope = currentUser.UserId.HasValue
             ? $"user:{currentUser.UserId.Value}"

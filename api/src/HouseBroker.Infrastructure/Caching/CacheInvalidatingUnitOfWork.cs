@@ -1,6 +1,6 @@
 using HouseBroker.Application.Contracts;
 
-namespace HouseBroker.Infrastructure;
+namespace HouseBroker.Infrastructure.Caching;
 
 /// <summary>Invalidates listing cache after successful persistence.</summary>
 public sealed class CacheInvalidatingUnitOfWork(IUnitOfWork inner, ICacheService cache) : IUnitOfWork

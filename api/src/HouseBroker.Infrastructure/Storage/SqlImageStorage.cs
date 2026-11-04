@@ -7,7 +7,7 @@ using HouseBroker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
 
-namespace HouseBroker.Infrastructure;
+namespace HouseBroker.Infrastructure.Storage;
 
 /// <summary>SQL-backed image storage.</summary>
 public sealed class SqlImageStorage(AppDbContext dbContext, ICurrentUserService currentUser, TimeProvider clock, ICacheService cache) : IImageStorage

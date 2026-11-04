@@ -227,7 +227,7 @@ Controls are mapped to the OWASP Top 10:2025 and the OWASP API Security Top 10:2
 - `angular-eslint` accessibility rules are clean; a manual keyboard + screen-reader pass (NVDA or Narrator) is part of Phase 12
 
 **Security**
-- The OIDC library keeps tokens in `sessionStorage`; this is mitigated by a strict CSP, Angular's default encoding, banned unsafe-HTML APIs and dependency audits. A backend-for-frontend cookie pattern is roadmap
+- The OIDC library keeps tokens in `sessionStorage`; this is mitigated by a strict CSP, Angular's default encoding, banned unsafe-HTML APIs and dependency audits. A backend-for-frontend cookie pattern is roadmap (deferred)
 - No secrets in the bundle; tokens never in URLs or logs; all URLs relative (`/api`, `/sso`), with the bearer attached to `/api` only
 
 **Localization and time**

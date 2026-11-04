@@ -3,7 +3,7 @@ using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
 using Microsoft.Extensions.Configuration;
 
-namespace HouseBroker.Infrastructure;
+namespace HouseBroker.Infrastructure.Caching;
 
 /// <summary>Caching decorator for commission rate provider.</summary>
 public sealed class CachedCommissionRateProvider(ICommissionRateProvider inner, ICacheService cache, IConfiguration configuration) : ICommissionRateProvider

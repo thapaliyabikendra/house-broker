@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace HouseBroker.Infrastructure;
+namespace HouseBroker.Infrastructure.Idempotency;
 
 /// <summary>Cleans expired idempotency keys.</summary>
 public sealed class IdempotencyCleanupService(IServiceProvider serviceProvider, TimeProvider clock, ILogger<IdempotencyCleanupService> logger) : BackgroundService

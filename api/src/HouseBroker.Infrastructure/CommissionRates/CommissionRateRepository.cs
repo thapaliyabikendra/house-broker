@@ -3,7 +3,7 @@ using HouseBroker.Domain;
 using HouseBroker.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 
-namespace HouseBroker.Infrastructure;
+namespace HouseBroker.Infrastructure.CommissionRates;
 
 /// <summary>Commission rate repository implementation.</summary>
 public sealed class CommissionRateRepository(AppDbContext dbContext) : ICommissionRateRepository

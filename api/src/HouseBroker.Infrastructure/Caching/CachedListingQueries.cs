@@ -6,7 +6,7 @@ using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
 using Microsoft.Extensions.Configuration;
 
-namespace HouseBroker.Infrastructure;
+namespace HouseBroker.Infrastructure.Caching;
 
 /// <summary>Caching decorator for listing queries.</summary>
 public sealed class CachedListingQueries(IListingQueries inner, ICacheService cache, IConfiguration configuration) : IListingQueries

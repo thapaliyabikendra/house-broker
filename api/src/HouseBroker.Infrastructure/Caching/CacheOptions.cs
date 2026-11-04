@@ -1,4 +1,4 @@
-namespace HouseBroker.Infrastructure;
+namespace HouseBroker.Infrastructure.Caching;
 
 /// <summary>Cache provider settings.</summary>
 public sealed class CacheOptions

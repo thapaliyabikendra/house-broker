@@ -46,7 +46,7 @@ public sealed class DependencyRulesTests
     [Fact]
     public void Infrastructure_ReferencesApplication()
     {
-        var references = ReferencedAssemblyNames(typeof(HouseBroker.Infrastructure.CachedListingQueries));
+        var references = ReferencedAssemblyNames(typeof(HouseBroker.Infrastructure.Caching.CachedListingQueries));
         Assert.Contains("HouseBroker.Application", references);
     }
 

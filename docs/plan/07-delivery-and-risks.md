@@ -26,7 +26,7 @@ Tier 1 is the assignment submission scope: it satisfies every raw requirement. *
 | OpenIddict or Swashbuckle incompatibility with .NET 10 | Spikes in Phases 1, 3 and 4; fallbacks: built-in OpenAPI, JwtBearer validation |
 | Path-base pitfalls (Swagger URLs, redirects, cookie paths, issuer mismatch behind the proxy) | PathBase tested in Phase 1 and again behind the gateway in Phase 14; public issuer configured explicitly |
 | Token validation across an internal network and a public issuer | Phase 4 spike; discovery address configurable separately from the issuer |
-| SPA token theft (XSS) | Strict CSP, Angular encoding, banned unsafe HTML, dependency audits; BFF pattern on the roadmap |
+| SPA token theft (XSS) | Strict CSP, Angular encoding, banned unsafe HTML, dependency audits; BFF pattern on the roadmap (deferred) |
 | Stale cache across instances | Redis provider for multi-instance; Memory provider limited to development or a single instance; cache failures fall through to the DB. Keep the token-in-key invalidation convention. Use explicit `RemoveAsync` or tags only where a two-node contract test verifies them. The Redis cache package is pinned in `api/Directory.Packages.props`. |
 | Concurrent migrations at startup | Dedicated `migrate` jobs; services do not migrate in production |
 | Lost updates and duplicate creates under retries | `If-Match` + `rowversion`; `Idempotency-Key`; parallel-request checks |

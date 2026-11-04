@@ -1,70 +1,69 @@
 using System.Collections.Concurrent;
+using System.Text.Json;
 using HouseBroker.Application.Contracts;
-using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 
-namespace HouseBroker.Infrastructure;
+namespace HouseBroker.Infrastructure.Caching;
 
-/// <summary>In-memory cache implementation.</summary>
-public sealed class MemoryCacheService(IMemoryCache memoryCache, ILogger<MemoryCacheService> logger) : ICacheService
+/// <summary>Redis-backed cache implementation.</summary>
+public sealed class RedisCacheService(IDistributedCache distributedCache, ILogger<RedisCacheService> logger) : ICacheService
 {
-    private readonly IMemoryCache _memoryCache = memoryCache;
-    private readonly ILogger<MemoryCacheService> _logger = logger;
+    private readonly IDistributedCache _distributedCache = distributedCache;
+    private readonly ILogger<RedisCacheService> _logger = logger;
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _gates = new(StringComparer.Ordinal);
 
     /// <inheritdoc />
-    public Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken)
+    public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken)
     {
         try
         {
-            if (_memoryCache.TryGetValue(key, out var value) && value is T typed)
+            var bytes = await _distributedCache.GetAsync(key, cancellationToken).ConfigureAwait(false);
+            if (bytes is null || bytes.Length == 0)
             {
-                return Task.FromResult<T?>(typed);
+                return default;
             }
 
-            return Task.FromResult<T?>(default);
+            return JsonSerializer.Deserialize<T>(bytes);
         }
         catch (Exception exception)
         {
             _logger.LogWarning(exception, "Cache get failed for key {CacheKey}.", key);
-            return Task.FromResult<T?>(default);
+            return default;
         }
     }
 
     /// <inheritdoc />
-    public Task SetAsync<T>(string key, T value, TimeSpan? expiration, CancellationToken cancellationToken)
+    public async Task SetAsync<T>(string key, T value, TimeSpan? expiration, CancellationToken cancellationToken)
     {
         try
         {
-            var options = new MemoryCacheEntryOptions();
+            var options = new DistributedCacheEntryOptions();
             if (expiration.HasValue)
             {
                 options.AbsoluteExpirationRelativeToNow = expiration.Value;
             }
 
-            _memoryCache.Set(key, value, options);
+            var bytes = JsonSerializer.SerializeToUtf8Bytes(value);
+            await _distributedCache.SetAsync(key, bytes, options, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
             _logger.LogWarning(exception, "Cache set failed for key {CacheKey}.", key);
         }
-
-        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public Task RemoveAsync(string key, CancellationToken cancellationToken)
+    public async Task RemoveAsync(string key, CancellationToken cancellationToken)
     {
         try
         {
-            _memoryCache.Remove(key);
+            await _distributedCache.RemoveAsync(key, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception exception)
         {
             _logger.LogWarning(exception, "Cache remove failed for key {CacheKey}.", key);
         }
-
-        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
@@ -76,10 +75,15 @@ public sealed class MemoryCacheService(IMemoryCache memoryCache, ILogger<MemoryC
         {
             try
             {
-                if (_memoryCache.TryGetValue(key, out var cached) && cached is T typed)
+                var bytes = await _distributedCache.GetAsync(key, cancellationToken).ConfigureAwait(false);
+                if (bytes is { Length: > 0 })
                 {
-                    _logger.LogDebug("Cache hit for key {CacheKey}.", key);
-                    return typed;
+                    var cached = JsonSerializer.Deserialize<T>(bytes);
+                    if (cached is not null || typeof(T).IsValueType == false)
+                    {
+                        _logger.LogDebug("Cache hit for key {CacheKey}.", key);
+                        return cached!;
+                    }
                 }
 
                 _logger.LogDebug("Cache miss for key {CacheKey}.", key);
@@ -102,18 +106,16 @@ public sealed class MemoryCacheService(IMemoryCache memoryCache, ILogger<MemoryC
 
     /// <inheritdoc />
     public Task InvalidateListingsAsync(CancellationToken cancellationToken)
-    {
-        // Memory provider uses a version token key consumed by CachedListingQueries.
-        return SetAsync(ListingCacheTokenKey, Guid.NewGuid().ToString("N"), TimeSpan.FromDays(30), cancellationToken);
-    }
+        => SetAsync(MemoryCacheService.ListingCacheTokenKey, Guid.NewGuid().ToString("N"), TimeSpan.FromDays(30), cancellationToken);
 
     /// <inheritdoc />
     public Task InvalidateCommissionRatesAsync(CancellationToken cancellationToken)
-    {
-        return SetAsync(CommissionRateCacheTokenKey, Guid.NewGuid().ToString("N"), TimeSpan.FromDays(30), cancellationToken);
-    }
+        => SetAsync(MemoryCacheService.CommissionRateCacheTokenKey, Guid.NewGuid().ToString("N"), TimeSpan.FromDays(30), cancellationToken);
 
-    internal const string ListingCacheTokenKey = "cache:token:listings";
-    internal const string CommissionRateCacheTokenKey = "cache:token:commission-rates";
+    internal static class Keys
+    {
+        public const string ListingCacheTokenKey = "cache:token:listings";
+        public const string CommissionRateCacheTokenKey = "cache:token:commission-rates";
+    }
 }
 
