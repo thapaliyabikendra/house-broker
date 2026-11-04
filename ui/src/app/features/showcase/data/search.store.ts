@@ -1,4 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
+import { TranslocoService } from '@jsverse/transloco';
 import { ListingsDataService } from '../../../core/data/listings-data.service';
 import type { ListingSearchCriteria } from '../../../core/data/listings-data.service';
 import { LookupsDataService } from '../../../core/data/lookups-data.service';
@@ -8,6 +9,7 @@ import type { ListingSummaryDto, PropertyTypeDto } from '../../../api/models';
 export class SearchStore {
   private readonly listingsData = inject(ListingsDataService);
   private readonly lookupsData = inject(LookupsDataService);
+  private readonly transloco = inject(TranslocoService);
 
   readonly propertyTypes = signal<PropertyTypeDto[]>([]);
   readonly results = signal<ListingSummaryDto[]>([]);
@@ -31,7 +33,9 @@ export class SearchStore {
       const page = await this.listingsData.search(criteria);
       this.results.set(page.items ?? []);
     } catch (error) {
-      this.error.set(error instanceof Error ? error.message : 'Search failed');
+      this.error.set(
+        error instanceof Error ? error.message : this.transloco.translate('errors.searchFailed'),
+      );
       this.results.set([]);
     } finally {
       this.loading.set(false);

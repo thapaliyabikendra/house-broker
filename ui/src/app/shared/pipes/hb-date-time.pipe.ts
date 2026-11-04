@@ -1,11 +1,11 @@
 import type { PipeTransform } from '@angular/core';
 import { inject, Pipe } from '@angular/core';
 import { ClockService } from '../../core/time/clock.service';
-import { LanguageService } from '../../core/i18n/language.service';
+import { TranslocoLocaleService } from '@jsverse/transloco-locale';
 
 @Pipe({ name: 'hbDateTime', standalone: true, pure: false })
 export class HbDateTimePipe implements PipeTransform {
-  private readonly language = inject(LanguageService);
+  private readonly locale = inject(TranslocoLocaleService);
   private readonly clock = inject(ClockService);
 
   transform(value: string | Date | null | undefined, options?: Intl.DateTimeFormatOptions): string {
@@ -13,7 +13,7 @@ export class HbDateTimePipe implements PipeTransform {
     if (!date) {
       return '';
     }
-    return new Intl.DateTimeFormat(this.language.toFormattingLocale(), {
+    return new Intl.DateTimeFormat(this.locale.getLocale(), {
       timeZone: this.clock.timeZone(),
       year: 'numeric',
       month: 'short',

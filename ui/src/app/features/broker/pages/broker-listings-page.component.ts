@@ -1,16 +1,20 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { HttpEventType } from '@angular/common/http';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ListingsDataService } from '../../../core/data/listings-data.service';
+import { RuntimeConfigService } from '../../../core/config/runtime-config.service';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
-import { TranslocoPipe } from '@jsverse/transloco';
 import type { OwnerListingDto } from '../../../api/models';
+import { ApiError } from '../../../core/http/api-error';
 
 @Component({
   selector: 'hb-broker-listings-page',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     RouterLink,
     LoadingStateComponent,
@@ -29,7 +33,11 @@ import type { OwnerListingDto } from '../../../api/models';
       @if (loading()) {
         <hb-loading-state [label]="'broker.loading' | transloco" />
       } @else if (error()) {
-        <hb-error-state [title]="error() ?? 'Error'" (retry)="load()" [actionLabel]="'Retry'" />
+        <hb-error-state
+          [title]="error() ?? ('common.error' | transloco)"
+          (retry)="load()"
+          [actionLabel]="'common.retry' | transloco"
+        />
       } @else if (listings().length === 0) {
         <hb-empty-state
           [title]="'broker.emptyTitle' | transloco"
@@ -48,19 +56,64 @@ import type { OwnerListingDto } from '../../../api/models';
               >
 
               <div class="actions">
-                <a [routerLink]="['/broker/listings', listing.id, 'edit']">Edit</a>
-                <button type="button" (click)="publish(listing.id ?? '')">Publish</button>
-                <button type="button" (click)="markSold(listing.id ?? '')">Sell</button>
-                <button type="button" (click)="archive(listing.id ?? '')">Archive</button>
-                <button type="button" (click)="remove(listing.id ?? '')">Delete</button>
+                <a [routerLink]="['/broker/listings', listing.id, 'edit']">{{
+                  'broker.edit' | transloco
+                }}</a>
+                <button type="button" (click)="publish(listing.id ?? '')">
+                  {{ 'broker.publish' | transloco }}
+                </button>
+                <button type="button" (click)="markSold(listing.id ?? '')">
+                  {{ 'broker.sell' | transloco }}
+                </button>
+                <button type="button" (click)="archive(listing.id ?? '')">
+                  {{ 'broker.archive' | transloco }}
+                </button>
+                <button type="button" (click)="remove(listing.id ?? '')">
+                  {{ 'broker.delete' | transloco }}
+                </button>
               </div>
 
+              @if (listing.images?.length) {
+                <div class="images">
+                  @for (image of listing.images; track image.id) {
+                    <figure class="image-item">
+                      <img
+                        [src]="imageUrl(listing.id ?? '', image.id ?? '')"
+                        [alt]="listing.title || ('detail.imageAlt' | transloco)"
+                      />
+                      @if (image.isPrimary) {
+                        <span class="primary-badge">{{ 'broker.primaryImage' | transloco }}</span>
+                      }
+                      <button
+                        type="button"
+                        (click)="deleteImage(listing.id ?? '', image.id ?? '')"
+                        [disabled]="deletingImageId() === image.id"
+                      >
+                        {{ 'broker.deleteImage' | transloco }}
+                      </button>
+                    </figure>
+                  }
+                </div>
+              }
+
               <div class="upload">
-                <input
-                  type="file"
-                  (change)="upload(listing.id ?? '', $event)"
-                  [disabled]="uploadingId() === listing.id"
-                />
+                <label>
+                  {{ 'broker.uploadImage' | transloco }}
+                  <input
+                    #fileInput
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    (change)="upload(listing.id ?? '', $event)"
+                    [disabled]="uploadingId() === listing.id"
+                  />
+                </label>
+                @if (uploadingId() === listing.id && uploadProgress() !== null) {
+                  <progress [value]="uploadProgress()" max="100"></progress>
+                  <span>{{ uploadProgress() }}%</span>
+                }
+                @if (uploadingId() === listing.id) {
+                  <span>{{ 'broker.uploading' | transloco }}</span>
+                }
               </div>
             </li>
           }
@@ -86,16 +139,46 @@ import type { OwnerListingDto } from '../../../api/models';
       flex-wrap: wrap;
       gap: 0.5rem;
     }
+    .images {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .image-item {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      align-items: center;
+    }
+    .image-item img {
+      inline-size: 8rem;
+      block-size: 6rem;
+      object-fit: cover;
+    }
+    .primary-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .upload {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-inline-size: 20rem;
+    }
   `,
 })
 export class BrokerListingsPageComponent {
   private readonly listingsData = inject(ListingsDataService);
+  private readonly config = inject(RuntimeConfigService);
+  private readonly transloco = inject(TranslocoService);
   readonly router = inject(Router);
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly listings = signal<OwnerListingDto[]>([]);
   readonly uploadingId = signal<string | null>(null);
+  readonly uploadProgress = signal<number | null>(null);
+  readonly deletingImageId = signal<string | null>(null);
 
   constructor() {
     void this.load();
@@ -113,7 +196,9 @@ export class BrokerListingsPageComponent {
       );
       this.listings.set(details);
     } catch (error) {
-      this.error.set(error instanceof Error ? error.message : 'Failed to load listings');
+      this.error.set(
+        error instanceof Error ? error.message : this.transloco.translate('errors.loadFailed'),
+      );
     } finally {
       this.loading.set(false);
     }
@@ -132,43 +217,95 @@ export class BrokerListingsPageComponent {
   }
 
   async remove(id: string): Promise<void> {
+    if (!window.confirm(this.transloco.translate('broker.deleteConfirm'))) {
+      return;
+    }
     try {
       await this.listingsData.delete(id);
       this.listings.update((items) => items.filter((item) => item.id !== id));
     } catch (error) {
-      this.error.set(error instanceof Error ? error.message : 'Delete failed');
+      this.error.set(
+        error instanceof Error ? error.message : this.transloco.translate('errors.deleteFailed'),
+      );
+    }
+  }
+
+  imageUrl(listingId: string, imageId: string): string {
+    if (!listingId || !imageId) {
+      return '';
+    }
+    return `${this.config.value().apiBaseUrl}/v1/listings/${listingId}/images/${imageId}`;
+  }
+
+  async deleteImage(listingId: string, imageId: string): Promise<void> {
+    if (!window.confirm(this.transloco.translate('broker.deleteImageConfirm'))) {
+      return;
+    }
+    this.deletingImageId.set(imageId);
+    try {
+      await this.listingsData.deleteImage(listingId, imageId);
+      await this.load();
+    } catch (error) {
+      this.error.set(
+        error instanceof Error ? error.message : this.transloco.translate('errors.deleteFailed'),
+      );
+    } finally {
+      this.deletingImageId.set(null);
     }
   }
 
   private readonly allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp'];
   private readonly maxImageSizeBytes = 5 * 1024 * 1024;
 
-  async upload(id: string, event: Event): Promise<void> {
+  upload(id: string, event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) {
       return;
     }
     if (!this.allowedImageTypes.includes(file.type)) {
-      this.error.set('Only JPEG, PNG, and WebP images are allowed.');
+      this.error.set(this.transloco.translate('broker.uploadTypeError'));
       input.value = '';
       return;
     }
     if (file.size > this.maxImageSizeBytes) {
-      this.error.set('Image size must be 5 MB or smaller.');
+      this.error.set(this.transloco.translate('broker.uploadSizeError'));
       input.value = '';
       return;
     }
+
     this.uploadingId.set(id);
-    try {
-      await this.listingsData.uploadImage(id, file);
-      await this.load();
-    } catch (error) {
-      this.error.set(error instanceof Error ? error.message : 'Image upload failed');
-    } finally {
-      this.uploadingId.set(null);
-      input.value = '';
-    }
+    this.uploadProgress.set(0);
+    this.listingsData.uploadImageProgress(id, file).subscribe({
+      next: (event) => {
+        if (event.type === HttpEventType.UploadProgress && event.total) {
+          this.uploadProgress.set(Math.round((event.loaded / event.total) * 100));
+        } else if (event.type === HttpEventType.Response) {
+          this.uploadProgress.set(100);
+        }
+      },
+      error: (error: unknown) => {
+        if (error instanceof ApiError && error.fieldErrors) {
+          for (const messages of Object.values(error.fieldErrors)) {
+            if (messages?.length) {
+              this.error.set(messages[0] ?? this.transloco.translate('errors.uploadFailed'));
+            }
+          }
+        }
+        this.error.set(
+          error instanceof Error ? error.message : this.transloco.translate('errors.uploadFailed'),
+        );
+        this.uploadingId.set(null);
+        this.uploadProgress.set(null);
+        input.value = '';
+      },
+      complete: () => {
+        this.uploadingId.set(null);
+        this.uploadProgress.set(null);
+        input.value = '';
+        void this.load();
+      },
+    });
   }
 
   private async transition(
@@ -180,7 +317,9 @@ export class BrokerListingsPageComponent {
       await action(listing);
       await this.load();
     } catch (error) {
-      this.error.set(error instanceof Error ? error.message : 'Status change failed');
+      this.error.set(
+        error instanceof Error ? error.message : this.transloco.translate('errors.statusFailed'),
+      );
     }
   }
 }

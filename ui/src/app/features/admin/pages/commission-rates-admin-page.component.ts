@@ -1,8 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminCommissionRatesDataService } from '../../../core/data/admin-commission-rates-data.service';
 import { ApiError } from '../../../core/http/api-error';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import type { CommissionRateDto, CommissionRateRequest } from '../../../api/models';
@@ -10,41 +10,56 @@ import type { CommissionRateDto, CommissionRateRequest } from '../../../api/mode
 @Component({
   selector: 'hb-commission-rates-admin-page',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, LoadingStateComponent, ErrorStateComponent, TranslocoPipe],
   template: `
     <section class="admin-page">
-      <h1>Commission rates</h1>
+      <h1>{{ 'admin.title' | transloco }}</h1>
 
       @if (loading()) {
         <hb-loading-state [label]="'admin.loading' | transloco" />
       } @else if (error()) {
-        <hb-error-state [title]="error() ?? 'Error'" (retry)="load()" actionLabel="Retry" />
+        <hb-error-state
+          [title]="error() ?? ('common.error' | transloco)"
+          (retry)="load()"
+          [actionLabel]="'common.retry' | transloco"
+        />
       } @else {
         <table class="rates-table">
           <thead>
             <tr>
-              <th>Min</th>
-              <th>Max</th>
-              <th>Rate %</th>
-              <th>Effective from</th>
-              <th>Active</th>
+              <th>{{ 'admin.min' | transloco }}</th>
+              <th>{{ 'admin.max' | transloco }}</th>
+              <th>{{ 'admin.ratePercent' | transloco }}</th>
+              <th>{{ 'admin.effectiveFrom' | transloco }}</th>
+              <th>{{ 'admin.active' | transloco }}</th>
               <th></th>
             </tr>
           </thead>
           <tbody>
             @for (rate of rates(); track rate.id) {
               <tr>
-                <td>{{ rate.minPrice }} ({{ rate.minInclusive ? 'incl' : 'excl' }})</td>
+                <td>
+                  {{ rate.minPrice }} ({{
+                    rate.minInclusive
+                      ? ('admin.inclusive' | transloco)
+                      : ('admin.exclusive' | transloco)
+                  }})
+                </td>
                 <td>
                   @if (rate.maxPrice !== null && rate.maxPrice !== undefined) {
-                    {{ rate.maxPrice }} ({{ rate.maxInclusive ? 'incl' : 'excl' }})
+                    {{ rate.maxPrice }} ({{
+                      rate.maxInclusive
+                        ? ('admin.inclusive' | transloco)
+                        : ('admin.exclusive' | transloco)
+                    }})
                   } @else {
-                    open
+                    {{ 'admin.open' | transloco }}
                   }
                 </td>
                 <td>{{ rate.ratePercent }}</td>
                 <td>{{ rate.effectiveFrom }}</td>
-                <td>{{ rate.isActive ? 'Yes' : 'No' }}</td>
+                <td>{{ rate.isActive ? ('admin.yes' | transloco) : ('admin.no' | transloco) }}</td>
                 <td>
                   <button type="button" (click)="edit(rate)">{{ 'admin.edit' | transloco }}</button>
                 </td>
@@ -57,31 +72,31 @@ import type { CommissionRateDto, CommissionRateRequest } from '../../../api/mode
           <h2>{{ editingId() ? ('admin.edit' | transloco) : ('admin.newRate' | transloco) }}</h2>
 
           <label>
-            Min price
+            {{ 'admin.minPrice' | transloco }}
             <input type="number" formControlName="minPrice" />
           </label>
           <label>
-            Min inclusive
+            {{ 'admin.minInclusive' | transloco }}
             <input type="checkbox" formControlName="minInclusive" />
           </label>
           <label>
-            Max price
+            {{ 'admin.maxPrice' | transloco }}
             <input type="number" formControlName="maxPrice" />
           </label>
           <label>
-            Max inclusive
+            {{ 'admin.maxInclusive' | transloco }}
             <input type="checkbox" formControlName="maxInclusive" />
           </label>
           <label>
-            Rate %
+            {{ 'admin.ratePercent' | transloco }}
             <input type="number" formControlName="ratePercent" />
           </label>
           <label>
-            Effective from
+            {{ 'admin.effectiveFrom' | transloco }}
             <input type="datetime-local" formControlName="effectiveFrom" />
           </label>
           <label>
-            Active
+            {{ 'admin.active' | transloco }}
             <input type="checkbox" formControlName="isActive" />
           </label>
 
@@ -112,6 +127,7 @@ import type { CommissionRateDto, CommissionRateRequest } from '../../../api/mode
 })
 export class CommissionRatesAdminPageComponent {
   private readonly data = inject(AdminCommissionRatesDataService);
+  private readonly transloco = inject(TranslocoService);
 
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -147,7 +163,9 @@ export class CommissionRatesAdminPageComponent {
     try {
       this.rates.set(await this.data.list());
     } catch (error) {
-      this.error.set(error instanceof Error ? error.message : 'Failed to load rates');
+      this.error.set(
+        error instanceof Error ? error.message : this.transloco.translate('errors.loadFailed'),
+      );
     } finally {
       this.loading.set(false);
     }
@@ -208,7 +226,9 @@ export class CommissionRatesAdminPageComponent {
           }
         }
       }
-      this.error.set(error instanceof Error ? error.message : 'Save failed');
+      this.error.set(
+        error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed'),
+      );
     } finally {
       this.saving.set(false);
     }

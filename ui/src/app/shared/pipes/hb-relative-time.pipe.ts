@@ -1,11 +1,11 @@
 import type { PipeTransform } from '@angular/core';
 import { inject, Pipe } from '@angular/core';
 import { ClockService } from '../../core/time/clock.service';
-import { LanguageService } from '../../core/i18n/language.service';
+import { TranslocoLocaleService } from '@jsverse/transloco-locale';
 
 @Pipe({ name: 'hbRelativeTime', standalone: true, pure: false })
 export class HbRelativeTimePipe implements PipeTransform {
-  private readonly language = inject(LanguageService);
+  private readonly locale = inject(TranslocoLocaleService);
   private readonly clock = inject(ClockService);
 
   transform(value: string | Date | null | undefined): string {
@@ -15,7 +15,7 @@ export class HbRelativeTimePipe implements PipeTransform {
     }
     const diffSeconds = Math.round((date.getTime() - this.clock.now().getTime()) / 1000);
     const { amount, unit } = this.toUnit(diffSeconds);
-    return new Intl.RelativeTimeFormat(this.language.toFormattingLocale(), {
+    return new Intl.RelativeTimeFormat(this.locale.getLocale(), {
       numeric: 'auto',
     }).format(amount, unit);
   }

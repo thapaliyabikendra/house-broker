@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import type { AbstractControl, ValidationErrors } from '@angular/forms';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -9,7 +9,7 @@ import { LookupsDataService } from '../../../core/data/lookups-data.service';
 import { ApiError } from '../../../core/http/api-error';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import type {
   PropertyTypeDto,
   CreateListingRequest,
@@ -33,16 +33,23 @@ function numberRange(min: number, max: number) {
 @Component({
   selector: 'hb-broker-listing-editor',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [ReactiveFormsModule, LoadingStateComponent, ErrorStateComponent, TranslocoPipe],
   template: `
     <section class="editor">
-      <h1>{{ isEdit() ? 'Edit listing' : 'Create listing' }}</h1>
+      <h1>
+        {{
+          isEdit()
+            ? ('broker.editor.editTitle' | transloco)
+            : ('broker.editor.createTitle' | transloco)
+        }}
+      </h1>
 
       @if (loading()) {
         <hb-loading-state [label]="'broker.editor.loading' | transloco" />
       } @else {
         @if (error()) {
-          <hb-error-state [title]="error() ?? 'Error'" />
+          <hb-error-state [title]="error() ?? ('common.error' | transloco)" />
         }
 
         <form [formGroup]="form" (ngSubmit)="submit()" class="editor-form">
@@ -50,7 +57,7 @@ function numberRange(min: number, max: number) {
             {{ 'broker.editor.title' | transloco }}
             <input formControlName="title" />
             @if (form.controls.title.invalid && form.controls.title.touched) {
-              <small>Title is required or too long.</small>
+              <small>{{ 'broker.editor.titleError' | transloco }}</small>
             }
           </label>
 
@@ -63,7 +70,7 @@ function numberRange(min: number, max: number) {
             {{ 'broker.editor.price' | transloco }}
             <input type="number" formControlName="price" />
             @if (form.controls.price.invalid && form.controls.price.touched) {
-              <small>Price is required and must be valid.</small>
+              <small>{{ 'broker.editor.priceError' | transloco }}</small>
             }
           </label>
 
@@ -80,7 +87,7 @@ function numberRange(min: number, max: number) {
             {{ 'broker.editor.city' | transloco }}
             <input formControlName="city" />
             @if (form.controls.city.invalid && form.controls.city.touched) {
-              <small>City is required.</small>
+              <small>{{ 'broker.editor.cityError' | transloco }}</small>
             }
           </label>
 
@@ -98,7 +105,7 @@ function numberRange(min: number, max: number) {
             {{ 'broker.editor.postalCode' | transloco }}
             <input formControlName="postalCode" />
             @if (form.controls.postalCode.invalid && form.controls.postalCode.touched) {
-              <small>Postal code must be 5 digits.</small>
+              <small>{{ 'broker.editor.postalCodeError' | transloco }}</small>
             }
           </label>
 
@@ -150,6 +157,7 @@ export class BrokerListingEditorComponent {
   private readonly router = inject(Router);
   private readonly listingsData = inject(ListingsDataService);
   private readonly lookupsData = inject(LookupsDataService);
+  private readonly transloco = inject(TranslocoService);
   readonly auth = inject(AuthService);
 
   readonly isEdit = signal(false);
@@ -220,7 +228,9 @@ export class BrokerListingEditorComponent {
       });
       // Feature selection is intentionally not tracked by this simplified form.
     } catch (error) {
-      this.error.set(error instanceof Error ? error.message : 'Failed to load listing');
+      this.error.set(
+        error instanceof Error ? error.message : this.transloco.translate('errors.loadFailed'),
+      );
     } finally {
       this.loading.set(false);
     }
@@ -271,7 +281,9 @@ export class BrokerListingEditorComponent {
           }
         }
       }
-      this.error.set(error instanceof Error ? error.message : 'Save failed');
+      this.error.set(
+        error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed'),
+      );
     } finally {
       this.saving.set(false);
     }

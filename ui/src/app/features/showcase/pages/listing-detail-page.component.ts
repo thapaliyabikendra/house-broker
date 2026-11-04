@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+﻿import { Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -8,7 +8,7 @@ import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import type { ListingDetailDto } from '../../../api/models';
 
 @Component({
@@ -32,8 +32,8 @@ import type { ListingDetailDto } from '../../../api/models';
         />
       } @else if (!listing()) {
         <hb-empty-state
-          title="Listing not found"
-          description="The requested listing could not be found."
+          [title]="'detail.emptyTitle' | transloco"
+          [description]="'detail.emptyDescription' | transloco"
         />
       } @else {
         @let item = listing()!;
@@ -41,7 +41,8 @@ import type { ListingDetailDto } from '../../../api/models';
         <p class="price">{{ item.price | hbPrice }}</p>
         <p>{{ item.city }}, {{ item.locality }}, {{ item.province }}</p>
         <p>
-          {{ item.bedrooms }} bedrooms · {{ item.bathrooms }} bathrooms · {{ item.areaSqFt }} sq ft
+          {{ item.bedrooms }} {{ 'detail.bedrooms' | transloco }} · {{ item.bathrooms }}
+          {{ 'detail.bathrooms' | transloco }} · {{ item.areaSqFt }} {{ 'detail.sqft' | transloco }}
         </p>
         <p>{{ item.description }}</p>
 
@@ -50,7 +51,7 @@ import type { ListingDetailDto } from '../../../api/models';
             @for (image of item.images; track image.id) {
               <img
                 [src]="imageUrl(item.id ?? '', image.id ?? '')"
-                [alt]="item.title || 'Listing image'"
+                [alt]="item.title || ('detail.imageAlt' | transloco)"
               />
             }
           </div>
@@ -104,6 +105,7 @@ export class ListingDetailPageComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly listingsData = inject(ListingsDataService);
   private readonly config = inject(RuntimeConfigService);
+  private readonly transloco = inject(TranslocoService);
   readonly auth = inject(AuthService);
 
   readonly loading = signal(true);
@@ -136,7 +138,9 @@ export class ListingDetailPageComponent {
     try {
       this.listing.set(await this.listingsData.getById(id));
     } catch (error) {
-      this.error.set(error instanceof Error ? error.message : 'Failed to load listing');
+      this.error.set(
+        error instanceof Error ? error.message : this.transloco.translate('errors.loadFailed'),
+      );
       this.listing.set(null);
     } finally {
       this.loading.set(false);

@@ -5,6 +5,10 @@ import { provideRouter } from '@angular/router';
 import { Api } from './api/api';
 import { provideApiConfiguration } from './api/api-configuration';
 import { provideTransloco } from '@jsverse/transloco';
+import {
+  provideTranslocoLocale,
+  provideTranslocoLocaleLangMapping,
+} from '@jsverse/transloco-locale';
 import { routes } from './app.routes';
 import { RuntimeConfigService } from './core/config/runtime-config.service';
 import { AuthService } from './core/auth/auth.service';
@@ -38,6 +42,8 @@ export const appConfig: ApplicationConfig = {
       },
       loader: AppTranslocoLoader,
     }),
+    provideTranslocoLocale(),
+    provideTranslocoLocaleLangMapping({ en: 'en-IN', ne: 'ne-NP' }),
     provideAppInitializer(() => {
       const runtimeConfig = inject(RuntimeConfigService);
       const api = inject(Api);

@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { HbNumberPipe } from './hb-number.pipe';
-import { LanguageService } from '../../core/i18n/language.service';
+import { TranslocoLocaleService } from '@jsverse/transloco-locale';
 
 @Component({
   imports: [HbNumberPipe],
@@ -16,11 +16,11 @@ describe('HbNumberPipe', () => {
   let fixture: ComponentFixture<HostComponent>;
 
   beforeEach(async () => {
-    const languageService = { toFormattingLocale: () => 'en-IN' };
+    const localeService = { getLocale: () => 'en-IN' };
 
     await TestBed.configureTestingModule({
       imports: [HostComponent],
-      providers: [{ provide: LanguageService, useValue: languageService }],
+      providers: [{ provide: TranslocoLocaleService, useValue: localeService }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(HostComponent);

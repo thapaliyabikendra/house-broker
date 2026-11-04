@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { HbRelativeTimePipe } from './hb-relative-time.pipe';
-import { LanguageService } from '../../core/i18n/language.service';
+import { TranslocoLocaleService } from '@jsverse/transloco-locale';
 import { ClockService } from '../../core/time/clock.service';
 
 @Component({
@@ -17,13 +17,13 @@ describe('HbRelativeTimePipe', () => {
   let fixture: ComponentFixture<HostComponent>;
 
   beforeEach(async () => {
-    const languageService = { toFormattingLocale: () => 'en-IN' };
+    const localeService = { getLocale: () => 'en-IN' };
     const clock = { now: () => new Date('2026-02-03T11:00:00Z') };
 
     await TestBed.configureTestingModule({
       imports: [HostComponent],
       providers: [
-        { provide: LanguageService, useValue: languageService },
+        { provide: TranslocoLocaleService, useValue: localeService },
         { provide: ClockService, useValue: clock },
       ],
     }).compileComponents();

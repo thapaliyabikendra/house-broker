@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { TranslocoPipe } from '@jsverse/transloco';
@@ -6,23 +6,24 @@ import { TranslocoPipe } from '@jsverse/transloco';
 @Component({
   selector: 'hb-header',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TranslocoPipe],
   template: `
     <header class="shell-header">
       <h1>{{ 'title' | transloco }}</h1>
       <div class="actions">
         <label class="lang">
-          Language
+          {{ 'header.language' | transloco }}
           <select [value]="lang()" (change)="setLanguage($event)">
-            <option value="en">English</option>
-            <option value="ne">नेपाली</option>
+            <option value="en">{{ 'header.english' | transloco }}</option>
+            <option value="ne">{{ 'header.nepali' | transloco }}</option>
           </select>
         </label>
         @if (auth.user(); as user) {
           <span class="user">{{ user.name ?? user.sub }}</span>
-          <button type="button" (click)="auth.signOut()">Sign out</button>
+          <button type="button" (click)="auth.signOut()">{{ 'header.signOut' | transloco }}</button>
         } @else {
-          <button type="button" (click)="auth.signIn()">Sign in</button>
+          <button type="button" (click)="auth.signIn()">{{ 'header.signIn' | transloco }}</button>
         }
       </div>
     </header>

@@ -1,5 +1,7 @@
 import { HttpClient } from '@angular/common/http';
+import type { HttpEvent } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
+import type { Observable } from 'rxjs';
 import { inject, Injectable } from '@angular/core';
 import { Api } from '../../api/api';
 import { RuntimeConfigService } from '../config/runtime-config.service';
@@ -118,6 +120,15 @@ export class ListingsDataService {
 
   uploadImage(id: string, file: File): Promise<ListingImageDto> {
     return this.api.invoke(v1ListingsIdImagesPost$Json, { id, body: { file } });
+  }
+
+  uploadImageProgress(id: string, file: File): Observable<HttpEvent<ListingImageDto>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<ListingImageDto>(`${this.baseUrl()}/${id}/images`, formData, {
+      reportProgress: true,
+      observe: 'events',
+    });
   }
 
   deleteImage(id: string, imageId: string): Promise<void> {

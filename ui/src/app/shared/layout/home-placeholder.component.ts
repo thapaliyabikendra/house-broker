@@ -1,22 +1,26 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 
 @Component({
   selector: 'hb-home-placeholder',
   standalone: true,
-  imports: [RouterLink],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterLink, TranslocoPipe],
   template: `
     <section>
-      <h2>Welcome</h2>
+      <h2>{{ 'home.welcome' | transloco }}</h2>
       @if (auth.user(); as user) {
-        <p>Signed in as {{ user.name ?? user.sub }}</p>
+        <p>{{ 'home.signedInAs' | transloco: { name: user.name ?? user.sub } }}</p>
       } @else {
         <p>
-          <button type="button" (click)="auth.signIn()">Sign in</button>
+          <button type="button" (click)="auth.signIn()">{{ 'header.signIn' | transloco }}</button>
         </p>
       }
-      <p><a routerLink="/search">Search listings</a></p>
+      <p>
+        <a routerLink="/search">{{ 'search.title' | transloco }}</a>
+      </p>
     </section>
   `,
 })

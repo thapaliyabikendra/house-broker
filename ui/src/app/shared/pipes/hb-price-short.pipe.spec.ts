@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import type { ComponentFixture } from '@angular/core/testing';
 import { TestBed } from '@angular/core/testing';
 import { HbPriceShortPipe } from './hb-price-short.pipe';
-import { LanguageService } from '../../core/i18n/language.service';
+import { TranslocoLocaleService } from '@jsverse/transloco-locale';
 import { MetaService } from '../../core/data/meta.service';
 
 @Component({
@@ -17,13 +17,13 @@ describe('HbPriceShortPipe', () => {
   let fixture: ComponentFixture<HostComponent>;
 
   beforeEach(async () => {
-    const languageService = { toFormattingLocale: () => 'en-IN' };
+    const localeService = { getLocale: () => 'en-IN' };
     const metaService = { currencyCode: () => 'NPR' };
 
     await TestBed.configureTestingModule({
       imports: [HostComponent],
       providers: [
-        { provide: LanguageService, useValue: languageService },
+        { provide: TranslocoLocaleService, useValue: localeService },
         { provide: MetaService, useValue: metaService },
       ],
     }).compileComponents();

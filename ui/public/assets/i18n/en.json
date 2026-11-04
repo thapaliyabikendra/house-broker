@@ -1,6 +1,34 @@
 {
   "title": "House Broker",
-  "loading": "Loading...",
+  "a11y": {
+    "skipToMain": "Skip to main content"
+  },
+  "common": {
+    "error": "Error",
+    "retry": "Retry"
+  },
+  "errors": {
+    "loadFailed": "Failed to load data.",
+    "saveFailed": "Save failed.",
+    "deleteFailed": "Delete failed.",
+    "statusFailed": "Status change failed.",
+    "uploadFailed": "Image upload failed.",
+    "searchFailed": "Search failed."
+  },
+  "header": {
+    "language": "Language",
+    "english": "English",
+    "nepali": "Nepali",
+    "signIn": "Sign in",
+    "signOut": "Sign out"
+  },
+  "footer": {
+    "text": "House Broker"
+  },
+  "home": {
+    "welcome": "Welcome",
+    "signedInAs": "Signed in as {{name}}"
+  },
   "search": {
     "title": "Search listings",
     "location": "Location",
@@ -21,7 +49,11 @@
     "emptyDescription": "The requested listing could not be found.",
     "contactTitle": "Broker contact",
     "contactPrompt": "Sign in to view broker contact details.",
-    "signIn": "Sign in"
+    "signIn": "Sign in",
+    "bedrooms": "bedrooms",
+    "bathrooms": "bathrooms",
+    "sqft": "sq ft",
+    "imageAlt": "Listing image"
   },
   "broker": {
     "listingsTitle": "My listings",
@@ -30,6 +62,19 @@
     "emptyTitle": "No listings yet",
     "emptyDescription": "Create your first listing.",
     "commission": "Commission",
+    "edit": "Edit",
+    "publish": "Publish",
+    "sell": "Sell",
+    "archive": "Archive",
+    "delete": "Delete",
+    "deleteConfirm": "Delete this listing?",
+    "deleteImage": "Delete image",
+    "deleteImageConfirm": "Delete this image?",
+    "primaryImage": "Primary",
+    "uploadImage": "Upload image",
+    "uploading": "Uploading...",
+    "uploadTypeError": "Only JPEG, PNG, and WebP images are allowed.",
+    "uploadSizeError": "Image size must be 5 MB or smaller.",
     "editor": {
       "title": "Title",
       "description": "Description",
@@ -44,7 +89,13 @@
       "area": "Area (sq ft)",
       "loading": "Loading...",
       "save": "Save",
-      "saving": "Saving..."
+      "saving": "Saving...",
+      "createTitle": "Create listing",
+      "editTitle": "Edit listing",
+      "titleError": "Title is required or too long.",
+      "priceError": "Price is required and must be valid.",
+      "cityError": "City is required.",
+      "postalCodeError": "Postal code must be 5 digits."
     }
   },
   "admin": {
@@ -53,6 +104,20 @@
     "save": "Save",
     "saving": "Saving...",
     "edit": "Edit",
-    "newRate": "New rate"
+    "newRate": "New rate",
+    "min": "Min",
+    "max": "Max",
+    "ratePercent": "Rate %",
+    "effectiveFrom": "Effective from",
+    "active": "Active",
+    "inclusive": "incl",
+    "exclusive": "excl",
+    "open": "open",
+    "yes": "Yes",
+    "no": "No",
+    "minPrice": "Min price",
+    "minInclusive": "Min inclusive",
+    "maxPrice": "Max price",
+    "maxInclusive": "Max inclusive"
   }
 }

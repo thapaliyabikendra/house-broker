@@ -3,6 +3,7 @@ import { vi } from 'vitest';
 import { SearchStore } from './search.store';
 import { ListingsDataService } from '../../../core/data/listings-data.service';
 import { LookupsDataService } from '../../../core/data/lookups-data.service';
+import { TranslocoService } from '@jsverse/transloco';
 
 describe('SearchStore', () => {
   let store: SearchStore;
@@ -21,6 +22,10 @@ describe('SearchStore', () => {
         SearchStore,
         { provide: ListingsDataService, useValue: listingsData },
         { provide: LookupsDataService, useValue: lookupsData },
+        {
+          provide: TranslocoService,
+          useValue: { translate: (key: string) => key, setActiveLang: () => undefined },
+        },
       ],
     });
     store = TestBed.inject(SearchStore);

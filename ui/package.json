@@ -12,7 +12,7 @@
     "prepare": "husky",
     "api:generate": "ng-openapi-gen -c ng-openapi-gen.json",
     "api:check": "npm run api:generate && git diff --exit-code -- src/app/api",
-    "i18n:check": "node scripts/i18n-check.js"
+    "i18n:check": "node scripts/i18n-check.js && npx transloco-keys-manager find -i src -o public/assets/i18n --translations-path public/assets/i18n -l en,ne --emit-error-on-extra-keys"
   },
   "private": true,
   "packageManager": "npm@11.6.2",
