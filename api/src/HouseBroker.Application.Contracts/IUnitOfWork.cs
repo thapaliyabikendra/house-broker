@@ -4,5 +4,5 @@ namespace HouseBroker.Application.Contracts;
 public interface IUnitOfWork
 {
     /// <summary>Saves changes.</summary>
-    Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+    Task<Result<int>> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

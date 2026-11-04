@@ -10,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Asp.Versioning;
 using Microsoft.OpenApi;
+using System.Reflection;
 using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -60,6 +61,36 @@ builder.Services.AddSwaggerGen(options =>
     });
 
     // Security requirement is attached to endpoints individually where applicable.
+
+    options.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme
+    {
+        Type = SecuritySchemeType.OAuth2,
+        Flows = new OpenApiOAuthFlows
+        {
+            AuthorizationCode = new OpenApiOAuthFlow
+            {
+                AuthorizationUrl = new Uri((builder.Configuration["Auth:Authority"] ?? "http://localhost:5000/sso") + "/connect/authorize"),
+                TokenUrl = new Uri((builder.Configuration["Auth:Authority"] ?? "http://localhost:5000/sso") + "/connect/token"),
+                Scopes = new Dictionary<string, string>
+                {
+                    ["openid"] = "OpenID Connect",
+                    ["profile"] = "User profile",
+                    ["listings.read"] = "Read listings",
+                    ["contacts.read"] = "Read broker contact",
+                    ["listings.write"] = "Manage listings",
+                    ["commission.read"] = "Read commission",
+                    ["admin.commission"] = "Manage commission rates",
+                },
+            },
+        },
+        Description = "OAuth 2.0 authorization code flow with PKCE via the House Broker identity provider.",
+    });
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath);
+    }
 });
 
 var connectionString = builder.Configuration.GetConnectionString("HouseBroker");
@@ -117,6 +148,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(options =>
     {
         options.SwaggerEndpoint("/api/swagger/v1/swagger.json", "House Broker API v1");
+        options.OAuthClientId("housebroker-swagger");
+        options.OAuthUsePkce();
+        options.OAuthScopes("openid", "profile", "listings.read", "contacts.read", "listings.write", "commission.read", "admin.commission");
     });
 }
 

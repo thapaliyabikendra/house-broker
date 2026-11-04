@@ -9,10 +9,14 @@ public sealed class CacheInvalidatingUnitOfWork(IUnitOfWork inner, ICacheService
     private readonly ICacheService _cache = cache;
 
     /// <inheritdoc />
-    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public async Task<Result<int>> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
         var result = await _inner.SaveChangesAsync(cancellationToken);
-        await _cache.InvalidateListingsAsync(cancellationToken);
+        if (result.IsSuccess)
+        {
+            await _cache.InvalidateListingsAsync(cancellationToken);
+        }
+
         return result;
     }
 }

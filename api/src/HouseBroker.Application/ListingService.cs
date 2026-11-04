@@ -86,7 +86,11 @@ public sealed class ListingService(
         listing.ApplyCommission(commission.Amount, commission.RatePercent, commission.RateId);
 
         await _repository.AddAsync(listing, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var saveResult = await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!saveResult.IsSuccess)
+        {
+            return Result.Failure<OwnerListingDto>(saveResult.Error!);
+        }
 
         _logger.LogInformation("Listing {ListingId} created by broker {BrokerId}.", listing.Id, brokerId.Value);
 
@@ -197,7 +201,11 @@ public sealed class ListingService(
                 _clock.GetUtcNow().UtcDateTime), cancellationToken);
         }
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var saveResult = await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!saveResult.IsSuccess)
+        {
+            return Result.Failure<OwnerListingDto>(saveResult.Error!);
+        }
         _logger.LogInformation("Listing {ListingId} updated by broker {BrokerId}.", listing.Id, brokerId.Value);
         return Result.Success<OwnerListingDto>(MapOwner(listing, featureLookup));
     }
@@ -225,7 +233,11 @@ public sealed class ListingService(
         }
 
         listing.SoftDelete();
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var saveResult = await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!saveResult.IsSuccess)
+        {
+            return Result.Failure(saveResult.Error!);
+        }
         _logger.LogInformation("Listing {ListingId} deleted by broker {BrokerId}.", id, brokerId.Value);
         return Result.Success();
     }
@@ -355,7 +367,11 @@ public sealed class ListingService(
         var fromStatus = listing.Status;
         listing.Publish();
         await _repository.AddStatusHistoryAsync(ListingStatusHistory.Create(listing.Id, fromStatus, listing.Status, brokerId.Value, _clock.GetUtcNow().UtcDateTime, null), cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var saveResult = await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!saveResult.IsSuccess)
+        {
+            return Result.Failure<OwnerListingDto>(saveResult.Error!);
+        }
         return Result.Success<OwnerListingDto>(MapOwner(listing));
     }
 
@@ -384,7 +400,11 @@ public sealed class ListingService(
         var fromStatus = listing.Status;
         listing.MarkSold();
         await _repository.AddStatusHistoryAsync(ListingStatusHistory.Create(listing.Id, fromStatus, listing.Status, brokerId.Value, _clock.GetUtcNow().UtcDateTime, null), cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var saveResult = await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!saveResult.IsSuccess)
+        {
+            return Result.Failure<OwnerListingDto>(saveResult.Error!);
+        }
         return Result.Success<OwnerListingDto>(MapOwner(listing));
     }
 
@@ -417,7 +437,11 @@ public sealed class ListingService(
             await _repository.AddStatusHistoryAsync(ListingStatusHistory.Create(listing.Id, fromStatus, listing.Status, brokerId.Value, _clock.GetUtcNow().UtcDateTime, null), cancellationToken);
         }
 
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var saveResult = await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!saveResult.IsSuccess)
+        {
+            return Result.Failure<OwnerListingDto>(saveResult.Error!);
+        }
         return Result.Success<OwnerListingDto>(MapOwner(listing));
     }
 

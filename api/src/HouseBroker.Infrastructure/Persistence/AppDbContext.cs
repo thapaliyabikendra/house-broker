@@ -1,4 +1,6 @@
 using HouseBroker.Domain;
+using HouseBroker.Application.Contracts;
+using HouseBroker.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 
 namespace HouseBroker.Infrastructure.Persistence;
@@ -6,6 +8,18 @@ namespace HouseBroker.Infrastructure.Persistence;
 /// <summary>Application database context.</summary>
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options), HouseBroker.Application.Contracts.IUnitOfWork
 {
+    /// <summary>Saves changes and translates concurrency failures.</summary>
+    async Task<Result<int>> IUnitOfWork.SaveChangesAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Result.Success<int>(await base.SaveChangesAsync(cancellationToken));
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Result.Failure<int>(new ApplicationError(ErrorCodes.PreconditionFailed, ErrorKind.PreconditionFailed));
+        }
+    }
     /// <summary>Gets listings.</summary>
     public DbSet<Listing> Listings => Set<Listing>();
 
