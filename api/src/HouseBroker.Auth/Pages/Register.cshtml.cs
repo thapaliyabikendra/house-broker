@@ -8,6 +8,7 @@ using HouseBroker.Auth.Data;
 
 namespace HouseBroker.Auth.Pages;
 
+[Microsoft.AspNetCore.RateLimiting.EnableRateLimiting("auth")]
 public class RegisterModel(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
@@ -27,6 +28,12 @@ public class RegisterModel(
     public string FullNameLabel => L["Register_FullNameLabel"];
     public string PhoneLabel => L["Register_PhoneLabel"];
     public string ButtonText => L["Register_Button"];
+    public string PasswordHint => L["Register_PasswordHint"];
+    public string BrokerHelp => L["Register_BrokerHelp"];
+    public string SeekerRoleLabel => L["Register_RoleSeeker"];
+    public string BrokerRoleLabel => L["Register_RoleBroker"];
+    public string HaveAccountLabel => L["Register_HaveAccount"];
+    public string SubmittingText => L["Register_Submitting"];
 
     public class InputModel
     {

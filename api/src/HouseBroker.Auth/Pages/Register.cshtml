@@ -5,42 +5,47 @@
 }
 
 <div class="container mt-5">
-    <div class="card mx-auto" style="max-width: 500px;">
+    <div class="card mx-auto shadow-sm" style="max-width: 500px;">
         <div class="card-header">
             <h3 class="text-center">@Model.Title</h3>
         </div>
         <div class="card-body">
-            <form method="post">
+            <form method="post" id="register-form">
                 <div asp-validation-summary="All" class="text-danger mb-3" aria-live="assertive" role="alert"></div>
                 <div class="mb-3">
                     <label asp-for="Input.Email" class="form-label">@Model.EmailLabel</label>
-                    <input asp-for="Input.Email" class="form-control" />
+                    <input asp-for="Input.Email" class="form-control" type="email" autocomplete="username" inputmode="email" required />
                 </div>
                 <div class="mb-3">
                     <label asp-for="Input.Password" class="form-label">@Model.PasswordLabel</label>
-                    <input asp-for="Input.Password" class="form-control" type="password" />
+                    <input asp-for="Input.Password" class="form-control" type="password" autocomplete="new-password" required aria-describedby="password-help" />
+                    <div id="password-help" class="form-text">@Model.PasswordHint</div>
                 </div>
                 <div class="mb-3">
                     <label asp-for="Input.ConfirmPassword" class="form-label">@Model.ConfirmPasswordLabel</label>
-                    <input asp-for="Input.ConfirmPassword" class="form-control" type="password" />
+                    <input asp-for="Input.ConfirmPassword" class="form-control" type="password" autocomplete="new-password" required />
                 </div>
                 <div class="mb-3">
                     <label asp-for="Input.Role" class="form-label">@Model.RoleLabel</label>
-                    <select asp-for="Input.Role" class="form-select">
-                        <option value="Seeker">Seeker</option>
-                        <option value="Broker">Broker</option>
+                    <select asp-for="Input.Role" class="form-select" aria-describedby="role-help">
+                        <option value="Seeker">@Model.SeekerRoleLabel</option>
+                        <option value="Broker">@Model.BrokerRoleLabel</option>
                     </select>
+                    <div id="role-help" class="form-text">@Model.BrokerHelp</div>
                 </div>
                 <div class="mb-3">
                     <label asp-for="Input.FullName" class="form-label">@Model.FullNameLabel</label>
-                    <input asp-for="Input.FullName" class="form-control" />
+                    <input asp-for="Input.FullName" class="form-control" autocomplete="name" />
                 </div>
                 <div class="mb-3">
                     <label asp-for="Input.PhoneNumber" class="form-label">@Model.PhoneLabel</label>
-                    <input asp-for="Input.PhoneNumber" class="form-control" />
+                    <input asp-for="Input.PhoneNumber" class="form-control" type="tel" autocomplete="tel" inputmode="tel" />
                 </div>
-                <button type="submit" class="btn btn-primary w-100">@Model.ButtonText</button>
+                <button type="submit" class="btn btn-primary w-100" data-submitting-text="@Model.SubmittingText">@Model.ButtonText</button>
             </form>
+            <div class="mt-3 text-center small">
+                <a asp-page="/Login" asp-route-returnUrl="@Model.ReturnUrl">@Model.HaveAccountLabel</a>
+            </div>
         </div>
     </div>
 </div>

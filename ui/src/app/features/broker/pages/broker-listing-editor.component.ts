@@ -15,6 +15,12 @@ import type {
   CreateListingRequest,
   UpdateListingRequest,
 } from '../../../api/models';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 function numberRange(min: number, max: number) {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -34,121 +40,151 @@ function numberRange(min: number, max: number) {
   selector: 'hb-broker-listing-editor',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, LoadingStateComponent, ErrorStateComponent, TranslocoPipe],
+  imports: [
+    ReactiveFormsModule,
+    LoadingStateComponent,
+    ErrorStateComponent,
+    TranslocoPipe,
+    MatCardModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatProgressSpinnerModule,
+  ],
   template: `
     <section class="editor">
-      <h1>
-        {{
-          isEdit()
-            ? ('broker.editor.editTitle' | transloco)
-            : ('broker.editor.createTitle' | transloco)
-        }}
-      </h1>
-
-      @if (loading()) {
-        <hb-loading-state [label]="'broker.editor.loading' | transloco" />
-      } @else {
-        @if (error()) {
-          <hb-error-state [title]="error() ?? ('common.error' | transloco)" />
-        }
-
-        <form [formGroup]="form" (ngSubmit)="submit()" class="editor-form">
-          <label>
-            {{ 'broker.editor.title' | transloco }}
-            <input formControlName="title" />
-            @if (form.controls.title.invalid && form.controls.title.touched) {
-              <small>{{ 'broker.editor.titleError' | transloco }}</small>
-            }
-          </label>
-
-          <label>
-            {{ 'broker.editor.description' | transloco }}
-            <textarea formControlName="description"></textarea>
-          </label>
-
-          <label>
-            {{ 'broker.editor.price' | transloco }}
-            <input type="number" formControlName="price" />
-            @if (form.controls.price.invalid && form.controls.price.touched) {
-              <small>{{ 'broker.editor.priceError' | transloco }}</small>
-            }
-          </label>
-
-          <label>
-            {{ 'broker.editor.propertyType' | transloco }}
-            <select formControlName="propertyTypeId">
-              @for (type of propertyTypes(); track type.id) {
-                <option [value]="type.id">{{ type.name }}</option>
-              }
-            </select>
-          </label>
-
-          <label>
-            {{ 'broker.editor.city' | transloco }}
-            <input formControlName="city" />
-            @if (form.controls.city.invalid && form.controls.city.touched) {
-              <small>{{ 'broker.editor.cityError' | transloco }}</small>
-            }
-          </label>
-
-          <label>
-            {{ 'broker.editor.locality' | transloco }}
-            <input formControlName="locality" />
-          </label>
-
-          <label>
-            {{ 'broker.editor.province' | transloco }}
-            <input formControlName="province" />
-          </label>
-
-          <label>
-            {{ 'broker.editor.postalCode' | transloco }}
-            <input formControlName="postalCode" />
-            @if (form.controls.postalCode.invalid && form.controls.postalCode.touched) {
-              <small>{{ 'broker.editor.postalCodeError' | transloco }}</small>
-            }
-          </label>
-
-          <label>
-            {{ 'broker.editor.bedrooms' | transloco }}
-            <input type="number" formControlName="bedrooms" />
-          </label>
-
-          <label>
-            {{ 'broker.editor.bathrooms' | transloco }}
-            <input type="number" formControlName="bathrooms" />
-          </label>
-
-          <label>
-            {{ 'broker.editor.area' | transloco }}
-            <input type="number" formControlName="areaSqFt" />
-          </label>
-
-          <button type="submit" [disabled]="saving() || form.invalid">
+      <mat-card appearance="outlined">
+        <mat-card-header>
+          <mat-card-title>
             {{
-              saving() ? ('broker.editor.saving' | transloco) : ('broker.editor.save' | transloco)
+              isEdit()
+                ? ('broker.editor.editTitle' | transloco)
+                : ('broker.editor.createTitle' | transloco)
             }}
-          </button>
-        </form>
-      }
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          @if (loading()) {
+            <hb-loading-state [label]="'broker.editor.loading' | transloco" />
+          } @else {
+            @if (error()) {
+              <hb-error-state [title]="error() ?? ('common.error' | transloco)" />
+            }
+
+            <form [formGroup]="form" (ngSubmit)="submit()" class="editor-form">
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'broker.editor.title' | transloco }}</mat-label>
+                <input matInput formControlName="title" />
+                @if (form.controls.title.invalid && form.controls.title.touched) {
+                  <mat-error>{{ 'broker.editor.titleError' | transloco }}</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'broker.editor.description' | transloco }}</mat-label>
+                <textarea matInput formControlName="description" rows="4"></textarea>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'broker.editor.price' | transloco }}</mat-label>
+                <input matInput type="number" formControlName="price" />
+                @if (form.controls.price.invalid && form.controls.price.touched) {
+                  <mat-error>{{ 'broker.editor.priceError' | transloco }}</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'broker.editor.propertyType' | transloco }}</mat-label>
+                <mat-select formControlName="propertyTypeId">
+                  @for (type of propertyTypes(); track type.id) {
+                    <mat-option [value]="type.id">{{ type.name }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'broker.editor.city' | transloco }}</mat-label>
+                <input matInput formControlName="city" />
+                @if (form.controls.city.invalid && form.controls.city.touched) {
+                  <mat-error>{{ 'broker.editor.cityError' | transloco }}</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'broker.editor.locality' | transloco }}</mat-label>
+                <input matInput formControlName="locality" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'broker.editor.province' | transloco }}</mat-label>
+                <input matInput formControlName="province" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'broker.editor.postalCode' | transloco }}</mat-label>
+                <input matInput formControlName="postalCode" />
+                @if (form.controls.postalCode.invalid && form.controls.postalCode.touched) {
+                  <mat-error>{{ 'broker.editor.postalCodeError' | transloco }}</mat-error>
+                }
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'broker.editor.bedrooms' | transloco }}</mat-label>
+                <input matInput type="number" formControlName="bedrooms" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'broker.editor.bathrooms' | transloco }}</mat-label>
+                <input matInput type="number" formControlName="bathrooms" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'broker.editor.area' | transloco }}</mat-label>
+                <input matInput type="number" formControlName="areaSqFt" />
+              </mat-form-field>
+
+              <div class="actions">
+                <button
+                  mat-raised-button
+                  color="primary"
+                  type="submit"
+                  [disabled]="saving() || form.invalid"
+                >
+                  @if (saving()) {
+                    <mat-spinner diameter="20" />
+                  }
+                  {{
+                    saving()
+                      ? ('broker.editor.saving' | transloco)
+                      : ('broker.editor.save' | transloco)
+                  }}
+                </button>
+              </div>
+            </form>
+          }
+        </mat-card-content>
+      </mat-card>
     </section>
   `,
   styles: `
     .editor {
       display: flex;
-      flex-direction: column;
-      gap: 1rem;
+      justify-content: center;
+      padding-block-start: 1rem;
+    }
+    mat-card {
       max-inline-size: 36rem;
+      width: 100%;
     }
     .editor-form {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
     }
-    label {
+    .actions {
       display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
+      justify-content: flex-end;
     }
   `,
 })
@@ -226,7 +262,6 @@ export class BrokerListingEditorComponent {
         bathrooms: listing.bathrooms != null ? Number(listing.bathrooms) : null,
         areaSqFt: listing.areaSqFt != null ? Number(listing.areaSqFt) : null,
       });
-      // Feature selection is intentionally not tracked by this simplified form.
     } catch (error) {
       this.error.set(
         error instanceof Error ? error.message : this.transloco.translate('errors.loadFailed'),
@@ -271,7 +306,7 @@ export class BrokerListingEditorComponent {
       } else {
         await this.listingsData.create(payload as CreateListingRequest, this.idempotencyKey);
       }
-      await this.router.navigate(['/search']);
+      await this.router.navigate(['/broker/listings']);
     } catch (error) {
       if (error instanceof ApiError && error.fieldErrors) {
         for (const [field, messages] of Object.entries(error.fieldErrors)) {

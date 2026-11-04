@@ -1,10 +1,19 @@
 ﻿@page
 @model IndexModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<HouseBroker.Auth.Resources.Resources> L
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = L["Home_Title"];
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="container mt-5">
+    <div class="card mx-auto shadow-sm" style="max-width: 600px;">
+        <div class="card-body text-center">
+            <h1 class="h3 mb-3">@L["Home_Welcome"]</h1>
+            <p class="text-muted mb-4">@L["Home_Description"]</p>
+            <div class="d-flex justify-content-center gap-2">
+                <a asp-page="/Login" class="btn btn-primary">@L["Home_SignIn"]</a>
+                <a asp-page="/Register" class="btn btn-outline-primary">@L["Home_CreateAccount"]</a>
+            </div>
+        </div>
+    </div>
 </div>

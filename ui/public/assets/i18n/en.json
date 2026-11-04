@@ -7,6 +7,11 @@
     "error": "Error",
     "retry": "Retry"
   },
+  "authCallback": {
+    "working": "Completing sign in...",
+    "error": "We could not complete sign in. Please try again.",
+    "retry": "Try again"
+  },
   "errors": {
     "loadFailed": "Failed to load data.",
     "saveFailed": "Save failed.",

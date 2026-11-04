@@ -10,6 +10,10 @@ import { LoadingStateComponent } from '../../../shared/ui/loading-state.componen
 import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
 import type { OwnerListingDto } from '../../../api/models';
 import { ApiError } from '../../../core/http/api-error';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 @Component({
   selector: 'hb-broker-listings-page',
@@ -22,13 +26,19 @@ import { ApiError } from '../../../core/http/api-error';
     ErrorStateComponent,
     HbPricePipe,
     TranslocoPipe,
+    MatCardModule,
+    MatButtonModule,
+    MatChipsModule,
+    MatProgressBarModule,
   ],
   template: `
     <section class="my-listings">
-      <h1>{{ 'broker.listingsTitle' | transloco }}</h1>
-      <p>
-        <a routerLink="/broker/listings/new">{{ 'broker.create' | transloco }}</a>
-      </p>
+      <div class="header-row">
+        <h1>{{ 'broker.listingsTitle' | transloco }}</h1>
+        <a mat-raised-button color="primary" routerLink="/broker/listings/new">{{
+          'broker.create' | transloco
+        }}</a>
+      </div>
 
       @if (loading()) {
         <hb-loading-state [label]="'broker.loading' | transloco" />
@@ -44,80 +54,101 @@ import { ApiError } from '../../../core/http/api-error';
           [description]="'broker.emptyDescription' | transloco"
         />
       } @else {
-        <ul class="listing-list">
+        <div class="listing-stack">
           @for (listing of listings(); track listing.id) {
-            <li>
-              <strong>{{ listing.title }}</strong>
-              <span>{{ listing.price | hbPrice }}</span>
-              <span class="status-chip">{{ listing.status }}</span>
-              <span
-                >{{ 'broker.commission' | transloco }}:
-                {{ (listing.commissionAmount ?? 0) | hbPrice }}</span
-              >
+            <mat-card appearance="outlined">
+              <mat-card-header>
+                <mat-card-title>{{ listing.title }}</mat-card-title>
+                <mat-card-subtitle>
+                  {{ listing.price | hbPrice }} ·
+                  <mat-chip-set>
+                    <mat-chip>{{ listing.status }}</mat-chip>
+                  </mat-chip-set>
+                </mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <p class="commission">
+                  {{ 'broker.commission' | transloco }}:
+                  <strong>{{ listing.commissionAmount ?? 0 | hbPrice }}</strong>
+                </p>
 
-              <div class="actions">
-                <a [routerLink]="['/broker/listings', listing.id, 'edit']">{{
-                  'broker.edit' | transloco
-                }}</a>
-                <button type="button" (click)="publish(listing.id ?? '')">
-                  {{ 'broker.publish' | transloco }}
-                </button>
-                <button type="button" (click)="markSold(listing.id ?? '')">
-                  {{ 'broker.sell' | transloco }}
-                </button>
-                <button type="button" (click)="archive(listing.id ?? '')">
-                  {{ 'broker.archive' | transloco }}
-                </button>
-                <button type="button" (click)="remove(listing.id ?? '')">
-                  {{ 'broker.delete' | transloco }}
-                </button>
-              </div>
+                <div class="actions">
+                  <a mat-stroked-button [routerLink]="['/broker/listings', listing.id, 'edit']">{{
+                    'broker.edit' | transloco
+                  }}</a>
+                  <button
+                    mat-flat-button
+                    color="primary"
+                    type="button"
+                    (click)="publish(listing.id ?? '')"
+                  >
+                    {{ 'broker.publish' | transloco }}
+                  </button>
+                  <button mat-stroked-button type="button" (click)="markSold(listing.id ?? '')">
+                    {{ 'broker.sell' | transloco }}
+                  </button>
+                  <button mat-stroked-button type="button" (click)="archive(listing.id ?? '')">
+                    {{ 'broker.archive' | transloco }}
+                  </button>
+                  <button mat-button color="warn" type="button" (click)="remove(listing.id ?? '')">
+                    {{ 'broker.delete' | transloco }}
+                  </button>
+                </div>
 
-              @if (listing.images?.length) {
-                <div class="images">
-                  @for (image of listing.images; track image.id) {
-                    <figure class="image-item">
-                      <img
-                        [src]="imageUrl(listing.id ?? '', image.id ?? '')"
-                        [alt]="listing.title || ('detail.imageAlt' | transloco)"
-                      />
-                      @if (image.isPrimary) {
-                        <span class="primary-badge">{{ 'broker.primaryImage' | transloco }}</span>
-                      }
-                      <button
-                        type="button"
-                        (click)="deleteImage(listing.id ?? '', image.id ?? '')"
-                        [disabled]="deletingImageId() === image.id"
-                      >
-                        {{ 'broker.deleteImage' | transloco }}
-                      </button>
-                    </figure>
+                @if (listing.images?.length) {
+                  <div class="images">
+                    @for (image of listing.images; track image.id) {
+                      <figure class="image-item">
+                        <img
+                          [src]="imageUrl(listing.id ?? '', image.id ?? '')"
+                          [alt]="listing.title || ('detail.imageAlt' | transloco)"
+                          width="128"
+                          height="96"
+                          loading="lazy"
+                        />
+                        @if (image.isPrimary) {
+                          <mat-chip>{{ 'broker.primaryImage' | transloco }}</mat-chip>
+                        }
+                        <button
+                          mat-button
+                          color="warn"
+                          type="button"
+                          (click)="deleteImage(listing.id ?? '', image.id ?? '')"
+                          [disabled]="deletingImageId() === image.id"
+                        >
+                          {{ 'broker.deleteImage' | transloco }}
+                        </button>
+                      </figure>
+                    }
+                  </div>
+                }
+
+                <div class="upload">
+                  <label class="upload-label">
+                    {{ 'broker.uploadImage' | transloco }}
+                    <input
+                      #fileInput
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      (change)="upload(listing.id ?? '', $event)"
+                      [disabled]="uploadingId() === listing.id"
+                    />
+                  </label>
+                  @if (uploadingId() === listing.id && uploadProgress() !== null) {
+                    <mat-progress-bar
+                      mode="determinate"
+                      [value]="uploadProgress()"
+                    ></mat-progress-bar>
+                    <span>{{ uploadProgress() }}%</span>
+                  }
+                  @if (uploadingId() === listing.id) {
+                    <span>{{ 'broker.uploading' | transloco }}</span>
                   }
                 </div>
-              }
-
-              <div class="upload">
-                <label>
-                  {{ 'broker.uploadImage' | transloco }}
-                  <input
-                    #fileInput
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    (change)="upload(listing.id ?? '', $event)"
-                    [disabled]="uploadingId() === listing.id"
-                  />
-                </label>
-                @if (uploadingId() === listing.id && uploadProgress() !== null) {
-                  <progress [value]="uploadProgress()" max="100"></progress>
-                  <span>{{ uploadProgress() }}%</span>
-                }
-                @if (uploadingId() === listing.id) {
-                  <span>{{ 'broker.uploading' | transloco }}</span>
-                }
-              </div>
-            </li>
+              </mat-card-content>
+            </mat-card>
           }
-        </ul>
+        </div>
       }
     </section>
   `,
@@ -125,24 +156,34 @@ import { ApiError } from '../../../core/http/api-error';
     .my-listings {
       display: flex;
       flex-direction: column;
+      gap: 1.5rem;
+    }
+    .header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
       gap: 1rem;
     }
-    .listing-list {
+    .listing-stack {
       display: flex;
       flex-direction: column;
       gap: 1rem;
-      padding: 0;
-      list-style: none;
+    }
+    .commission {
+      margin: 0 0 0.75rem;
     }
     .actions {
       display: flex;
       flex-wrap: wrap;
       gap: 0.5rem;
+      margin-block: 0.75rem;
     }
     .images {
       display: flex;
       flex-wrap: wrap;
       gap: 0.75rem;
+      margin-block: 0.75rem;
     }
     .image-item {
       display: flex;
@@ -154,16 +195,17 @@ import { ApiError } from '../../../core/http/api-error';
       inline-size: 8rem;
       block-size: 6rem;
       object-fit: cover;
-    }
-    .primary-badge {
-      font-size: 0.75rem;
-      font-weight: 600;
+      border-radius: 6px;
     }
     .upload {
       display: flex;
       flex-direction: column;
       gap: 0.5rem;
       max-inline-size: 20rem;
+      margin-block-start: 0.75rem;
+    }
+    .upload-label {
+      font-weight: 500;
     }
   `,
 })

@@ -1,10 +1,19 @@
 @page
 @model HouseBroker.Auth.Pages.LogoutModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<HouseBroker.Auth.Resources.Resources> L
 @{
-    ViewData["Title"] = "Logout";
+    ViewData["Title"] = L["Logout_Title"];
 }
 
-<h1>Logout</h1>
-<form method="post">
-    <button type="submit">Sign out</button>
-</form>
+<div class="container mt-5">
+    <div class="card mx-auto shadow-sm" style="max-width: 400px;">
+        <div class="card-body text-center">
+            <h1 class="h4">@L["Logout_Title"]</h1>
+            <p class="text-muted">@L["Logout_Message"]</p>
+            <form method="post" class="d-flex justify-content-center gap-2">
+                <button type="submit" class="btn btn-danger">@L["Logout_Button"]</button>
+                <a asp-page="/Index" class="btn btn-outline-secondary">@L["Logout_Cancel"]</a>
+            </form>
+        </div>
+    </div>
+</div>

@@ -11,6 +11,11 @@ import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
 import type { ListingSearchCriteria } from '../../../core/data/listings-data.service';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 
 @Component({
   selector: 'hb-search-page',
@@ -25,37 +30,87 @@ import type { ListingSearchCriteria } from '../../../core/data/listings-data.ser
     EmptyStateComponent,
     ErrorStateComponent,
     HbPricePipe,
+    MatCardModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
   ],
   template: `
     <section class="search-page">
       <h1>{{ 'search.title' | transloco }}</h1>
-      <form [formGroup]="criteriaForm" (ngSubmit)="applyFilters()" class="filters">
-        <input formControlName="location" [attr.placeholder]="'search.location' | transloco" />
-        <input
-          type="number"
-          formControlName="minPrice"
-          [attr.placeholder]="'search.minPrice' | transloco"
-        />
-        <input
-          type="number"
-          formControlName="maxPrice"
-          [attr.placeholder]="'search.maxPrice' | transloco"
-        />
-        <select formControlName="propertyTypeId">
-          <option value="">{{ 'search.propertyType' | transloco }}</option>
-          @for (type of store.propertyTypes(); track type.id) {
-            <option [value]="type.id">{{ type.name }}</option>
-          }
-        </select>
-        <input
-          type="number"
-          formControlName="bedrooms"
-          [attr.placeholder]="'search.bedrooms' | transloco"
-        />
-        <button type="submit" [disabled]="store.loading()">
-          {{ 'search.submit' | transloco }}
-        </button>
-      </form>
+      <mat-card appearance="outlined" class="filters-card">
+        <mat-card-content>
+          <form [formGroup]="criteriaForm" (ngSubmit)="applyFilters()" class="filters">
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'search.location' | transloco }}</mat-label>
+              <input
+                matInput
+                id="search-location"
+                name="location"
+                formControlName="location"
+                [attr.placeholder]="'search.location' | transloco"
+              />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'search.minPrice' | transloco }}</mat-label>
+              <input
+                matInput
+                id="search-min-price"
+                name="minPrice"
+                type="number"
+                formControlName="minPrice"
+                [attr.placeholder]="'search.minPrice' | transloco"
+              />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'search.maxPrice' | transloco }}</mat-label>
+              <input
+                matInput
+                id="search-max-price"
+                name="maxPrice"
+                type="number"
+                formControlName="maxPrice"
+                [attr.placeholder]="'search.maxPrice' | transloco"
+              />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'search.propertyType' | transloco }}</mat-label>
+              <mat-select
+                id="search-property-type"
+                name="propertyTypeId"
+                formControlName="propertyTypeId"
+              >
+                <mat-option value="">{{ 'search.propertyType' | transloco }}</mat-option>
+                @for (type of store.propertyTypes(); track type.id) {
+                  <mat-option [value]="type.id">{{ type.name }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>{{ 'search.bedrooms' | transloco }}</mat-label>
+              <input
+                matInput
+                id="search-bedrooms"
+                name="bedrooms"
+                type="number"
+                formControlName="bedrooms"
+                [attr.placeholder]="'search.bedrooms' | transloco"
+              />
+            </mat-form-field>
+
+            <div class="actions">
+              <button mat-raised-button color="primary" type="submit" [disabled]="store.loading()">
+                {{ 'search.submit' | transloco }}
+              </button>
+            </div>
+          </form>
+        </mat-card-content>
+      </mat-card>
 
       @if (store.loading()) {
         <hb-loading-state [label]="'search.loading' | transloco" />
@@ -70,15 +125,21 @@ import type { ListingSearchCriteria } from '../../../core/data/listings-data.ser
           [description]="'search.emptyDescription' | transloco"
         />
       } @else {
-        <ul class="results">
+        <div class="results">
           @for (listing of store.results(); track listing.id) {
-            <li>
-              <a [routerLink]="['/listings', listing.id]">{{ listing.title }}</a>
-              <span>{{ listing.price | hbPrice }}</span>
-              <span>{{ listing.city }}, {{ listing.locality }}</span>
-            </li>
+            <mat-card appearance="outlined" class="result-card">
+              <mat-card-header>
+                <mat-card-title>
+                  <a [routerLink]="['/listings', listing.id]">{{ listing.title }}</a>
+                </mat-card-title>
+                <mat-card-subtitle>{{ listing.city }}, {{ listing.locality }}</mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <p class="price">{{ listing.price | hbPrice }}</p>
+              </mat-card-content>
+            </mat-card>
           }
-        </ul>
+        </div>
       }
     </section>
   `,
@@ -86,19 +147,35 @@ import type { ListingSearchCriteria } from '../../../core/data/listings-data.ser
     .search-page {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 1.5rem;
+    }
+    .filters-card {
+      width: 100%;
     }
     .filters {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+      gap: 1rem;
+      align-items: center;
+    }
+    .actions {
       display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
+      align-items: end;
+      justify-content: flex-end;
     }
     .results {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      padding: 0;
-      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .result-card a {
+      text-decoration: none;
+      color: inherit;
+    }
+    .price {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin: 0;
     }
   `,
 })

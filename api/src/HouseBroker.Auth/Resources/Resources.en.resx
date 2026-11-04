@@ -34,6 +34,8 @@
   <data name="Register_BrokerPhoneRequired" xml:space="preserve">Phone number is required for brokers.</data>
   <data name="Register_PasswordMismatch" xml:space="preserve">Passwords do not match.</data>
   <data name="Register_InvalidRole" xml:space="preserve">Invalid role.</data>
+  <data name="Register_RoleSeeker" xml:space="preserve">Seeker (browse and contact brokers)</data>
+  <data name="Register_RoleBroker" xml:space="preserve">Broker (manage listings)</data>
   <data name="Lockout_Title" xml:space="preserve">Account locked</data>
   <data name="Lockout_Message" xml:space="preserve">Due to multiple failed login attempts, your account has been locked for security reasons.</data>
   <data name="Lockout_Instructions" xml:space="preserve">Please try again in 15 minutes or contact support if you believe this is an error.</data>
@@ -72,4 +74,44 @@
   <data name="Scope_listings.write" xml:space="preserve">Manage listings</data>
   <data name="Scope_commission.read" xml:space="preserve">Read commission</data>
   <data name="Scope_admin.commission" xml:space="preserve">Manage commission rates</data>
+  <data name="Brand_Name" xml:space="preserve">House Broker</data>
+  <data name="Nav_Home" xml:space="preserve">Home</data>
+  <data name="Nav_Privacy" xml:space="preserve">Privacy</data>
+  <data name="Nav_Language" xml:space="preserve">Language</data>
+  <data name="Language_English" xml:space="preserve">English</data>
+  <data name="Language_Nepali" xml:space="preserve">Nepali</data>
+  <data name="Login_CreateAccount" xml:space="preserve">Create an account</data>
+  <data name="Login_ForgotPassword" xml:space="preserve">Forgot your password?</data>
+  <data name="Login_Submitting" xml:space="preserve">Signing in...</data>
+  <data name="Login_PasswordHint" xml:space="preserve">Your password must be at least 10 characters and include uppercase, lowercase, digit, and special characters.</data>
+  <data name="Register_HaveAccount" xml:space="preserve">Already have an account? Sign in</data>
+  <data name="Register_PasswordHint" xml:space="preserve">Use at least 10 characters with uppercase, lowercase, digit, and special characters.</data>
+  <data name="Register_BrokerHelp" xml:space="preserve">Broker accounts can manage listings and view commission for their own listings.</data>
+  <data name="Register_Submitting" xml:space="preserve">Creating account...</data>
+  <data name="Logout_Title" xml:space="preserve">Sign out</data>
+  <data name="Logout_Message" xml:space="preserve">You are about to sign out of your House Broker account.</data>
+  <data name="Logout_Button" xml:space="preserve">Sign out</data>
+  <data name="Logout_Cancel" xml:space="preserve">Cancel</data>
+  <data name="AccessDenied_Title" xml:space="preserve">Access denied</data>
+  <data name="AccessDenied_Message" xml:space="preserve">You do not have permission to view this page.</data>
+  <data name="AccessDenied_Back" xml:space="preserve">Back to home</data>
+  <data name="Privacy_Title" xml:space="preserve">Privacy policy</data>
+  <data name="Privacy_Body" xml:space="preserve">House Broker processes your account and listing information to provide the property marketplace.</data>
+  <data name="Home_Title" xml:space="preserve">House Broker sign in</data>
+  <data name="Home_Welcome" xml:space="preserve">Welcome to House Broker</data>
+  <data name="Home_Description" xml:space="preserve">Sign in or create an account to search listings, manage properties, and view broker commission.</data>
+  <data name="Home_SignIn" xml:space="preserve">Sign in</data>
+  <data name="Home_CreateAccount" xml:space="preserve">Create account</data>
+  <data name="Error_Title" xml:space="preserve">Something went wrong</data>
+  <data name="Error_Heading" xml:space="preserve">An error occurred while processing your request.</data>
+  <data name="Error_Body" xml:space="preserve">Please try again. If the problem continues, contact support with the reference below.</data>
+  <data name="Error_RequestId" xml:space="preserve">Reference</data>
+  <data name="Error_Development" xml:space="preserve">Development mode shows detailed diagnostic information.</data>
+  <data name="Consent_ClientRequesting" xml:space="preserve">The application below is requesting access to your House Broker account.</data>
+  <data name="Consent_ScopeHeading" xml:space="preserve">Requested permissions</data>
+  <data name="Consent_DenyResult" xml:space="preserve">If you deny, the application will not receive access.</data>
+  <data name="Consent_Error" xml:space="preserve">Consent was not completed. Please return to the application and try again.</data>
+  <data name="AuthCallback_Working" xml:space="preserve">Completing sign in...</data>
+  <data name="AuthCallback_Error" xml:space="preserve">We could not complete sign in. Please try again.</data>
+  <data name="AuthCallback_Retry" xml:space="preserve">Try again</data>
 </root>

@@ -56,7 +56,10 @@ export class AuthService {
     }
   }
 
-  async signIn(uiLocales?: string): Promise<void> {
+  async signIn(uiLocales?: string, returnUrl?: string): Promise<void> {
+    if (returnUrl && this.isLocalUrl(returnUrl)) {
+      sessionStorage.setItem('hb.return_url', returnUrl);
+    }
     const verifier = this.generateRandomString(64);
     const challenge = await this.createCodeChallenge(verifier);
     const state = this.generateRandomString(32);
@@ -184,6 +187,16 @@ export class AuthService {
       params.set('id_token_hint', idToken);
     }
     window.location.assign(`${this.absolute(cfg.ssoIssuer)}/connect/logout?${params.toString()}`);
+  }
+
+  consumeReturnUrl(): string {
+    const returnUrl = sessionStorage.getItem('hb.return_url');
+    sessionStorage.removeItem('hb.return_url');
+    return returnUrl && this.isLocalUrl(returnUrl) ? returnUrl : '/';
+  }
+
+  private isLocalUrl(url: string): boolean {
+    return url.startsWith('/') && !url.startsWith('//');
   }
 
   getAccessToken(): string | null {

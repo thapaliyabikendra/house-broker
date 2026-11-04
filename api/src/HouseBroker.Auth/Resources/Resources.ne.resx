@@ -34,6 +34,8 @@
   <data name="Register_BrokerPhoneRequired" xml:space="preserve">ब्रोकरहरूको लागि फोन नम्बर आवश्यक छ।</data>
   <data name="Register_PasswordMismatch" xml:space="preserve">पासवर्डहरू मिल्दैनन्।</data>
   <data name="Register_InvalidRole" xml:space="preserve">अमान्य भूमिका।</data>
+  <data name="Register_RoleSeeker" xml:space="preserve">Seeker (खोज र ब्रोकर सम्पर्क)</data>
+  <data name="Register_RoleBroker" xml:space="preserve">Broker (लिस्टिङ व्यवस्थापन)</data>
   <data name="Lockout_Title" xml:space="preserve">खाता लक गरिएको छ</data>
   <data name="Lockout_Message" xml:space="preserve">धेरै पटक असफल लगइन प्रयासका कारण, तपाईंको खाता सुरक्षा कारणले लक गरिएको छ।</data>
   <data name="Lockout_Instructions" xml:space="preserve">कृपया १५ मिनेट पछि फेरि प्रयास गर्नुहोस् वा यदि तपाईंलाई यो त्रुटि हो भन्ने लाग्छ भने समर्थनमा सम्पर्क गर्नुहोस्।</data>
@@ -62,14 +64,54 @@
   <data name="Identity_PasswordRequiresUpper" xml:space="preserve">Password requires an uppercase letter.</data>
   <data name="Identity_PasswordRequiresUniqueChars" xml:space="preserve">Password requires at least {0} unique characters.</data>
   <data name="Identity_RecoveryCodeRedemptionFailed" xml:space="preserve">Recovery code redemption failed.</data>
-  <data name="Scope_openid" xml:space="preserve">OpenID identity</data>
-  <data name="Scope_profile" xml:space="preserve">Profile information</data>
-  <data name="Scope_email" xml:space="preserve">Email address</data>
-  <data name="Scope_phone" xml:space="preserve">Phone number</data>
-  <data name="Scope_offline_access" xml:space="preserve">Offline access</data>
-  <data name="Scope_listings.read" xml:space="preserve">Read listings</data>
-  <data name="Scope_contacts.read" xml:space="preserve">Read broker contacts</data>
-  <data name="Scope_listings.write" xml:space="preserve">Manage listings</data>
-  <data name="Scope_commission.read" xml:space="preserve">Read commission</data>
-  <data name="Scope_admin.commission" xml:space="preserve">Manage commission rates</data>
+  <data name="Scope_openid" xml:space="preserve">OpenID पहिचान</data>
+  <data name="Scope_profile" xml:space="preserve">प्रोफाइल जानकारी</data>
+  <data name="Scope_email" xml:space="preserve">इमेल ठेगाना</data>
+  <data name="Scope_phone" xml:space="preserve">फोन नम्बर</data>
+  <data name="Scope_offline_access" xml:space="preserve">अफलाइन पहुँच</data>
+  <data name="Scope_listings.read" xml:space="preserve">लिस्टिङ हेर्ने</data>
+  <data name="Scope_contacts.read" xml:space="preserve">ब्रोकर सम्पर्क हेर्ने</data>
+  <data name="Scope_listings.write" xml:space="preserve">लिस्टिङ व्यवस्थापन गर्ने</data>
+  <data name="Scope_commission.read" xml:space="preserve">कमिसन हेर्ने</data>
+  <data name="Scope_admin.commission" xml:space="preserve">कमिसन दर व्यवस्थापन गर्नुहोस्</data>
+  <data name="Brand_Name" xml:space="preserve">हाउस ब्रोकर</data>
+  <data name="Nav_Home" xml:space="preserve">गृह</data>
+  <data name="Nav_Privacy" xml:space="preserve">गोपनीयता</data>
+  <data name="Nav_Language" xml:space="preserve">भाषा</data>
+  <data name="Language_English" xml:space="preserve">अंग्रेजी</data>
+  <data name="Language_Nepali" xml:space="preserve">नेपाली</data>
+  <data name="Login_CreateAccount" xml:space="preserve">खाता बनाउनुहोस्</data>
+  <data name="Login_ForgotPassword" xml:space="preserve">पासवर्ड बिर्सनुभयो?</data>
+  <data name="Login_Submitting" xml:space="preserve">साइन इन हुँदैछ...</data>
+  <data name="Login_PasswordHint" xml:space="preserve">तपाईंको पासवर्ड कम्तीमा १० वर्ण हुनुपर्छ र ठूला/साना अक्षर, अंक र विशेष वर्ण समावेश गर्नुपर्छ।</data>
+  <data name="Register_HaveAccount" xml:space="preserve">पहिले नै खाता छ? साइन इन गर्नुहोस्</data>
+  <data name="Register_PasswordHint" xml:space="preserve">कम्तीमा १० वर्ण, ठूला/साना अक्षर, अंक र विशेष वर्ण प्रयोग गर्नुहोस्।</data>
+  <data name="Register_BrokerHelp" xml:space="preserve">ब्रोकर खाताले लिस्टिङ व्यवस्थापन गर्न र आफ्नै लिस्टिङको कमिसन हेर्न सक्छन्।</data>
+  <data name="Register_Submitting" xml:space="preserve">खाता बन्दैछ...</data>
+  <data name="Logout_Title" xml:space="preserve">साइन आउट</data>
+  <data name="Logout_Message" xml:space="preserve">तपाईं आफ्नो हाउस ब्रोकर खाताबाट साइन आउट हुँदै हुनुहुन्छ।</data>
+  <data name="Logout_Button" xml:space="preserve">साइन आउट</data>
+  <data name="Logout_Cancel" xml:space="preserve">रद्द गर्नुहोस्</data>
+  <data name="AccessDenied_Title" xml:space="preserve">पहुँच अस्वीकृत</data>
+  <data name="AccessDenied_Message" xml:space="preserve">तपाईंसँग यो पृष्ठ हेर्न अनुमति छैन।</data>
+  <data name="AccessDenied_Back" xml:space="preserve">गृह पृष्ठमा फर्कनुहोस्</data>
+  <data name="Privacy_Title" xml:space="preserve">गोपनीयता नीति</data>
+  <data name="Privacy_Body" xml:space="preserve">हाउस ब्रोकरले बजार सेवा प्रदान गर्न तपाईंको खाता र लिस्टिङ जानकारी प्रक्रिया गर्छ।</data>
+  <data name="Home_Title" xml:space="preserve">हाउस ब्रोकर साइन इन</data>
+  <data name="Home_Welcome" xml:space="preserve">हाउस ब्रोकरमा स्वागत छ</data>
+  <data name="Home_Description" xml:space="preserve">लिस्टिङ खोज्न, सम्पत्ति व्यवस्थापन गर्न र ब्रोकर कमिसन हेर्न साइन इन वा खाता बनाउनुहोस्।</data>
+  <data name="Home_SignIn" xml:space="preserve">साइन इन</data>
+  <data name="Home_CreateAccount" xml:space="preserve">खाता बनाउनुहोस्</data>
+  <data name="Error_Title" xml:space="preserve">केही गलत भयो</data>
+  <data name="Error_Heading" xml:space="preserve">तपाईंको अनुरोध प्रक्रिया गर्दा त्रुटि भयो।</data>
+  <data name="Error_Body" xml:space="preserve">कृपया पुन: प्रयास गर्नुहोस्। समस्या जारी रहे सहायतालाई तलको सन्दर्भ प्रदान गर्नुहोस्।</data>
+  <data name="Error_RequestId" xml:space="preserve">सन्दर्भ</data>
+  <data name="Error_Development" xml:space="preserve">विकास मोडले विस्तृत निदान जानकारी देखाउँछ।</data>
+  <data name="Consent_ClientRequesting" xml:space="preserve">तलको एप्लिकेसनले तपाईंको हाउस ब्रोकर खातामा पहुँच अनुरोध गरिरहेको छ।</data>
+  <data name="Consent_ScopeHeading" xml:space="preserve">अनुरोध गरिएका अनुमतिहरू</data>
+  <data name="Consent_DenyResult" xml:space="preserve">अस्वीकार गरे, एप्लिकेसनले पहुँच पाउने छैन।</data>
+  <data name="Consent_Error" xml:space="preserve">सहमति पूरा भएन। कृपया एप्लिकेसनमा फर्केर पुन: प्रयास गर्नुहोस्।</data>
+  <data name="AuthCallback_Working" xml:space="preserve">साइन इन पूरा हुँदैछ...</data>
+  <data name="AuthCallback_Error" xml:space="preserve">हामी साइन इन पूरा गर्न सकेनौं। कृपया पुन: प्रयास गर्नुहोस्।</data>
+  <data name="AuthCallback_Retry" xml:space="preserve">पुन: प्रयास गर्नुहोस्</data>
 </root>

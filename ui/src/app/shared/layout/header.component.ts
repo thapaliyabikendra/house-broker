@@ -1,49 +1,68 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
 import { TranslocoPipe } from '@jsverse/transloco';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
 
 @Component({
   selector: 'hb-header',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TranslocoPipe],
+  imports: [RouterLink, TranslocoPipe, MatToolbarModule, MatButtonModule, MatSelectModule],
   template: `
-    <header class="shell-header">
-      <h1>{{ 'title' | transloco }}</h1>
-      <div class="actions">
-        <label class="lang">
-          {{ 'header.language' | transloco }}
-          <select [value]="lang()" (change)="setLanguage($event)">
-            <option value="en">{{ 'header.english' | transloco }}</option>
-            <option value="ne">{{ 'header.nepali' | transloco }}</option>
-          </select>
-        </label>
+    <mat-toolbar color="primary" class="shell-header">
+      <span class="brand">{{ 'title' | transloco }}</span>
+      <nav class="nav" aria-label="Primary">
+        <a mat-button routerLink="/search">{{ 'search.title' | transloco }}</a>
         @if (auth.user(); as user) {
-          <span class="user">{{ user.name ?? user.sub }}</span>
-          <button type="button" (click)="auth.signOut()">{{ 'header.signOut' | transloco }}</button>
-        } @else {
-          <button type="button" (click)="auth.signIn()">{{ 'header.signIn' | transloco }}</button>
+          <a mat-button routerLink="/broker/listings">{{ 'broker.listingsTitle' | transloco }}</a>
+          @if (auth.hasPermission('commission:rates:manage')) {
+            <a mat-button routerLink="/admin/commission-rates">{{ 'admin.title' | transloco }}</a>
+          }
         }
-      </div>
-    </header>
+      </nav>
+      <span class="spacer"></span>
+      <mat-select
+        class="lang-select"
+        [value]="lang()"
+        (selectionChange)="setLanguage($event.value)"
+        [attr.aria-label]="'header.language' | transloco"
+      >
+        <mat-option value="en">{{ 'header.english' | transloco }}</mat-option>
+        <mat-option value="ne">{{ 'header.nepali' | transloco }}</mat-option>
+      </mat-select>
+      @if (auth.user(); as user) {
+        <span class="user">{{ user.name ?? user.sub }}</span>
+        <button mat-button (click)="auth.signOut()">{{ 'header.signOut' | transloco }}</button>
+      } @else {
+        <button mat-button (click)="auth.signIn()">{{ 'header.signIn' | transloco }}</button>
+      }
+    </mat-toolbar>
   `,
   styles: `
     .shell-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem;
-    }
-    .actions {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-    }
-    .lang {
-      display: flex;
+      flex-wrap: wrap;
       gap: 0.5rem;
-      align-items: center;
+    }
+    .brand {
+      font-weight: 600;
+    }
+    .spacer {
+      flex: 1 1 auto;
+    }
+    .nav {
+      display: flex;
+      gap: 0.25rem;
+    }
+    .lang-select {
+      width: 7rem;
+    }
+    .user {
+      margin-inline-start: 0.5rem;
+      font-size: 0.9rem;
     }
   `,
 })
@@ -52,10 +71,9 @@ export class HeaderComponent {
   readonly auth = inject(AuthService);
   readonly lang = signal(this.languageService.currentLang());
 
-  setLanguage(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
+  setLanguage(value: string): void {
     if (value === 'en' || value === 'ne') {
-      this.languageService.setLanguage(value);
+      this.languageService.setLanguage(value as 'en' | 'ne');
     }
     this.lang.set(this.languageService.currentLang());
   }

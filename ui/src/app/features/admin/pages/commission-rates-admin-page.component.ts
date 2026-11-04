@@ -6,12 +6,33 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import type { CommissionRateDto, CommissionRateRequest } from '../../../api/models';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatTableModule } from '@angular/material/table';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
   selector: 'hb-commission-rates-admin-page',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, LoadingStateComponent, ErrorStateComponent, TranslocoPipe],
+  imports: [
+    ReactiveFormsModule,
+    LoadingStateComponent,
+    ErrorStateComponent,
+    TranslocoPipe,
+    MatCardModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatCheckboxModule,
+    MatSlideToggleModule,
+    MatTableModule,
+    MatProgressSpinnerModule,
+  ],
   template: `
     <section class="admin-page">
       <h1>{{ 'admin.title' | transloco }}</h1>
@@ -25,85 +46,120 @@ import type { CommissionRateDto, CommissionRateRequest } from '../../../api/mode
           [actionLabel]="'common.retry' | transloco"
         />
       } @else {
-        <table class="rates-table">
-          <thead>
-            <tr>
-              <th>{{ 'admin.min' | transloco }}</th>
-              <th>{{ 'admin.max' | transloco }}</th>
-              <th>{{ 'admin.ratePercent' | transloco }}</th>
-              <th>{{ 'admin.effectiveFrom' | transloco }}</th>
-              <th>{{ 'admin.active' | transloco }}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (rate of rates(); track rate.id) {
-              <tr>
-                <td>
-                  {{ rate.minPrice }} ({{
-                    rate.minInclusive
-                      ? ('admin.inclusive' | transloco)
-                      : ('admin.exclusive' | transloco)
-                  }})
-                </td>
-                <td>
-                  @if (rate.maxPrice !== null && rate.maxPrice !== undefined) {
-                    {{ rate.maxPrice }} ({{
-                      rate.maxInclusive
+        <mat-card appearance="outlined" class="table-card">
+          <mat-card-content>
+            <div class="table-scroll">
+              <table mat-table [dataSource]="rates()" class="rates-table">
+                <ng-container matColumnDef="min">
+                  <th mat-header-cell *matHeaderCellDef>{{ 'admin.min' | transloco }}</th>
+                  <td mat-cell *matCellDef="let rate">
+                    {{ rate.minPrice }} ({{
+                      rate.minInclusive
                         ? ('admin.inclusive' | transloco)
                         : ('admin.exclusive' | transloco)
                     }})
-                  } @else {
-                    {{ 'admin.open' | transloco }}
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="max">
+                  <th mat-header-cell *matHeaderCellDef>{{ 'admin.max' | transloco }}</th>
+                  <td mat-cell *matCellDef="let rate">
+                    @if (rate.maxPrice !== null && rate.maxPrice !== undefined) {
+                      {{ rate.maxPrice }} ({{
+                        rate.maxInclusive
+                          ? ('admin.inclusive' | transloco)
+                          : ('admin.exclusive' | transloco)
+                      }})
+                    } @else {
+                      {{ 'admin.open' | transloco }}
+                    }
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="rate">
+                  <th mat-header-cell *matHeaderCellDef>{{ 'admin.ratePercent' | transloco }}</th>
+                  <td mat-cell *matCellDef="let rate">{{ rate.ratePercent }}</td>
+                </ng-container>
+                <ng-container matColumnDef="effective">
+                  <th mat-header-cell *matHeaderCellDef>{{ 'admin.effectiveFrom' | transloco }}</th>
+                  <td mat-cell *matCellDef="let rate">{{ rate.effectiveFrom }}</td>
+                </ng-container>
+                <ng-container matColumnDef="active">
+                  <th mat-header-cell *matHeaderCellDef>{{ 'admin.active' | transloco }}</th>
+                  <td mat-cell *matCellDef="let rate">
+                    {{ rate.isActive ? ('admin.yes' | transloco) : ('admin.no' | transloco) }}
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef></th>
+                  <td mat-cell *matCellDef="let rate">
+                    <button mat-stroked-button type="button" (click)="edit(rate)">
+                      {{ 'admin.edit' | transloco }}
+                    </button>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+              </table>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card appearance="outlined" class="rate-card">
+          <mat-card-header>
+            <mat-card-title>
+              {{ editingId() ? ('admin.edit' | transloco) : ('admin.newRate' | transloco) }}
+            </mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <form [formGroup]="form" (ngSubmit)="submit()" class="rate-form">
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'admin.minPrice' | transloco }}</mat-label>
+                <input matInput type="number" formControlName="minPrice" />
+              </mat-form-field>
+
+              <mat-slide-toggle formControlName="minInclusive" color="primary">
+                {{ 'admin.minInclusive' | transloco }}
+              </mat-slide-toggle>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'admin.maxPrice' | transloco }}</mat-label>
+                <input matInput type="number" formControlName="maxPrice" />
+              </mat-form-field>
+
+              <mat-slide-toggle formControlName="maxInclusive" color="primary">
+                {{ 'admin.maxInclusive' | transloco }}
+              </mat-slide-toggle>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'admin.ratePercent' | transloco }}</mat-label>
+                <input matInput type="number" formControlName="ratePercent" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>{{ 'admin.effectiveFrom' | transloco }}</mat-label>
+                <input matInput type="datetime-local" formControlName="effectiveFrom" />
+              </mat-form-field>
+
+              <mat-slide-toggle formControlName="isActive" color="primary">
+                {{ 'admin.active' | transloco }}
+              </mat-slide-toggle>
+
+              <div class="actions">
+                <button
+                  mat-raised-button
+                  color="primary"
+                  type="submit"
+                  [disabled]="saving() || form.invalid"
+                >
+                  @if (saving()) {
+                    <mat-spinner diameter="20" />
                   }
-                </td>
-                <td>{{ rate.ratePercent }}</td>
-                <td>{{ rate.effectiveFrom }}</td>
-                <td>{{ rate.isActive ? ('admin.yes' | transloco) : ('admin.no' | transloco) }}</td>
-                <td>
-                  <button type="button" (click)="edit(rate)">{{ 'admin.edit' | transloco }}</button>
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-
-        <form [formGroup]="form" (ngSubmit)="submit()" class="rate-form">
-          <h2>{{ editingId() ? ('admin.edit' | transloco) : ('admin.newRate' | transloco) }}</h2>
-
-          <label>
-            {{ 'admin.minPrice' | transloco }}
-            <input type="number" formControlName="minPrice" />
-          </label>
-          <label>
-            {{ 'admin.minInclusive' | transloco }}
-            <input type="checkbox" formControlName="minInclusive" />
-          </label>
-          <label>
-            {{ 'admin.maxPrice' | transloco }}
-            <input type="number" formControlName="maxPrice" />
-          </label>
-          <label>
-            {{ 'admin.maxInclusive' | transloco }}
-            <input type="checkbox" formControlName="maxInclusive" />
-          </label>
-          <label>
-            {{ 'admin.ratePercent' | transloco }}
-            <input type="number" formControlName="ratePercent" />
-          </label>
-          <label>
-            {{ 'admin.effectiveFrom' | transloco }}
-            <input type="datetime-local" formControlName="effectiveFrom" />
-          </label>
-          <label>
-            {{ 'admin.active' | transloco }}
-            <input type="checkbox" formControlName="isActive" />
-          </label>
-
-          <button type="submit" [disabled]="saving() || form.invalid">
-            {{ saving() ? ('admin.saving' | transloco) : ('admin.save' | transloco) }}
-          </button>
-        </form>
+                  {{ saving() ? ('admin.saving' | transloco) : ('admin.save' | transloco) }}
+                </button>
+              </div>
+            </form>
+          </mat-card-content>
+        </mat-card>
       }
     </section>
   `,
@@ -111,17 +167,24 @@ import type { CommissionRateDto, CommissionRateRequest } from '../../../api/mode
     .admin-page {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 1.5rem;
+    }
+    .table-scroll {
+      overflow-x: auto;
+    }
+    .rates-table {
+      width: 100%;
+    }
+    .rate-card {
+      max-inline-size: 32rem;
     }
     .rate-form {
       display: grid;
-      gap: 0.75rem;
-      max-inline-size: 32rem;
+      gap: 1rem;
     }
-    label {
+    .actions {
       display: flex;
-      flex-direction: column;
-      gap: 0.25rem;
+      justify-content: flex-end;
     }
   `,
 })
@@ -135,6 +198,8 @@ export class CommissionRatesAdminPageComponent {
   readonly rates = signal<CommissionRateDto[]>([]);
   readonly editingId = signal<string | null>(null);
   readonly editingVersion = signal<string | null>(null);
+
+  readonly displayedColumns = ['min', 'max', 'rate', 'effective', 'active', 'actions'];
 
   readonly form = new FormGroup({
     minPrice: new FormControl<number | null>(null, {
@@ -223,6 +288,7 @@ export class CommissionRatesAdminPageComponent {
           const control = this.form.get(field);
           if (control && messages?.length) {
             control.setErrors({ server: messages[0] });
+            control.markAsTouched();
           }
         }
       }

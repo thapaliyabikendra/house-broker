@@ -1,23 +1,27 @@
 import { inject } from '@angular/core';
 import type { CanActivateFn } from '@angular/router';
+import type { ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 
-export const authGuard: CanActivateFn = () => {
+export const authGuard: CanActivateFn = (
+  _route: ActivatedRouteSnapshot,
+  state: RouterStateSnapshot,
+) => {
   const auth = inject(AuthService);
   if (auth.isAuthenticated()) {
     return true;
   }
-  void auth.signIn();
+  void auth.signIn(undefined, state.url);
   return false;
 };
 
 export function roleGuard(role: string): CanActivateFn {
-  return () => {
+  return (_route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
     const auth = inject(AuthService);
     const router = inject(Router);
     if (!auth.isAuthenticated()) {
-      void auth.signIn();
+      void auth.signIn(undefined, state.url);
       return false;
     }
     if (auth.hasRole(role) || auth.hasPermission(role)) {
@@ -28,11 +32,11 @@ export function roleGuard(role: string): CanActivateFn {
 }
 
 export function permissionGuard(permission: string): CanActivateFn {
-  return () => {
+  return (_route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => {
     const auth = inject(AuthService);
     const router = inject(Router);
     if (!auth.isAuthenticated()) {
-      void auth.signIn();
+      void auth.signIn(undefined, state.url);
       return false;
     }
     if (auth.hasPermission(permission)) {

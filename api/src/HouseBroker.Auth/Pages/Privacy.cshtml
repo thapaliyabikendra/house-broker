@@ -1,8 +1,16 @@
 ﻿@page
 @model PrivacyModel
+@inject Microsoft.Extensions.Localization.IStringLocalizer<HouseBroker.Auth.Resources.Resources> L
 @{
-    ViewData["Title"] = "Privacy Policy";
+    ViewData["Title"] = L["Privacy_Title"];
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<div class="container mt-5">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h1 class="h3">@L["Privacy_Title"]</h1>
+            <p>@L["Privacy_Body"]</p>
+            <p class="text-muted small">House Broker</p>
+        </div>
+    </div>
+</div>

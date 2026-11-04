@@ -1,9 +1,14 @@
-﻿<!DOCTYPE html>
-<html lang="@System.Globalization.CultureInfo.CurrentUICulture.Name">
+﻿@inject Microsoft.Extensions.Localization.IStringLocalizer<HouseBroker.Auth.Resources.Resources> L
+@{
+    var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
+    var existingQuery = Context.Request.QueryString.HasValue ? Context.Request.QueryString.Value + "&" : "?";
+}
+<!DOCTYPE html>
+<html lang="@currentCulture">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - HouseBroker.Auth</title>
+    <title>@ViewData["Title"] - @L["Brand_Name"]</title>
     <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -11,24 +16,25 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3" aria-label="@L["Nav_Home"]">
             <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">HouseBroker.Auth</a>
-            <div class="ms-auto d-flex gap-2">
-                <a class="nav-link" href="?culture=en&ui-culture=en">EN</a>
-                <a class="nav-link" href="?culture=ne&ui-culture=ne">NE</a>
-            </div>
+                <a class="navbar-brand" asp-area="" asp-page="/Index">@L["Brand_Name"]</a>
+                <div class="ms-auto d-flex gap-2 align-items-center">
+                    <span class="visually-hidden">@L["Nav_Language"]</span>
+                    <a class="nav-link @(currentCulture.StartsWith("en") ? "fw-bold" : "")" href="@(existingQuery)culture=en&amp;ui-culture=en" hreflang="en" lang="en">@L["Language_English"]</a>
+                    <a class="nav-link @(currentCulture.StartsWith("ne") ? "fw-bold" : "")" href="@(existingQuery)culture=ne&amp;ui-culture=ne" hreflang="ne" lang="ne">@L["Language_Nepali"]</a>
+                </div>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+                    <ul class="nav navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">Home</a>
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">@L["Nav_Home"]</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">Privacy</a>
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">@L["Nav_Privacy"]</a>
                         </li>
                     </ul>
                 </div>
@@ -43,7 +49,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2026 - HouseBroker.Auth - <a asp-area="" asp-page="/Privacy">Privacy</a>
+            &copy; 2026 - @L["Brand_Name"]
         </div>
     </footer>
 

@@ -10,6 +10,9 @@ import { LoadingStateComponent } from '../../../shared/ui/loading-state.componen
 import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import type { ListingDetailDto } from '../../../api/models';
+import { MatCardModule } from '@angular/material/card';
+import { MatButtonModule } from '@angular/material/button';
+import { MatChipsModule } from '@angular/material/chips';
 
 @Component({
   selector: 'hb-listing-detail-page',
@@ -21,6 +24,9 @@ import type { ListingDetailDto } from '../../../api/models';
     ErrorStateComponent,
     HbPricePipe,
     TranslocoPipe,
+    MatCardModule,
+    MatButtonModule,
+    MatChipsModule,
   ],
   template: `
     <section class="detail-page">
@@ -38,50 +44,69 @@ import type { ListingDetailDto } from '../../../api/models';
         />
       } @else {
         @let item = listing()!;
-        <!-- listing is guaranteed non-null here because of the @else branch -->
-        <h1>{{ item.title }}</h1>
-        <p class="price">{{ item.price | hbPrice }}</p>
-        <p>{{ item.city }}, {{ item.locality }}, {{ item.province }}</p>
-        <p>
-          {{ item.bedrooms }} {{ 'detail.bedrooms' | transloco }} · {{ item.bathrooms }}
-          {{ 'detail.bathrooms' | transloco }} · {{ item.areaSqFt }} {{ 'detail.sqft' | transloco }}
-        </p>
-        <p>{{ item.description }}</p>
+        <mat-card appearance="outlined" class="overview">
+          <mat-card-header>
+            <mat-card-title>{{ item.title }}</mat-card-title>
+            <mat-card-subtitle
+              >{{ item.city }}, {{ item.locality }}, {{ item.province }}</mat-card-subtitle
+            >
+          </mat-card-header>
+          <mat-card-content>
+            <p class="price">{{ item.price | hbPrice }}</p>
+            <mat-chip-set>
+              <mat-chip>{{ item.bedrooms }} {{ 'detail.bedrooms' | transloco }}</mat-chip>
+              <mat-chip>{{ item.bathrooms }} {{ 'detail.bathrooms' | transloco }}</mat-chip>
+              <mat-chip>{{ item.areaSqFt }} {{ 'detail.sqft' | transloco }}</mat-chip>
+            </mat-chip-set>
+            @if (item.description) {
+              <p class="description">{{ item.description }}</p>
+            }
 
-        @if (item.images && item.images.length > 0) {
-          <div class="gallery">
-            @for (image of item.images; track image.id) {
-              <img
-                [src]="imageUrl(item.id ?? '', image.id ?? '')"
-                [alt]="item.title || ('detail.imageAlt' | transloco)"
-              />
+            @if (item.images && item.images.length > 0) {
+              <div class="gallery">
+                @for (image of item.images; track image.id; let i = $index) {
+                  <img
+                    [src]="imageUrl(item.id ?? '', image.id ?? '')"
+                    [alt]="(item.title || ('detail.imageAlt' | transloco)) + ' ' + (i + 1)"
+                    width="192"
+                    height="144"
+                    loading="lazy"
+                  />
+                }
+              </div>
             }
-          </div>
-        }
 
-        @if (item.features && item.features.length > 0) {
-          <ul class="features">
-            @for (feature of item.features; track feature.id) {
-              <li>{{ feature.name || feature.code }}</li>
+            @if (item.features && item.features.length > 0) {
+              <mat-chip-set class="features">
+                @for (feature of item.features; track feature.id) {
+                  <mat-chip>{{ feature.name || feature.code }}</mat-chip>
+                }
+              </mat-chip-set>
             }
-          </ul>
-        }
+          </mat-card-content>
+        </mat-card>
 
-        <section class="contact">
-          <h2>{{ 'detail.contactTitle' | transloco }}</h2>
-          @if (canViewContact() && item.brokerContact) {
-            <p>{{ item.brokerContact.fullName }}</p>
-            @if (item.brokerContact.email) {
-              <p>{{ item.brokerContact.email }}</p>
+        <mat-card appearance="outlined" class="contact">
+          <mat-card-header>
+            <mat-card-title>{{ 'detail.contactTitle' | transloco }}</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            @if (canViewContact() && item.brokerContact) {
+              <p class="contact-name">{{ item.brokerContact.fullName }}</p>
+              @if (item.brokerContact.email) {
+                <p>{{ item.brokerContact.email }}</p>
+              }
+              @if (item.brokerContact.phoneNumber) {
+                <p>{{ item.brokerContact.phoneNumber }}</p>
+              }
+            } @else {
+              <p>{{ 'detail.contactPrompt' | transloco }}</p>
+              <button mat-raised-button color="primary" type="button" (click)="auth.signIn()">
+                {{ 'detail.signIn' | transloco }}
+              </button>
             }
-            @if (item.brokerContact.phoneNumber) {
-              <p>{{ item.brokerContact.phoneNumber }}</p>
-            }
-          } @else {
-            <p>{{ 'detail.contactPrompt' | transloco }}</p>
-            <button type="button" (click)="auth.signIn()">{{ 'detail.signIn' | transloco }}</button>
-          }
-        </section>
+          </mat-card-content>
+        </mat-card>
       }
     </section>
   `,
@@ -89,17 +114,31 @@ import type { ListingDetailDto } from '../../../api/models';
     .detail-page {
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 1.5rem;
+    }
+    .price {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0 0 0.75rem;
     }
     .gallery {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
       gap: 0.5rem;
+      margin-block: 1rem;
     }
     .gallery img {
-      inline-size: 12rem;
-      block-size: 9rem;
+      inline-size: 100%;
+      block-size: auto;
+      aspect-ratio: 4 / 3;
       object-fit: cover;
+      border-radius: 8px;
+    }
+    .description {
+      margin-block-start: 1rem;
+    }
+    .contact-name {
+      font-weight: 600;
     }
   `,
 })

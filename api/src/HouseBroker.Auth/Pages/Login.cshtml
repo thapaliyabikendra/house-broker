@@ -10,22 +10,27 @@
             <h3 class="text-center">@Model.Title</h3>
         </div>
         <div class="card-body">
-            <form method="post">
+            <form method="post" id="login-form">
                 <div asp-validation-summary="All" class="text-danger mb-3" aria-live="assertive" role="alert"></div>
                 <div class="mb-3">
                     <label asp-for="Input.Email" class="form-label">@Model.EmailLabel</label>
-                    <input asp-for="Input.Email" class="form-control" />
+                    <input asp-for="Input.Email" class="form-control" type="email" autocomplete="username" inputmode="email" required aria-describedby="email-help" />
                 </div>
                 <div class="mb-3">
                     <label asp-for="Input.Password" class="form-label">@Model.PasswordLabel</label>
-                    <input asp-for="Input.Password" class="form-control" type="password" />
+                    <input asp-for="Input.Password" class="form-control" type="password" autocomplete="current-password" required aria-describedby="password-help" />
+                    <div id="password-help" class="form-text">@Model.PasswordHint</div>
                 </div>
                 <div class="mb-3 form-check">
                     <input asp-for="Input.RememberMe" class="form-check-input" />
                     <label asp-for="Input.RememberMe" class="form-check-label">@Model.RememberMeLabel</label>
                 </div>
-                <button type="submit" class="btn btn-primary w-100">@Model.ButtonText</button>
+                <button type="submit" class="btn btn-primary w-100" data-submitting-text="@Model.SubmittingText">@Model.ButtonText</button>
             </form>
+            <div class="d-flex justify-content-between mt-3 small">
+                <a asp-page="/Register" asp-route-returnUrl="@Model.ReturnUrl">@Model.CreateAccountLabel</a>
+                <span class="text-muted">@Model.ForgotPasswordLabel</span>
+            </div>
         </div>
     </div>
 </div>
