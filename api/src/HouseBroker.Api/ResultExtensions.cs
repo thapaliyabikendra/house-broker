@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using HouseBroker.Api.Localization;
 using HouseBroker.Application.Contracts;
@@ -41,6 +42,8 @@ public static class ResultExtensions
             _ => StatusCodes.Status400BadRequest,
         };
 
+        // UseRequestLocalization sets the UI culture to the negotiated request culture ("en" or "ne").
+        var format = ArgumentFormat.For(CultureInfo.CurrentUICulture);
         var localizer = controller.HttpContext.RequestServices.GetService<IStringLocalizer<SharedResource>>();
         var message = localizer is null ? error.Code : localizer[error.Code];
 
@@ -49,7 +52,7 @@ public static class ResultExtensions
             Status = statusCode,
             // Title is localized like Detail; the stable code stays in the "code" extension.
             Title = message,
-            Detail = message,
+            Detail = AppendRelatedTiers(message, error.RelatedRecords, localizer, format),
         };
         problem.Extensions["code"] = error.Code;
         problem.Extensions["correlationId"] = controller.HttpContext.GetCorrelationId();
@@ -67,7 +70,7 @@ public static class ResultExtensions
                 .GroupBy(entry => entry.Field, StringComparer.Ordinal)
                 .ToDictionary(
                     group => group.Key,
-                    group => group.Select(entry => new FieldErrorDetail(entry.Code, Localize(localizer, entry.Code))).ToList(),
+                    group => group.Select(entry => ToFieldErrorDetail(entry, localizer, format)).ToList(),
                     StringComparer.Ordinal);
         }
 
@@ -75,7 +78,7 @@ public static class ResultExtensions
     }
 
     /// <summary>Returns the per-field entries (camelCase field names), synthesizing one from <see cref="ApplicationError.Field"/> when needed.</summary>
-    private static List<(string Field, string Code)> FieldErrorsOf(ApplicationError error)
+    private static List<(string Field, string Code, IReadOnlyList<object?> Args)> FieldErrorsOf(ApplicationError error)
     {
         var source = error.FieldErrors.Count > 0
             ? error.FieldErrors
@@ -84,10 +87,119 @@ public static class ResultExtensions
                 : new[] { new FieldError(error.Field, error.Code) };
 
         return source
-            .Select(entry => (Field: JsonNamingPolicy.CamelCase.ConvertName(entry.Field), entry.Code))
+            .Select(entry => (Field: JsonNamingPolicy.CamelCase.ConvertName(entry.Field), entry.Code, entry.Args))
             .ToList();
     }
 
-    private static string Localize(IStringLocalizer<SharedResource>? localizer, string code)
-        => localizer is null ? code : localizer[code];
+    private static FieldErrorDetail ToFieldErrorDetail(
+        (string Field, string Code, IReadOnlyList<object?> Args) entry,
+        IStringLocalizer<SharedResource>? localizer,
+        ArgumentFormat format)
+    {
+        var args = entry.Args.Select(value => format.Format(value)).ToList();
+        return new FieldErrorDetail(entry.Code, Localize(localizer, entry.Code, args), args);
+    }
+
+    /// <summary>
+    /// Appends a sentence that names the existing tiers the caller must fix first, when the error carries their ranges.
+    /// Each record's arguments are <c>[minPrice, minInclusive, maxPrice-or-null, maxInclusive]</c>.
+    /// </summary>
+    private static string AppendRelatedTiers(
+        string message,
+        IReadOnlyList<RelatedRecord> records,
+        IStringLocalizer<SharedResource>? localizer,
+        ArgumentFormat format)
+    {
+        var ranges = records
+            .Where(record => record.Args.Count == 4)
+            .Select(record => FormatTierRange(record.Args, format))
+            .ToList();
+        if (ranges.Count == 0)
+        {
+            return message;
+        }
+
+        var sentence = Localize(localizer, "validation.related_tiers", [string.Join("; ", ranges)]);
+        return $"{message} {sentence}";
+    }
+
+    /// <summary>Formats one tier as interval notation, for example <c>[50,00,000, 1,00,00,000)</c>; an absent maximum is <c>∞</c>.</summary>
+    private static string FormatTierRange(IReadOnlyList<object?> args, ArgumentFormat format)
+    {
+        var opening = args[1] is true ? "[" : "(";
+        var upper = args[2] is null ? "∞" : format.Format(args[2]);
+        var closing = args[2] is not null && args[3] is true ? "]" : ")";
+        return $"{opening}{format.Format(args[0])}, {upper}{closing}";
+    }
+
+    private static string Localize(IStringLocalizer<SharedResource>? localizer, string key, IReadOnlyList<string> args)
+    {
+        if (localizer is null)
+        {
+            return key;
+        }
+
+        return args.Count == 0 ? localizer[key] : localizer[key, args.ToArray()];
+    }
+
+    /// <summary>
+    /// Formats raw message arguments for a request culture. Numbers use Indian digit grouping (lakh and crore) for both
+    /// English and Nepali; Nepali also uses Devanagari digits. Machine-readable values never pass through here.
+    /// </summary>
+    private sealed class ArgumentFormat
+    {
+        private static readonly NumberFormatInfo IndianNumbers = CreateNumbers("en-IN");
+
+        private ArgumentFormat(NumberFormatInfo numbers, bool devanagariDigits)
+        {
+            Numbers = numbers;
+            DevanagariDigits = devanagariDigits;
+        }
+
+        private NumberFormatInfo Numbers { get; }
+
+        private bool DevanagariDigits { get; }
+
+        /// <summary>Returns the format for a UI culture: <c>ne</c> uses Nepali digits, everything else English.</summary>
+        public static ArgumentFormat For(CultureInfo uiCulture)
+        {
+            var nepali = string.Equals(uiCulture.TwoLetterISOLanguageName, "ne", StringComparison.OrdinalIgnoreCase);
+            return nepali
+                ? new ArgumentFormat(CreateNumbers("ne-NP"), devanagariDigits: true)
+                : new ArgumentFormat(IndianNumbers, devanagariDigits: false);
+        }
+
+        /// <summary>Formats one raw argument value.</summary>
+        public string Format(object? value)
+        {
+            var text = value switch
+            {
+                null => string.Empty,
+                decimal amount => FormatNumber(amount),
+                int whole => FormatNumber(whole),
+                long whole => FormatNumber(whole),
+                _ => Convert.ToString(value, CultureInfo.InvariantCulture) ?? string.Empty,
+            };
+
+            return DevanagariDigits ? ToDevanagariDigits(text) : text;
+        }
+
+        /// <summary>Formats a number with at most two decimals and no trailing zeros.</summary>
+        private string FormatNumber(decimal value)
+        {
+            var separator = Numbers.NumberDecimalSeparator;
+            var text = value.ToString("N2", Numbers).TrimEnd('0');
+            return text.EndsWith(separator, StringComparison.Ordinal) ? text[..^separator.Length] : text;
+        }
+
+        private static NumberFormatInfo CreateNumbers(string culture)
+        {
+            var numbers = (NumberFormatInfo)new CultureInfo(culture).NumberFormat.Clone();
+            numbers.NumberGroupSizes = [3, 2];
+            return numbers;
+        }
+
+        private static string ToDevanagariDigits(string text)
+            => new(text.Select(character => character is >= '0' and <= '9' ? (char)('०' + (character - '0')) : character).ToArray());
+    }
 }

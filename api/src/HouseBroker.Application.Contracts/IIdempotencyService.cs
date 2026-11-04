@@ -22,6 +22,9 @@ public sealed record IdempotencyResult(IdempotencyStatus Status, int? StatusCode
 /// <summary>Idempotency service.</summary>
 public interface IIdempotencyService
 {
+    /// <summary>Computes the stable hash that identifies a request payload.</summary>
+    string ComputeRequestHash(string body);
+
     /// <summary>Begins idempotent processing.</summary>
     Task<IdempotencyResult> BeginAsync(string key, string scope, string requestHash, CancellationToken cancellationToken);
 

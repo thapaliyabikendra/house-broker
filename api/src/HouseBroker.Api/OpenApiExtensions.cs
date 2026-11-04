@@ -133,8 +133,8 @@ internal static class OpenApiExtensions
                             Name = "Idempotency-Key",
                             In = ParameterLocation.Header,
                             Required = false,
-                            Description = "Optional idempotency key (max 128 chars). Replay returns the original response with Idempotent-Replayed: true.",
-                            Schema = new OpenApiSchema { Type = JsonSchemaType.String, MaxLength = 128 },
+                            Description = "Optional idempotency key, 16 to 64 characters from A-Z, a-z, 0-9, underscore or dash. A replay returns the original response with Idempotent-Replayed: true.",
+                            Schema = new OpenApiSchema { Type = JsonSchemaType.String, MinLength = 16, MaxLength = 64, Pattern = "^[A-Za-z0-9_-]{16,64}$" },
                         });
                     }
 
@@ -144,7 +144,7 @@ internal static class OpenApiExtensions
                     {
                         operation.Responses[unprocessable] = new OpenApiResponse
                         {
-                            Description = "Unprocessable entity: invalid or too-long idempotency key.",
+                            Description = "Unprocessable entity: the idempotency key was already used with a different request body.",
                             Content = new Dictionary<string, OpenApiMediaType>(StringComparer.OrdinalIgnoreCase)
                             {
                                 ["application/problem+json"] = new OpenApiMediaType

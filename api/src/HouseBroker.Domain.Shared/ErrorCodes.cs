@@ -74,4 +74,13 @@ public static class ErrorCodes
 
     /// <summary>An open-ended commission tier must be the last tier in the set.</summary>
     public const string TierOpenEndedLast = "validation.tier_open_ended_last";
+
+    /// <summary>The lowest commission tier must start at zero.</summary>
+    public const string TierMinNotZero = "validation.tier_min_not_zero";
+
+    /// <summary>A commission tier's maximum must be greater than its minimum.</summary>
+    public const string TierMaxNotAboveMin = "validation.tier_max_not_above_min";
+
+    /// <summary>At least one commission tier must be active.</summary>
+    public const string TierSetEmpty = "validation.tier_set_empty";
 }

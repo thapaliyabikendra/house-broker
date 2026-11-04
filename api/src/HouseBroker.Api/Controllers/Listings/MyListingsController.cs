@@ -22,10 +22,11 @@ public sealed class MyListingsController(IListingService listingService, IImageS
     /// <summary>Creates a listing.</summary>
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     /// <response code="201">Created.</response>
-    /// <response code="400">Bad request.</response>
+    /// <response code="400">Bad request: validation failed or the Idempotency-Key format is invalid.</response>
     /// <response code="401">Unauthorized.</response>
     /// <response code="403">Forbidden.</response>
-    /// <response code="409">Conflict.</response>
+    /// <response code="409">Conflict: a request with the same Idempotency-Key is still in progress.</response>
+    /// <response code="422">Unprocessable entity: the Idempotency-Key was already used with a different request body.</response>
     [HttpPost]
     [Idempotent]
     [EnableRateLimiting(RateLimitPolicies.Write)]
@@ -141,7 +142,7 @@ public sealed class MyListingsController(IListingService listingService, IImageS
     {
         if (file is null || file.Length == 0)
         {
-            return BadRequest();
+            return Result.Failure<ListingImageDto>(new ApplicationError(ErrorCodes.Required, ErrorKind.Validation, "file")).ToActionResult(this);
         }
 
         await using var stream = file.OpenReadStream();
@@ -153,6 +154,7 @@ public sealed class MyListingsController(IListingService listingService, IImageS
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpDelete("{id:guid}/images/{imageId:guid}")]
     [RequiresFeature(FeatureFlags.ImageUploads)]
+    [EnableRateLimiting(RateLimitPolicies.Write)]
     [HasPermission(AppPermissions.MyListingsImagesManage)]
     [Tags("Images")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

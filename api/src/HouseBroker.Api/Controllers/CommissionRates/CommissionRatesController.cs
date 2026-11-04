@@ -37,16 +37,18 @@ public sealed class CommissionRatesController(ICommissionRateAdminService servic
 
     /// <summary>Creates a commission rate.</summary>
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
-    /// <response code="200">OK.</response>
-    /// <response code="400">Bad request.</response>
+    /// <response code="201">Created. The Location header points at the rate's resource URI.</response>
+    /// <response code="400">Bad request: validation failed or the Idempotency-Key format is invalid.</response>
     /// <response code="401">Unauthorized.</response>
     /// <response code="403">Forbidden.</response>
-    /// <response code="409">Conflict.</response>
+    /// <response code="409">Conflict: a request with the same Idempotency-Key is still in progress.</response>
+    /// <response code="422">Unprocessable entity: the Idempotency-Key was already used with a different request body.</response>
     [HttpPost]
+    [Idempotent]
     [HasPermission(AppPermissions.CommissionRatesCreate)]
     [EnableRateLimiting(RateLimitPolicies.Write)]
     [Tags("Admin: Commission Rates")]
-    [ProducesResponseType<CommissionRateDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<CommissionRateDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
@@ -55,7 +57,14 @@ public sealed class CommissionRatesController(ICommissionRateAdminService servic
     public async Task<IActionResult> Create([FromBody] CommissionRateRequest request, CancellationToken cancellationToken)
     {
         var result = await service.CreateAsync(request, cancellationToken);
-        return result.ToActionResult(this);
+        if (!result.IsSuccess)
+        {
+            return result.ToActionResult(this);
+        }
+
+        // There is no GET-by-id for commission rates yet, so the Location uses the item URI that PUT already addresses.
+        var location = $"{Request.PathBase.Value}{Request.Path.Value}/{result.Value!.Id:D}";
+        return Created(location, result.Value);
     }
 
     /// <summary>Updates a commission rate.</summary>

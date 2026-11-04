@@ -49,22 +49,22 @@
     <value>The value is not in the expected format.</value>
   </data>
   <data name="validation.tier_boundary_mismatch" xml:space="preserve">
-    <value>The tier boundary does not match the adjacent tier's boundary.</value>
+    <value>This tier's boundary ({0}) must equal the adjacent tier's boundary ({1}). Change one of them so they match.</value>
   </data>
   <data name="validation.tier_boundary_inclusive_mismatch" xml:space="preserve">
-    <value>Adjacent tiers must have opposite inclusivity at the shared boundary.</value>
+    <value>Adjacent tiers must have opposite inclusivity at {0}: make one bound inclusive and the other exclusive.</value>
   </data>
   <data name="validation.tier_open_ended_count" xml:space="preserve">
-    <value>The tier set must contain exactly one open-ended tier.</value>
+    <value>Exactly one active tier must have no maximum (found {0}).</value>
   </data>
   <data name="validation.tier_lowest_inclusive" xml:space="preserve">
-    <value>The lowest tier's minimum must be inclusive.</value>
+    <value>The lowest tier starts at {0}, so its minimum must be inclusive. Make the minimum inclusive.</value>
   </data>
   <data name="validation.tier_top_open_ended" xml:space="preserve">
-    <value>The highest active tier must be open-ended.</value>
+    <value>Only the highest tier may have no maximum. Give the tier starting at {0} a maximum, or remove the maximum from the highest tier.</value>
   </data>
   <data name="validation.tier_open_ended_last" xml:space="preserve">
-    <value>The open-ended tier must be the last tier.</value>
+    <value>The tier starting at {0} has no maximum, so no tier can follow it. Give it a maximum, or move it to the top.</value>
   </data>
   <data name="idempotency.conflict" xml:space="preserve">
     <value>The idempotency key was already used with a different request.</value>
@@ -77,5 +77,17 @@
   </data>
   <data name="idempotency.key_invalid" xml:space="preserve">
     <value>The idempotency key must be 16 to 64 characters from A-Z, a-z, 0-9, underscore or dash.</value>
+  </data>
+  <data name="validation.tier_min_not_zero" xml:space="preserve">
+    <value>The lowest tier must start at 0, but it starts at {0}. Set its minimum to 0.</value>
+  </data>
+  <data name="validation.tier_max_not_above_min" xml:space="preserve">
+    <value>This tier's maximum ({1}) must be greater than its minimum ({0}). Raise the maximum or lower the minimum.</value>
+  </data>
+  <data name="validation.tier_set_empty" xml:space="preserve">
+    <value>At least one commission tier must be active.</value>
+  </data>
+  <data name="validation.related_tiers" xml:space="preserve">
+    <value>These existing tiers break the tier rules and must be fixed first: {0}.</value>
   </data>
 </root>

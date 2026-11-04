@@ -1,26 +1,78 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, signal } from '@angular/core';
-import { ChangeDetectorRef } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  inject,
+  signal,
+} from '@angular/core';
+import type { AbstractControl, ValidatorFn } from '@angular/forms';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { filter } from 'rxjs';
 import type { CommissionRateDto, CommissionRateRequest } from '../../../api/models';
 import { AdminCommissionRatesDataService } from '../../../core/data/admin-commission-rates-data.service';
 import { ApiError } from '../../../core/http/api-error';
-import { ConfirmService } from '../../../shared/ui/confirm.service';
+import { applyServerErrors } from '../../../shared/forms/apply-server-errors';
 import { focusFirstInvalid } from '../../../shared/forms/focus-first-invalid';
+import { ConfirmService } from '../../../shared/ui/confirm.service';
 
 export interface CommissionRateEditorDialogData {
   rate: CommissionRateDto | null;
 }
 
+/** Controls rendered with an inline error slot. Server errors for any other field go to the banner. */
+const INLINE_FIELDS = [
+  'minPrice',
+  'minInclusive',
+  'maxPrice',
+  'maxInclusive',
+  'ratePercent',
+  'effectiveFrom',
+] as const;
+
+/** Min price (`minPrice`) of the same tier must be below the max price when a max is set. */
+function maxAboveMin(minControl: AbstractControl): ValidatorFn {
+  return (control) => {
+    const max: unknown = control.value;
+    const min: unknown = minControl.value;
+    if (max === null || max === '' || min === null || min === '') {
+      return null;
+    }
+    return Number(max) > Number(min) ? null : { range: true };
+  };
+}
+
+/** Local `YYYY-MM-DDTHH:mm:ss` value for a datetime-local input, in the browser's zone. */
+function toLocalInputValue(isoUtc: string): string {
+  const date = new Date(isoUtc);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const pad = (n: number): string => String(n).padStart(2, '0');
+  return (
+    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
+    `T${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  );
+}
+
+function numberOrNull(value: number | string | null | undefined): number | null {
+  return value != null ? Number(value) : null;
+}
+
+/**
+ * Create or edit a commission tier. Closes with `true` after a save (or after the admin accepts a
+ * reload on a stale version) and `false` on cancel. Opened with `disableClose`, so Escape and the
+ * backdrop reach requestClose(), which asks before discarding edits.
+ */
 @Component({
   selector: 'hb-commission-rate-editor-dialog',
   standalone: true,
@@ -32,7 +84,6 @@ export interface CommissionRateEditorDialogData {
     MatButtonModule,
     MatFormFieldModule,
     MatInputModule,
-    MatCheckboxModule,
     MatSlideToggleModule,
     MatProgressSpinnerModule,
   ],
@@ -41,11 +92,18 @@ export interface CommissionRateEditorDialogData {
       {{ data.rate ? ('admin.edit' | transloco) : ('admin.newRate' | transloco) }}
     </h2>
     <mat-dialog-content class="dialog-body">
-      @if (actionError()) {
-        <p class="action-error" role="alert">{{ actionError() }}</p>
+      @if (banner().length > 0) {
+        <div class="action-error" role="alert">
+          @for (message of banner(); track $index) {
+            <p>{{ message }}</p>
+          }
+          @if (relatedHint()) {
+            <p class="hint">{{ 'admin.relatedTiers' | transloco }}</p>
+          }
+        </div>
       }
       <form id="rate-form" [formGroup]="form" (ngSubmit)="submit()" class="rate-form">
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ 'admin.minPrice' | transloco }}</mat-label>
           <input matInput type="number" formControlName="minPrice" />
           @if (form.controls.minPrice.invalid && form.controls.minPrice.touched) {
@@ -55,25 +113,43 @@ export interface CommissionRateEditorDialogData {
           }
         </mat-form-field>
 
-        <mat-slide-toggle formControlName="minInclusive" color="primary">
-          {{ 'admin.minInclusive' | transloco }}
-        </mat-slide-toggle>
+        <div class="toggle-field">
+          <mat-slide-toggle
+            formControlName="minInclusive"
+            color="primary"
+            [aria-describedby]="toggleErrorId('minInclusive')"
+          >
+            {{ 'admin.minInclusive' | transloco }}
+          </mat-slide-toggle>
+          @if (serverError('minInclusive'); as message) {
+            <p id="minInclusive-error" class="field-error">{{ message }}</p>
+          }
+        </div>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ 'admin.maxPrice' | transloco }}</mat-label>
           <input matInput type="number" formControlName="maxPrice" />
           @if (form.controls.maxPrice.invalid && form.controls.maxPrice.touched) {
             <mat-error>{{
-              form.controls.maxPrice.errors?.['server'] ?? ('errors.validation' | transloco)
+              form.controls.maxPrice.errors?.['server'] ?? ('admin.maxPriceError' | transloco)
             }}</mat-error>
           }
         </mat-form-field>
 
-        <mat-slide-toggle formControlName="maxInclusive" color="primary">
-          {{ 'admin.maxInclusive' | transloco }}
-        </mat-slide-toggle>
+        <div class="toggle-field">
+          <mat-slide-toggle
+            formControlName="maxInclusive"
+            color="primary"
+            [aria-describedby]="toggleErrorId('maxInclusive')"
+          >
+            {{ 'admin.maxInclusive' | transloco }}
+          </mat-slide-toggle>
+          @if (serverError('maxInclusive'); as message) {
+            <p id="maxInclusive-error" class="field-error">{{ message }}</p>
+          }
+        </div>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ 'admin.ratePercent' | transloco }}</mat-label>
           <input matInput type="number" formControlName="ratePercent" />
           <span matTextSuffix>%</span>
@@ -84,20 +160,19 @@ export interface CommissionRateEditorDialogData {
           }
         </mat-form-field>
 
-        <mat-form-field appearance="outline">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ 'admin.effectiveFrom' | transloco }}</mat-label>
-          <input matInput type="datetime-local" formControlName="effectiveFrom" />
+          <input matInput type="datetime-local" step="1" formControlName="effectiveFrom" />
           @if (form.controls.effectiveFrom.invalid && form.controls.effectiveFrom.touched) {
-            <mat-error>{{
-              form.controls.effectiveFrom.errors?.['server'] ??
-                ('admin.effectiveFromError' | transloco)
-            }}</mat-error>
+            <mat-error>{{ form.controls.effectiveFrom.errors?.['server'] }}</mat-error>
           }
         </mat-form-field>
 
-        <mat-slide-toggle formControlName="isActive" color="primary">
-          {{ 'admin.active' | transloco }}
-        </mat-slide-toggle>
+        <div class="toggle-field">
+          <mat-slide-toggle formControlName="isActive" color="primary">
+            {{ 'admin.active' | transloco }}
+          </mat-slide-toggle>
+        </div>
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
@@ -131,16 +206,33 @@ export interface CommissionRateEditorDialogData {
     .rate-form mat-form-field {
       width: 100%;
     }
-    .rate-form .mat-mdc-slide-toggle {
-      align-self: center;
+    .toggle-field {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.25rem;
+    }
+    .toggle-field mat-slide-toggle {
+      align-self: flex-start;
       padding-block: 0.5rem;
     }
     .rate-form mat-form-field:has(input[type='datetime-local']) {
       grid-column: 1 / -1;
     }
+    .field-error {
+      margin: 0;
+      color: var(--mat-sys-error, #b3261e);
+      font-size: 0.85rem;
+    }
     .action-error {
       color: var(--mat-sys-error, #b3261e);
       margin: 0 0 0.75rem;
+    }
+    .action-error p {
+      margin: 0 0 0.25rem;
+    }
+    .action-error .hint {
+      color: var(--mat-sys-on-surface-variant);
     }
     @media (max-width: 680px) {
       .rate-form {
@@ -160,49 +252,69 @@ export class CommissionRateEditorDialogComponent {
   private readonly cdr = inject(ChangeDetectorRef);
 
   readonly saving = signal(false);
-  readonly actionError = signal<string | null>(null);
-  readonly editingVersion = signal<string | null>(this.data.rate?.version ?? null);
+  /** Messages that could not be shown under a control: the banner lists them. */
+  readonly banner = signal<string[]>([]);
+  /** Set when a field-less conflict names other records that must change too. */
+  readonly relatedHint = signal(false);
+  private readonly editingVersion = this.data.rate?.version ?? null;
+  /** The stored instant and its local form, so an untouched effective date is sent unchanged. */
+  private readonly originalEffectiveFrom = this.data.rate?.effectiveFrom
+    ? String(this.data.rate.effectiveFrom)
+    : null;
+  private readonly originalEffectiveLocal = this.originalEffectiveFrom
+    ? toLocalInputValue(this.originalEffectiveFrom)
+    : '';
+
+  private readonly minPriceControl = new FormControl<number | null>(
+    numberOrNull(this.data.rate?.minPrice),
+    { validators: [Validators.required, Validators.min(0)] },
+  );
 
   readonly form = new FormGroup({
-    minPrice: new FormControl<number | null>(
-      this.data.rate?.minPrice != null ? Number(this.data.rate.minPrice) : null,
-      {
-        validators: [Validators.required, Validators.min(0)],
-      },
-    ),
+    minPrice: this.minPriceControl,
     minInclusive: new FormControl<boolean>(this.data.rate?.minInclusive ?? true, {
       nonNullable: true,
     }),
-    maxPrice: new FormControl<number | null>(
-      this.data.rate?.maxPrice != null ? Number(this.data.rate.maxPrice) : null,
-    ),
+    maxPrice: new FormControl<number | null>(numberOrNull(this.data.rate?.maxPrice), {
+      validators: [maxAboveMin(this.minPriceControl)],
+    }),
     maxInclusive: new FormControl<boolean>(this.data.rate?.maxInclusive ?? false, {
       nonNullable: true,
     }),
-    ratePercent: new FormControl<number | null>(
-      this.data.rate?.ratePercent != null ? Number(this.data.rate.ratePercent) : null,
-      {
-        validators: [Validators.required, Validators.min(0)],
-      },
-    ),
-    effectiveFrom: new FormControl<string>(
-      this.data.rate?.effectiveFrom != null
-        ? this.toLocalInputValue(String(this.data.rate.effectiveFrom))
-        : '',
-      { nonNullable: true, validators: [Validators.required] },
-    ),
+    ratePercent: new FormControl<number | null>(numberOrNull(this.data.rate?.ratePercent), {
+      validators: [Validators.required, Validators.min(0), Validators.max(100)],
+    }),
+    effectiveFrom: new FormControl<string>(this.originalEffectiveLocal, { nonNullable: true }),
     isActive: new FormControl<boolean>(this.data.rate?.isActive ?? true, { nonNullable: true }),
   });
 
   constructor() {
     this.dialogRef
-      .keydownEvents?.()
+      .keydownEvents()
+      .pipe(
+        filter((event) => event.key === 'Escape'),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => void this.requestClose());
+    this.dialogRef
+      .backdropClick()
       .pipe(takeUntilDestroyed())
-      .subscribe((event) => {
-        if (event.key === 'Escape') {
-          void this.requestClose();
-        }
-      });
+      .subscribe(() => void this.requestClose());
+    // Changing the minimum can make the maximum valid or invalid, so re-check it.
+    this.minPriceControl.valueChanges
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.form.controls.maxPrice.updateValueAndValidity());
+  }
+
+  /** Server error for a toggle, if one is attached. */
+  protected serverError(name: 'minInclusive' | 'maxInclusive'): string | null {
+    const message: unknown = this.form.controls[name].errors?.['server'];
+    return typeof message === 'string' ? message : null;
+  }
+
+  /** The id of a toggle's inline error when one is shown, for aria-describedby; empty otherwise. */
+  protected toggleErrorId(name: 'minInclusive' | 'maxInclusive'): string {
+    return this.serverError(name) ? `${name}-error` : '';
   }
 
   async requestClose(): Promise<void> {
@@ -222,30 +334,21 @@ export class CommissionRateEditorDialogComponent {
     this.dialogRef.close(false);
   }
 
-  private toLocalInputValue(isoUtc: string): string {
-    const date = new Date(isoUtc);
-    if (Number.isNaN(date.getTime())) {
-      return '';
+  /**
+   * Effective-from is optional: an empty value is omitted, so the API uses now for a new tier
+   * and keeps the stored value for an edit. An untouched value is sent as the stored instant,
+   * so seconds and sub-second precision survive a save.
+   */
+  private effectiveFromValue(): string | undefined {
+    const local = this.form.controls.effectiveFrom.value;
+    if (!local) {
+      return undefined;
     }
-    const pad = (n: number): string => String(n).padStart(2, '0');
-    return (
-      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-      `T${pad(date.getHours())}:${pad(date.getMinutes())}`
-    );
-  }
-
-  /** First server-provided field message, if the failure carries field errors. */
-  private firstFieldMessage(error: unknown): string | null {
-    if (!(error instanceof ApiError) || !error.fieldErrors) {
-      return null;
+    if (local === this.originalEffectiveLocal && this.originalEffectiveFrom) {
+      return this.originalEffectiveFrom;
     }
-    for (const messages of Object.values(error.fieldErrors)) {
-      const first = messages?.[0];
-      if (first?.message) {
-        return first.message;
-      }
-    }
-    return null;
+    const date = new Date(local);
+    return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
   }
 
   async submit(): Promise<void> {
@@ -256,7 +359,8 @@ export class CommissionRateEditorDialogComponent {
       return;
     }
     this.saving.set(true);
-    this.actionError.set(null);
+    this.banner.set([]);
+    this.relatedHint.set(false);
     const value = this.form.getRawValue();
     const request: CommissionRateRequest = {
       minPrice: value.minPrice ?? 0,
@@ -264,14 +368,14 @@ export class CommissionRateEditorDialogComponent {
       maxPrice: value.maxPrice ?? null,
       maxInclusive: value.maxInclusive,
       ratePercent: value.ratePercent ?? 0,
-      effectiveFrom: value.effectiveFrom ? new Date(value.effectiveFrom).toISOString() : undefined,
+      effectiveFrom: this.effectiveFromValue(),
       isActive: value.isActive,
     };
 
     try {
       const id = this.data.rate?.id ?? null;
       if (id) {
-        await this.dataService.update(id, request, this.editingVersion());
+        await this.dataService.update(id, request, this.editingVersion);
       } else {
         await this.dataService.create(request);
       }
@@ -290,21 +394,18 @@ export class CommissionRateEditorDialogComponent {
         }
         return;
       }
-      if (error instanceof ApiError && error.fieldErrors) {
-        for (const [field, messages] of Object.entries(error.fieldErrors)) {
-          const control = this.form.get(field);
-          const first = messages?.[0];
-          if (control && first) {
-            control.setErrors({ server: first.message });
-            control.markAsTouched();
-          }
-        }
-      }
-      this.cdr.markForCheck();
-      this.actionError.set(
-        this.firstFieldMessage(error) ??
-          (error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed')),
+      this.banner.set(
+        applyServerErrors(this.form, error, {
+          inlineFields: INLINE_FIELDS,
+          fallbackMessage: this.transloco.translate('errors.saveFailed'),
+        }),
       );
+      this.relatedHint.set(
+        error instanceof ApiError && !error.fieldErrors && error.relatedIds.length > 0,
+      );
+      // Render the new error state first so focus lands on a control that is marked invalid.
+      this.cdr.detectChanges();
+      focusFirstInvalid(this.host.nativeElement);
     } finally {
       this.saving.set(false);
     }

@@ -29,4 +29,7 @@ public sealed record ApplicationError
 
     /// <summary>Gets the ids of existing records that cause the failure and that the caller must fix (for example, commission tiers that already break the tier rules).</summary>
     public IReadOnlyList<Guid> RelatedIds { get; init; } = Array.Empty<Guid>();
+
+    /// <summary>Gets the existing records named by <see cref="RelatedIds"/>, with the values that describe each one.</summary>
+    public IReadOnlyList<RelatedRecord> RelatedRecords { get; init; } = Array.Empty<RelatedRecord>();
 }

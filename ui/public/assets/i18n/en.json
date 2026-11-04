@@ -29,7 +29,7 @@
     "notFound": "The requested resource was not found.",
     "conflict": "The request conflicts with the current state. Please refresh and try again.",
     "stale": "This record was changed by someone else. Please refresh and try again.",
-    "validation": "Please correct the highlighted fields and try again.",
+    "idempotencyConflict": "This submission conflicts with an earlier request. Reload the page and try again.",
     "preconditionRequired": "A version (If-Match) is required for this change.",
     "server": "Something went wrong on the server. Please try again later.",
     "unexpected": "Unexpected error."
@@ -147,7 +147,8 @@
       "groupDetails": "Details",
       "priceHint": "Digits only, for example 5000000",
       "discardConfirm": "Discard your unsaved changes?",
-      "discard": "Discard"
+      "discard": "Discard",
+      "descriptionError": "Description is invalid or too long."
     },
     "publishConfirm": "Publish this listing?",
     "sellConfirm": "Mark this listing as sold?",
@@ -190,8 +191,9 @@
     "maxInclusive": "Max inclusive",
     "staleReload": "Someone else changed this rate. Reload to see the latest version? Your unsaved edits will be replaced.",
     "minPriceError": "Min price is required and must be zero or greater.",
-    "ratePercentError": "Rate percent is required and must be zero or greater.",
-    "effectiveFromError": "Effective date is required.",
+    "ratePercentError": "Rate percent is required and must be between 0 and 100.",
+    "maxPriceError": "Max price must be greater than min price.",
+    "relatedTiers": "Other commission tiers must also be changed to keep the price bands consistent. Update those tiers too, then save again.",
     "andAbove": "and above"
   }
 }

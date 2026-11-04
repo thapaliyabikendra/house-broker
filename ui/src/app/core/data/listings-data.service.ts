@@ -5,6 +5,7 @@ import type { Observable } from 'rxjs';
 import { inject, Injectable } from '@angular/core';
 import { Api } from '../../api/api';
 import { RuntimeConfigService } from '../config/runtime-config.service';
+import { IdempotencyKeyScope } from '../http/idempotency-key';
 import { v1ListingsGet$Json } from '../../api/fn/listings/v-1-listings-get-json';
 import { v1ListingsIdGet$Json } from '../../api/fn/listings/v-1-listings-id-get-json';
 import { v1ListingsMineGet$Json } from '../../api/fn/listings/v-1-listings-mine-get-json';
@@ -37,6 +38,7 @@ export class ListingsDataService {
   private readonly api = inject(Api);
   private readonly http = inject(HttpClient);
   private readonly config = inject(RuntimeConfigService);
+  private readonly createKeys = new IdempotencyKeyScope();
 
   search(criteria: ListingSearchCriteria = {}): Promise<PagedResultOfListingSummaryDto> {
     return this.api.invoke(v1ListingsGet$Json, {
@@ -68,11 +70,14 @@ export class ListingsDataService {
     return `${this.config.value().apiBaseUrl}/v1/listings`;
   }
 
-  create(request: CreateListingRequest, idempotencyKey?: string): Promise<OwnerListingDto> {
-    const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined;
-    return firstValueFrom(
-      this.http.post<OwnerListingDto>(this.baseUrl(), request, headers ? { headers } : {}),
+  /** Creates a listing. A retry of the same unchanged request reuses its Idempotency-Key (plan 4.8). */
+  async create(request: CreateListingRequest): Promise<OwnerListingDto> {
+    const headers = { 'Idempotency-Key': this.createKeys.keyFor(JSON.stringify(request)) };
+    const created = await firstValueFrom(
+      this.http.post<OwnerListingDto>(this.baseUrl(), request, { headers }),
     );
+    this.createKeys.reset();
+    return created;
   }
 
   update(id: string, request: UpdateListingRequest, ifMatch?: string): Promise<OwnerListingDto> {

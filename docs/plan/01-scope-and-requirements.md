@@ -72,4 +72,6 @@ Boundary resolution: both inclusive thresholds use the middle tier, so the tier 
 
 Admin writes re-validate the complete active tier set (the set effective now; a future-dated row is validated together with the set that will be effective at its `EffectiveFrom`): sorted by `MinPrice`, the first tier starts at 0 (inclusive), each tier's `MaxPrice` equals the next tier's `MinPrice` with exactly one of the two sides inclusive (no gap, no overlap), and exactly one tier is open-ended.
 
+Editing a boundary cascades to the adjacent active tier so the set stays contiguous: changing a tier's `MaxPrice`/`MaxInclusive` sets the successor's `MinPrice`/`MinInclusive` to the same boundary (inclusivity flipped), and changing its `MinPrice`/`MinInclusive` sets the predecessor's `MaxPrice`/`MaxInclusive` likewise. Both rows are written in the same `Serializable` transaction, each gets its own `commission.rate.updated` audit event, and the whole set is validated before anything is saved. A cascade that breaks the set (for example a max beyond the successor's max) is rejected as a validation error on the edited tier's field and nothing is persisted. Open-ended edges have no neighbour to cascade to.
+
 ---

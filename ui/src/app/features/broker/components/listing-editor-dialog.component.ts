@@ -23,10 +23,26 @@ import { ListingsDataService } from '../../../core/data/listings-data.service';
 import { LookupsDataService } from '../../../core/data/lookups-data.service';
 import { ApiError } from '../../../core/http/api-error';
 import type { FeatureDto, CreateListingRequest, PropertyTypeDto } from '../../../api/models';
+import { applyServerErrors } from '../../../shared/forms/apply-server-errors';
 import { focusFirstInvalid } from '../../../shared/forms/focus-first-invalid';
 import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
+
+/** Fields with an inline error slot in the template; server errors for other fields go to the banner. */
+const INLINE_FIELDS = [
+  'title',
+  'description',
+  'price',
+  'propertyTypeId',
+  'city',
+  'locality',
+  'province',
+  'postalCode',
+  'bedrooms',
+  'bathrooms',
+  'areaSqFt',
+] as const;
 
 /** Input for the dialog: the listing to edit, or null to create one. */
 export interface ListingEditorDialogData {
@@ -101,7 +117,8 @@ function numberRange(min: number, max: number) {
             <textarea matInput formControlName="description" rows="4"></textarea>
             @if (form.controls.description.invalid && form.controls.description.touched) {
               <mat-error>{{
-                form.controls.description.errors?.['server'] ?? ('errors.validation' | transloco)
+                form.controls.description.errors?.['server'] ??
+                  ('broker.editor.descriptionError' | transloco)
               }}</mat-error>
             }
           </mat-form-field>
@@ -287,8 +304,6 @@ export class ListingEditorDialogComponent {
   readonly propertyTypes = signal<PropertyTypeDto[]>([]);
   readonly features = signal<FeatureDto[]>([]);
   readonly version = signal<string | null>(null);
-  /** Key and serialized body of the last create attempt; a changed body gets a fresh key. */
-  private idempotency: { key: string; body: string } | null = null;
 
   readonly form = new FormGroup({
     title: new FormControl('', {
@@ -416,28 +431,6 @@ export class ListingEditorDialogComponent {
     }
   }
 
-  private idempotencyKeyFor(payload: CreateListingRequest): string {
-    const body = JSON.stringify(payload);
-    if (this.idempotency?.body !== body) {
-      this.idempotency = { key: crypto.randomUUID(), body };
-    }
-    return this.idempotency.key;
-  }
-
-  /** First server-provided field message, if the failure carries field errors. */
-  private firstFieldMessage(error: unknown): string | null {
-    if (!(error instanceof ApiError) || !error.fieldErrors) {
-      return null;
-    }
-    for (const messages of Object.values(error.fieldErrors)) {
-      const first = messages?.[0];
-      if (first?.message) {
-        return first.message;
-      }
-    }
-    return null;
-  }
-
   async submit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -467,7 +460,7 @@ export class ListingEditorDialogComponent {
       if (this.listingId) {
         await this.listingsData.update(this.listingId, payload, this.version() ?? undefined);
       } else {
-        await this.listingsData.create(payload, this.idempotencyKeyFor(payload));
+        await this.listingsData.create(payload);
       }
       this.snack.open(this.transloco.translate('common.saved'), undefined, { duration: 3000 });
       this.form.markAsPristine();
@@ -478,21 +471,13 @@ export class ListingEditorDialogComponent {
         await this.offerReload();
         return;
       }
-      if (error instanceof ApiError && error.fieldErrors) {
-        for (const [field, messages] of Object.entries(error.fieldErrors)) {
-          const control = this.form.get(field);
-          const first = messages?.[0];
-          if (control && first) {
-            control.setErrors({ server: first.message });
-            control.markAsTouched();
-          }
-        }
-      }
+      // Every control with an inline slot shows its own messages; the rest go in the banner.
+      const unattached = applyServerErrors(this.form, error, {
+        inlineFields: INLINE_FIELDS,
+        fallbackMessage: this.transloco.translate('errors.saveFailed'),
+      });
       this.cdr.markForCheck();
-      this.error.set(
-        this.firstFieldMessage(error) ??
-          (error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed')),
-      );
+      this.error.set(unattached.length > 0 ? unattached.join(' ') : null);
     } finally {
       this.saving.set(false);
     }

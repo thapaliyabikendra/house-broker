@@ -100,6 +100,9 @@ public sealed class IdempotencyService(AppDbContext dbContext, TimeProvider cloc
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    /// <inheritdoc />
+    public string ComputeRequestHash(string body) => ComputeHash(body);
+
     /// <summary>Computes a stable hash for a request body.</summary>
     public static string ComputeHash(string body)
     {
