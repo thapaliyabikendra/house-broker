@@ -171,13 +171,13 @@ export class AuthService {
   }
 
   signOut(redirect = true): void {
+    const idToken = this.storage.getIdToken();
     this.storage.clearTokens();
     this.userSignal.set(null);
     if (!redirect) {
       return;
     }
     const cfg = this.config.value();
-    const idToken = this.storage.getIdToken();
     const params = new URLSearchParams();
     params.set('post_logout_redirect_uri', window.location.origin);
     if (idToken) {

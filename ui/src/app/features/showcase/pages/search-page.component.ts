@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import type { OnInit } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -15,6 +15,7 @@ import type { ListingSearchCriteria } from '../../../core/data/listings-data.ser
 @Component({
   selector: 'hb-search-page',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   providers: [SearchStore],
   imports: [
     ReactiveFormsModule,

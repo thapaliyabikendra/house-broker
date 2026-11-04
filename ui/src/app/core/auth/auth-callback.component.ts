@@ -1,11 +1,12 @@
 import type { OnInit } from '@angular/core';
-import { Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 
 @Component({
   selector: 'hb-auth-callback',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   template: '<p>Completing sign in…</p>',
 })
 export class AuthCallbackComponent implements OnInit {

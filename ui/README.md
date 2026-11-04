@@ -6,6 +6,7 @@ Angular 22 SPA for the House Broker marketplace. The app runs behind the shared 
 
 ```bash
 npm ci
+npm run api:generate
 npm start
 ```
 
