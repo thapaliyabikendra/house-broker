@@ -10,6 +10,9 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\HouseBroker.Application\HouseBroker.Application.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="SeedData\demo-house.jpg" />
+  </ItemGroup>
 
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
