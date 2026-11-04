@@ -7,37 +7,115 @@ services:
       MSSQL_PID: "Developer"
     volumes:
       - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Your_password123' -Q 'SELECT 1' -No || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    command: [ "redis-server", "--appendonly", "yes" ]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  api-migrate:
+    build:
+      context: ./api
+      dockerfile: src/HouseBroker.Api/Dockerfile
+    command: [ "dotnet", "HouseBroker.Api.dll", "migrate" ]
+    environment:
+      ConnectionStrings__HouseBroker: "Server=sqlserver,1433;Database=HouseBroker;User Id=sa;Password=Your_password123;TrustServerCertificate=True"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: "no"
+
+  auth-migrate:
+    build:
+      context: ./api
+      dockerfile: src/HouseBroker.Auth/Dockerfile
+    command: [ "dotnet", "HouseBroker.Auth.dll", "migrate" ]
+    environment:
+      ConnectionStrings__HouseBroker: "Server=sqlserver,1433;Database=HouseBroker;User Id=sa;Password=Your_password123;TrustServerCertificate=True"
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    restart: "no"
 
   api:
     build:
       context: ./api
       dockerfile: src/HouseBroker.Api/Dockerfile
     depends_on:
-      - sqlserver
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api-migrate:
+        condition: service_completed_successfully
+      auth-migrate:
+        condition: service_completed_successfully
     environment:
       ConnectionStrings__HouseBroker: "Server=sqlserver,1433;Database=HouseBroker;User Id=sa;Password=Your_password123;TrustServerCertificate=True"
+      ConnectionStrings__Redis: "redis:6379"
       PathBase: "/api"
+      Cache__Provider: "Redis"
+      Cache__Redis__Configuration: "redis:6379"
+      ASPNETCORE_URLS: "http://+:8080"
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -c '</dev/tcp/localhost/8080'" ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
 
   auth:
     build:
       context: ./api
       dockerfile: src/HouseBroker.Auth/Dockerfile
     depends_on:
-      - sqlserver
+      sqlserver:
+        condition: service_healthy
+      auth-migrate:
+        condition: service_completed_successfully
     environment:
       ConnectionStrings__HouseBroker: "Server=sqlserver,1433;Database=HouseBroker;User Id=sa;Password=Your_password123;TrustServerCertificate=True"
       PathBase: "/sso"
+      Auth__Issuer: "http://localhost/sso"
+      ASPNETCORE_URLS: "http://+:8080"
+    healthcheck:
+      test: [ "CMD-SHELL", "bash -c '</dev/tcp/localhost/8080'" ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
 
-  nginx:
-    image: nginx:alpine
+  gateway:
+    build:
+      context: ./deploy
+      dockerfile: Dockerfile.gateway
     depends_on:
-      - api
-      - auth
+      api:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
     ports:
       - "80:80"
     volumes:
-      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./ui/dist:/usr/share/nginx/html:ro
+      - ./ui/dist/house-broker-ui/browser:/usr/share/nginx/html:ro
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://127.0.0.1/" ]
+      interval: 10s
+      timeout: 3s
+      retries: 10
 
 volumes:
   sqlserver-data: {}
+  redis-data: {}

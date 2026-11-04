@@ -215,3 +215,37 @@ Strict TDD applies to commission calculation, domain invariants, validators, `Li
 ## Deliberate deviation from the brief
 
 The raw brief asks for Clean Architecture. The business API follows it strictly. `HouseBroker.Auth` is intentionally an infrastructure-centric SSO service (Identity + OpenIddict + Razor Pages) kept as one small, separate service; the layering and dependency rules apply to the API. See [docs/plan/03-architecture.md](docs/plan/03-architecture.md) (3.1).
+
+## Local validation results (2026-11-04)
+
+The full local gate list from this README was run on 2026-11-04. Results:
+
+| Gate | Result |
+|---|---|
+| dotnet restore api/HouseBroker.sln | Pass |
+| dotnet build api/HouseBroker.sln --no-restore | Pass (0 errors; package vulnerability advisories reported by separate gate) |
+| dotnet test api/HouseBroker.sln --no-build | Pass (Auth 21, Application 28, Architecture 1, Api 32) |
+| dotnet format api/HouseBroker.sln --verify-no-changes | Pass |
+| dotnet list api/HouseBroker.sln package --vulnerable --include-transitive | Advisory report: known transitive advisories in .NET 10 test dependencies; exit code 0 |
+| 
+pm --prefix ui ci | Pass (dependencies installed) |
+| 
+pm --prefix ui run lint | Pass |
+| 
+pm --prefix ui run format:check | Pass |
+| 
+pm --prefix ui run test | Pass (26 tests, 12 files) |
+| 
+pm --prefix ui run build | Pass |
+| 
+pm --prefix ui run api:check | Pass |
+| 
+pm --prefix ui run i18n:check | Pass |
+| docker compose -f docker-compose.prod.yml build | Pass (api, auth, gateway) |
+| Scaled smoke (--scale api=3) | Pass (gateway 200, health/ready 200, meta returns NPR, SQL/Redis/migrations pass) |
+| Anonymous search / lookups / meta smoke | Pass |
+| Partner client_credentials token + read smoke | Pass |
+
+Notes:
+- Docker-based smoke uses the development environment override for ephemeral SSO signing keys; production requires a mounted signing certificate via OpenIddict:SigningCertificate:Path.
+- Seed data for local smoke: demo brokers roker1@demo.com / roker2@demo.com, seeker seeker@demo.com, admin dmin@housebroker.com, all with password Password123! except admin AdminPassword123!; partner client demo-partner / partner_secret_123.

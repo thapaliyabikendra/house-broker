@@ -1,0 +1,29 @@
+{
+  "info": { "name": "House Broker smoke tests", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+  "variable": [
+    { "key": "apiBaseUrl", "value": "http://localhost:5049/api" },
+    { "key": "authBaseUrl", "value": "https://localhost:7074" },
+    { "key": "partnerClientId", "value": "demo-partner" },
+    { "key": "partnerClientSecret", "value": "partner_secret_123" },
+    { "key": "accessToken", "value": "" }
+  ],
+  "item": [
+    { "name": "Health API", "request": { "method": "GET", "url": "{{apiBaseUrl}}/health/ready" } },
+    { "name": "Meta", "request": { "method": "GET", "url": "{{apiBaseUrl}}/v1/meta" } },
+    {
+      "name": "Partner token",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/x-www-form-urlencoded" }],
+        "body": { "mode": "urlencoded", "urlencoded": [
+          { "key": "grant_type", "value": "client_credentials" },
+          { "key": "client_id", "value": "{{partnerClientId}}" },
+          { "key": "client_secret", "value": "{{partnerClientSecret}}" },
+          { "key": "scope", "value": "listings.read contacts.read" }
+        ]},
+        "url": "{{authBaseUrl}}/connect/token"
+      }
+    },
+    { "name": "Search listings", "request": { "method": "GET", "url": "{{apiBaseUrl}}/v1/listings" } }
+  ]
+}

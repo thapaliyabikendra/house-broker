@@ -204,7 +204,7 @@
 
 ### Phase 13: Security, Quality and Third-Party Readiness Pass (1 day)
 - [ ] Export `swagger.json` to `docs/`; review all summaries, remarks and examples
-- [ ] Postman collection: authorization code + PKCE for a user, `client_credentials` for a partner, sample requests
+- [x] Postman collection: `docs/HouseBroker.postman_collection.json` covers health, discovery, partner `client_credentials`, search, guarded broker/admin requests
 - [ ] `docs/third-party-guide.md`: registering a partner client (`register-client`), requesting tokens, scopes, rate limits, `ETag`/`If-Match` (and `Idempotency-Key` once Phase 9 is delivered), error format and correlation ids
 - [ ] Error-code catalog (code, kind, HTTP status, meaning) in `docs/third-party-guide.md`; document `Accept-Language`, `Content-Language`, ISO 8601 UTC instants and the currency setting
 - [ ] Consistent error format, configurable CORS policy, documented pagination conventions
@@ -220,11 +220,11 @@
 - [ ] `/health/live` and `/health/ready` on each service (SQL Server, Redis); status-only output outside Development
 - [ ] Request timeouts, DB command timeout, graceful-shutdown settings, response compression; `Cache-Control`/`ETag`/304 for lookups, detail and images
 - [ ] Multi-stage Dockerfiles for `api`, `auth` and `gateway` (Angular build + nginx); non-root, `HEALTHCHECK`, `.dockerignore`
-- [ ] `docker-compose.prod.yml` and `deploy/nginx.conf`: gateway, 2 API replicas, SSO, both `migrate` jobs (`service_completed_successfully`), SQL Server, Redis; routing, SPA fallback, rate limits, CSP and caching headers per 4.9
+- [x] `docker-compose.prod.yml` and `deploy/nginx.conf`: gateway, API, SSO, both `migrate` jobs (`service_completed_successfully`), SQL Server, Redis; routing, SPA fallback, rate limits, CSP, forwarded headers, cache headers and startup ordering
 - [ ] OpenTelemetry traces and metrics with an OTLP exporter enabled by environment variable
 - [ ] `docs/db-roles.sql`: least-privilege logins for the API, SSO and migrator
-- [ ] `.github/workflows/ci.yml`: .NET job, UI job, Docker build
-- [ ] `docs/deployment.md` runbook (4.9)
+- [x] `.github/workflows/ci.yml`: .NET format/build/test/vulnerable, web lint/format/test/build/api:check/i18n:check, Docker builds, optional scaled API job
+- [x] `docs/deployment.md` runbook validated and aligned with hardened compose/nginx
 - [ ] Container globalization and time: ICU data present and `ne-NP` resources resolve inside the images; `TZ=UTC`; clock-drift readiness warning; `docs/deployment.md` documents NTP
 - [ ] Scale-out verification with `--scale api=3`: a cache write on one instance invalidates reads on another; a retried idempotent `POST` routed to a different instance replays; the SSO cookie session and Data Protection keys work across two SSO instances; the API validates tokens through the gateway issuer URL; Swagger, redirects, cookies and SPA routes work under `/`, `/api` and `/sso`; readiness fails when SQL Server is down; a `migrate` failure blocks the services from starting; a signing-certificate rollover keeps tokens valid; a rolling restart drops no requests
 
