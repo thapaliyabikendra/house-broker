@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, signal } from '@angular/core';
+import { ChangeDetectorRef } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -49,7 +50,7 @@ export interface CommissionRateEditorDialogData {
           <input matInput type="number" formControlName="minPrice" />
           @if (form.controls.minPrice.invalid && form.controls.minPrice.touched) {
             <mat-error>{{
-              form.controls.minPrice.errors?.['server'] ?? ('errors.validation' | transloco)
+              form.controls.minPrice.errors?.['server'] ?? ('admin.minPriceError' | transloco)
             }}</mat-error>
           }
         </mat-form-field>
@@ -78,7 +79,7 @@ export interface CommissionRateEditorDialogData {
           <span matTextSuffix>%</span>
           @if (form.controls.ratePercent.invalid && form.controls.ratePercent.touched) {
             <mat-error>{{
-              form.controls.ratePercent.errors?.['server'] ?? ('errors.validation' | transloco)
+              form.controls.ratePercent.errors?.['server'] ?? ('admin.ratePercentError' | transloco)
             }}</mat-error>
           }
         </mat-form-field>
@@ -88,7 +89,8 @@ export interface CommissionRateEditorDialogData {
           <input matInput type="datetime-local" formControlName="effectiveFrom" />
           @if (form.controls.effectiveFrom.invalid && form.controls.effectiveFrom.touched) {
             <mat-error>{{
-              form.controls.effectiveFrom.errors?.['server'] ?? ('errors.validation' | transloco)
+              form.controls.effectiveFrom.errors?.['server'] ??
+                ('admin.effectiveFromError' | transloco)
             }}</mat-error>
           }
         </mat-form-field>
@@ -155,6 +157,7 @@ export class CommissionRateEditorDialogComponent {
   private readonly dialogRef = inject(MatDialogRef<CommissionRateEditorDialogComponent, boolean>);
   private readonly confirmService = inject(ConfirmService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly saving = signal(false);
   readonly actionError = signal<string | null>(null);
@@ -249,6 +252,7 @@ export class CommissionRateEditorDialogComponent {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       focusFirstInvalid(this.host.nativeElement);
+      this.cdr.markForCheck();
       return;
     }
     this.saving.set(true);
@@ -296,6 +300,7 @@ export class CommissionRateEditorDialogComponent {
           }
         }
       }
+      this.cdr.markForCheck();
       this.actionError.set(
         this.firstFieldMessage(error) ??
           (error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed')),

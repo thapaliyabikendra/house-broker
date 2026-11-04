@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  ElementRef,
+  inject,
+  signal,
+} from '@angular/core';
 import type { AbstractControl, ValidationErrors } from '@angular/forms';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -271,6 +278,7 @@ export class ListingEditorDialogComponent {
   private readonly snack = inject(MatSnackBar);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly confirmService = inject(ConfirmService);
+  private readonly cdr = inject(ChangeDetectorRef);
 
   readonly isEdit = signal(this.listingId !== null);
   readonly loading = signal(false);
@@ -434,6 +442,7 @@ export class ListingEditorDialogComponent {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       focusFirstInvalid(this.host.nativeElement);
+      this.cdr.markForCheck();
       return;
     }
     this.saving.set(true);
@@ -479,6 +488,7 @@ export class ListingEditorDialogComponent {
           }
         }
       }
+      this.cdr.markForCheck();
       this.error.set(
         this.firstFieldMessage(error) ??
           (error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed')),

@@ -189,6 +189,9 @@
     "maxPrice": "Max price",
     "maxInclusive": "Max inclusive",
     "staleReload": "Someone else changed this rate. Reload to see the latest version? Your unsaved edits will be replaced.",
+    "minPriceError": "Min price is required and must be zero or greater.",
+    "ratePercentError": "Rate percent is required and must be zero or greater.",
+    "effectiveFromError": "Effective date is required.",
     "andAbove": "and above"
   }
 }
