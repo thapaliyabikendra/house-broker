@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import type { ComponentFixture } from '@angular/core/testing';
+import { TestBed } from '@angular/core/testing';
 import { TranslocoService } from '@jsverse/transloco';
 import { HbPricePipe } from './hb-price.pipe';
 import { LanguageService } from '../../core/i18n/language.service';
@@ -37,6 +38,7 @@ describe('HbPricePipe', () => {
 
   it('formats a number as NPR currency', () => {
     fixture.detectChanges();
-    expect(fixture.nativeElement.textContent.trim()).toContain('1,234.50');
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent?.trim()).toContain('1,234.50');
   });
 });

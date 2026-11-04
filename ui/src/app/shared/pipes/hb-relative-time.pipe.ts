@@ -15,7 +15,9 @@ export class HbRelativeTimePipe implements PipeTransform {
     }
     const diffSeconds = Math.round((date.getTime() - this.clock.now().getTime()) / 1000);
     const { amount, unit } = this.toUnit(diffSeconds);
-    return new Intl.RelativeTimeFormat(this.language.toFormattingLocale(), { numeric: 'auto' }).format(amount, unit);
+    return new Intl.RelativeTimeFormat(this.language.toFormattingLocale(), {
+      numeric: 'auto',
+    }).format(amount, unit);
   }
 
   private toDate(value: string | Date | null | undefined): Date | null {
