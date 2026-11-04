@@ -23,22 +23,21 @@ public static class AuthClaimMapper
         {
             if (role == Roles.Broker)
             {
-                permissions.Add(AppPermissions.ListingsView);
-                permissions.Add(AppPermissions.ListingsContactView);
-                permissions.Add(AppPermissions.ListingsCreate);
-                permissions.Add(AppPermissions.ListingsUpdate);
-                permissions.Add(AppPermissions.ListingsDelete);
-                permissions.Add(AppPermissions.ListingsImagesManage);
-                permissions.Add(AppPermissions.CommissionView);
+                permissions.Add(AppPermissions.MyListings);
+                permissions.Add(AppPermissions.MyListingsCreate);
+                permissions.Add(AppPermissions.MyListingsUpdate);
+                permissions.Add(AppPermissions.MyListingsDelete);
+                permissions.Add(AppPermissions.MyListingsImagesManage);
             }
             else if (role == Roles.Seeker)
             {
-                permissions.Add(AppPermissions.ListingsView);
-                permissions.Add(AppPermissions.ListingsContactView);
+                // Showcase search and detail are anonymous; no permission required.
             }
             else if (role == Roles.Admin)
             {
-                permissions.Add(AppPermissions.CommissionRatesManage);
+                permissions.Add(AppPermissions.CommissionRates);
+                permissions.Add(AppPermissions.CommissionRatesCreate);
+                permissions.Add(AppPermissions.CommissionRatesUpdate);
             }
         }
 

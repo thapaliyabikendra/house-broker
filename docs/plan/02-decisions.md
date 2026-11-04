@@ -50,7 +50,7 @@
 | Clients | `housebroker-web` (Angular, first party, no consent screen); `housebroker-swagger` (Development/Staging); partner clients registered with a CLI verb `register-client`; a demo partner in Development. No admin UI for clients (roadmap) |
 | Partner (machine) tokens | `client_credentials` clients may only hold `listings.read` and `contacts.read`. Writing on behalf of a broker needs the authorization code flow with that broker's consent |
 | Broker profile | The API keeps a `BrokerProfiles` table (name, email, phone), created and updated from the token's `name`, `email` and `phone_number` claims when a broker writes. Listing contact details are read from it. A broker write without those claims gets 403 `forbidden` |
-| Access rules | Search and listing detail are anonymous. Broker contact details need a token with `contacts.read` and (for users) the `listings:contact:view` permission |
+| Access rules | Search and listing detail are anonymous. Broker contact details are public by design (raw R13); no scope or permission is required for showcase detail |
 | Registration | On the SSO register page: Seeker or Broker only (never Admin); a broker needs name and phone; the `BrokerSelfRegistration` flag can disable broker sign-up |
 | Out of scope (documented) | Email confirmation, password reset, MFA and social login |
 

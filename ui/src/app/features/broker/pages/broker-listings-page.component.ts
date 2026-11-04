@@ -384,7 +384,7 @@ export class BrokerListingsPageComponent implements OnInit {
 
   /** Brokers may create listings; admins and seekers do not see the create action. */
   canCreateListings(): boolean {
-    return this.auth?.hasPermission('listings:create') ?? true;
+    return this.auth?.hasPermission('MyListings.Create') ?? true;
   }
 
   constructor() {

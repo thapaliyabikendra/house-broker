@@ -38,7 +38,7 @@ public sealed class ListingETagTests
         var service = new Mock<IListingService>();
         service.Setup(listing => listing.GetOwnerDetailAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Result.Success<OwnerListingDto>(new OwnerListingDto { Version = version }));
-        var controller = new BrokerListingsController(service.Object, Mock.Of<IImageStorage>())
+        var controller = new MyListingsController(service.Object, Mock.Of<IImageStorage>())
         {
             ControllerContext = new ControllerContext { HttpContext = CreateHttpContext() },
         };

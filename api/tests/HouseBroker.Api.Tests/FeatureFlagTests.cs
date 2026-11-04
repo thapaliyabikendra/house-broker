@@ -22,7 +22,7 @@ public sealed class FeatureFlagTests
     [Fact]
     public void UploadImage_RequiresImageUploadsFlag()
     {
-        var method = typeof(BrokerListingsController).GetMethod(nameof(BrokerListingsController.UploadImage));
+        var method = typeof(MyListingsController).GetMethod(nameof(MyListingsController.UploadImage));
         var attribute = Assert.Single(method!.GetCustomAttributes(typeof(RequiresFeatureAttribute), inherit: true));
 
         Assert.Equal(FeatureFlags.ImageUploads, ((RequiresFeatureAttribute)attribute).Feature);
@@ -32,7 +32,7 @@ public sealed class FeatureFlagTests
     [Fact]
     public void DeleteImage_RequiresImageUploadsFlag()
     {
-        var method = typeof(BrokerListingsController).GetMethod(nameof(BrokerListingsController.DeleteImage));
+        var method = typeof(MyListingsController).GetMethod(nameof(MyListingsController.DeleteImage));
         var attribute = Assert.Single(method!.GetCustomAttributes(typeof(RequiresFeatureAttribute), inherit: true));
 
         Assert.Equal(FeatureFlags.ImageUploads, ((RequiresFeatureAttribute)attribute).Feature);

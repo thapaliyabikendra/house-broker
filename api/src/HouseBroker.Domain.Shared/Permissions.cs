@@ -3,27 +3,27 @@ namespace HouseBroker.Domain.Common;
 /// <summary>Permission claims carried by user access tokens.</summary>
 public static class AppPermissions
 {
-    /// <summary>May view listings.</summary>
-    public const string ListingsView = "listings:view";
-
-    /// <summary>May view broker contact details.</summary>
-    public const string ListingsContactView = "listings:contact:view";
+    /// <summary>May view the My Listings page (owned listings, including commission).</summary>
+    public const string MyListings = "MyListings";
 
     /// <summary>May create listings.</summary>
-    public const string ListingsCreate = "listings:create";
+    public const string MyListingsCreate = "MyListings.Create";
 
     /// <summary>May update own listings.</summary>
-    public const string ListingsUpdate = "listings:update";
+    public const string MyListingsUpdate = "MyListings.Update";
 
     /// <summary>May delete own listings.</summary>
-    public const string ListingsDelete = "listings:delete";
+    public const string MyListingsDelete = "MyListings.Delete";
 
     /// <summary>May manage images on own listings.</summary>
-    public const string ListingsImagesManage = "listings:images:manage";
+    public const string MyListingsImagesManage = "MyListings.ImagesManage";
 
-    /// <summary>May view commission on own listings.</summary>
-    public const string CommissionView = "commission:view";
+    /// <summary>May view commission rate tiers (admin page).</summary>
+    public const string CommissionRates = "CommissionRates";
 
-    /// <summary>May manage commission rate tiers.</summary>
-    public const string CommissionRatesManage = "commission:rates:manage";
+    /// <summary>May create commission rate tiers.</summary>
+    public const string CommissionRatesCreate = "CommissionRates.Create";
+
+    /// <summary>May update commission rate tiers.</summary>
+    public const string CommissionRatesUpdate = "CommissionRates.Update";
 }

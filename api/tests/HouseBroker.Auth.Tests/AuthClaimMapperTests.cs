@@ -12,14 +12,12 @@ public class AuthClaimMapperTests
     {
         var permissions = AuthClaimMapper.GetPermissions(new List<string> { Roles.Broker });
 
-        Assert.Contains(AppPermissions.ListingsView, permissions);
-        Assert.Contains(AppPermissions.ListingsContactView, permissions);
-        Assert.Contains(AppPermissions.ListingsCreate, permissions);
-        Assert.Contains(AppPermissions.ListingsUpdate, permissions);
-        Assert.Contains(AppPermissions.ListingsDelete, permissions);
-        Assert.Contains(AppPermissions.ListingsImagesManage, permissions);
-        Assert.Contains(AppPermissions.CommissionView, permissions);
-        Assert.DoesNotContain(AppPermissions.CommissionRatesManage, permissions);
+        Assert.Contains(AppPermissions.MyListings, permissions);
+        Assert.Contains(AppPermissions.MyListingsCreate, permissions);
+        Assert.Contains(AppPermissions.MyListingsUpdate, permissions);
+        Assert.Contains(AppPermissions.MyListingsDelete, permissions);
+        Assert.Contains(AppPermissions.MyListingsImagesManage, permissions);
+        Assert.DoesNotContain(AppPermissions.CommissionRates, permissions);
     }
 
     /// <summary>Seekers receive only listing view permissions.</summary>
@@ -28,10 +26,7 @@ public class AuthClaimMapperTests
     {
         var permissions = AuthClaimMapper.GetPermissions(new List<string> { Roles.Seeker });
 
-        Assert.Contains(AppPermissions.ListingsView, permissions);
-        Assert.Contains(AppPermissions.ListingsContactView, permissions);
-        Assert.DoesNotContain(AppPermissions.ListingsCreate, permissions);
-        Assert.DoesNotContain(AppPermissions.CommissionView, permissions);
+        Assert.Empty(permissions);
     }
 
     /// <summary>Admins receive commission management permission only.</summary>
@@ -40,8 +35,10 @@ public class AuthClaimMapperTests
     {
         var permissions = AuthClaimMapper.GetPermissions(new List<string> { Roles.Admin });
 
-        Assert.Contains(AppPermissions.CommissionRatesManage, permissions);
-        Assert.DoesNotContain(AppPermissions.ListingsView, permissions);
+        Assert.Contains(AppPermissions.CommissionRates, permissions);
+        Assert.Contains(AppPermissions.CommissionRatesCreate, permissions);
+        Assert.Contains(AppPermissions.CommissionRatesUpdate, permissions);
+        Assert.DoesNotContain(AppPermissions.MyListings, permissions);
     }
 
     /// <summary>Unknown roles yield no permissions.</summary>
@@ -58,8 +55,8 @@ public class AuthClaimMapperTests
     {
         var permissions = AuthClaimMapper.GetPermissions(new List<string> { Roles.Broker, Roles.Admin });
 
-        Assert.Contains(AppPermissions.ListingsCreate, permissions);
-        Assert.Contains(AppPermissions.CommissionRatesManage, permissions);
+        Assert.Contains(AppPermissions.MyListingsCreate, permissions);
+        Assert.Contains(AppPermissions.CommissionRates, permissions);
     }
 
     /// <summary>Identity claims target both tokens.</summary>

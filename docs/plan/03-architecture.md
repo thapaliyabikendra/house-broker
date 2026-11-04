@@ -137,14 +137,14 @@ Effective access requires both the user's permission (for user tokens) and the c
 
 | Permission claim | Required scope | Seeker | Broker | Admin |
 |------------------|----------------|:------:|:------:|:-----:|
-| `listings:view` | `listings.read` | ✔ | ✔ | ✔ |
-| `listings:contact:view` | `contacts.read` | ✔ | ✔ | ✔ | (issued for compatibility; no endpoint requires it) |
-| `listings:create` | `listings.write` | | ✔ | |
-| `listings:update` (own only) | `listings.write` | | ✔ | |
-| `listings:delete` (own only) | `listings.write` | | ✔ | |
-| `listings:images:manage` (own only) | `listings.write` | | ✔ | |
-| `commission:view` (own listings only) | `commission.read` | | ✔ | |
-| `commission:rates:manage` | `admin.commission` | | | ✔ |
+| `MyListings` | `commission.read` | | ✔ | |
+| `MyListings.Create` | `listings.write` | | ✔ | |
+| `MyListings.Update` (own only) | `listings.write` | | ✔ | |
+| `MyListings.Delete` (own only) | `listings.write` | | ✔ | |
+| `MyListings.ImagesManage` (own only) | `listings.write` | | ✔ | |
+| `CommissionRates` | `admin.commission` | | | ✔ |
+| `CommissionRates.Create` | `admin.commission` | | | ✔ |
+| `CommissionRates.Update` | `admin.commission` | | | ✔ |
 
 "Own only" is enforced by a resource-based ownership check (`sub` equals the listing's `BrokerId`). Partner (`client_credentials`) tokens carry no user, so they can satisfy only `listings.read` and `contacts.read`. `admin.commission` is granted only to the first-party client.
 

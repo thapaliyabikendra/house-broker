@@ -77,38 +77,38 @@ public sealed class RateLimitingTests
     {
         var listingMethods = new[]
         {
-            nameof(BrokerListingsController.Create),
-            nameof(BrokerListingsController.Update),
-            nameof(BrokerListingsController.Delete),
-            nameof(BrokerListingsController.Publish),
-            nameof(BrokerListingsController.MarkSold),
-            nameof(BrokerListingsController.Archive),
+            nameof(MyListingsController.Create),
+            nameof(MyListingsController.Update),
+            nameof(MyListingsController.Delete),
+            nameof(MyListingsController.Publish),
+            nameof(MyListingsController.MarkSold),
+            nameof(MyListingsController.Archive),
         };
 
         foreach (var method in listingMethods)
         {
-            Assert.Equal(RateLimitPolicies.Write, GetPolicy(typeof(BrokerListingsController), method));
+            Assert.Equal(RateLimitPolicies.Write, GetPolicy(typeof(MyListingsController), method));
         }
 
-        Assert.Equal(RateLimitPolicies.Write, GetPolicy(typeof(AdminCommissionRatesController), nameof(AdminCommissionRatesController.Create)));
-        Assert.Equal(RateLimitPolicies.Write, GetPolicy(typeof(AdminCommissionRatesController), nameof(AdminCommissionRatesController.Update)));
+        Assert.Equal(RateLimitPolicies.Write, GetPolicy(typeof(CommissionRatesController), nameof(CommissionRatesController.Create)));
+        Assert.Equal(RateLimitPolicies.Write, GetPolicy(typeof(CommissionRatesController), nameof(CommissionRatesController.Update)));
     }
 
     /// <summary>The image upload endpoint uses the upload policy.</summary>
     [Fact]
     public void UploadEndpoint_UsesUploadPolicy()
     {
-        Assert.Equal(RateLimitPolicies.Upload, GetPolicy(typeof(BrokerListingsController), nameof(BrokerListingsController.UploadImage)));
+        Assert.Equal(RateLimitPolicies.Upload, GetPolicy(typeof(MyListingsController), nameof(MyListingsController.UploadImage)));
     }
 
     /// <summary>Controllers document the 429 response for every action.</summary>
     [Fact]
     public void Controllers_Document429()
     {
-        AssertDocuments429(typeof(BrokerListingsController));
+        AssertDocuments429(typeof(MyListingsController));
         AssertDocuments429(typeof(PublicListingsController));
         AssertDocuments429(typeof(ReferenceDataController));
-        AssertDocuments429(typeof(AdminCommissionRatesController));
+        AssertDocuments429(typeof(CommissionRatesController));
     }
 
     /// <summary>Requests over the limit return 429 with Retry-After and a ProblemDetails body.</summary>

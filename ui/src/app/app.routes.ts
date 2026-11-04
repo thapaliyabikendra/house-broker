@@ -27,7 +27,7 @@ export const routes: Routes = [
   // Deep links to the editor: the list page opens the create/edit dialog from this data.
   {
     path: 'broker/listings/new',
-    canActivate: [authGuard, permissionGuard('listings:create')],
+    canActivate: [authGuard, permissionGuard('MyListings.Create')],
     data: { editor: 'new' },
     loadComponent: () =>
       import('./features/broker/pages/broker-listings-page.component').then(
@@ -45,7 +45,7 @@ export const routes: Routes = [
   },
   {
     path: 'admin/commission-rates',
-    canActivate: [permissionGuard('commission:rates:manage')],
+    canActivate: [permissionGuard('CommissionRates')],
     loadComponent: () =>
       import('./features/admin/pages/commission-rates-admin-page.component').then(
         (m) => m.CommissionRatesAdminPageComponent,

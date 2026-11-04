@@ -16,7 +16,7 @@ namespace HouseBroker.Api.Controllers;
 [ApiVersion("1.0")]
 [Route("v{version:apiVersion}/admin/commission-rates")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
-public sealed class AdminCommissionRatesController(ICommissionRateAdminService service) : ControllerBase
+public sealed class CommissionRatesController(ICommissionRateAdminService service) : ControllerBase
 {
     /// <summary>Gets all commission rates.</summary>
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
@@ -24,7 +24,7 @@ public sealed class AdminCommissionRatesController(ICommissionRateAdminService s
     /// <response code="401">Unauthorized.</response>
     /// <response code="403">Forbidden.</response>
     [HttpGet]
-    [HasPermission(AppPermissions.CommissionRatesManage)]
+    [HasPermission(AppPermissions.CommissionRates)]
     [Tags("Admin: Commission Rates")]
     [ProducesResponseType<IReadOnlyList<CommissionRateDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -43,8 +43,7 @@ public sealed class AdminCommissionRatesController(ICommissionRateAdminService s
     /// <response code="403">Forbidden.</response>
     /// <response code="409">Conflict.</response>
     [HttpPost]
-    [HasPermission(AppPermissions.CommissionRatesManage)]
-    [Idempotent]
+    [HasPermission(AppPermissions.CommissionRatesCreate)]
     [EnableRateLimiting(RateLimitPolicies.Write)]
     [Tags("Admin: Commission Rates")]
     [ProducesResponseType<CommissionRateDto>(StatusCodes.Status200OK)]
@@ -62,7 +61,7 @@ public sealed class AdminCommissionRatesController(ICommissionRateAdminService s
     /// <summary>Updates a commission rate.</summary>
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpPut("{id:guid}")]
-    [HasPermission(AppPermissions.CommissionRatesManage)]
+    [HasPermission(AppPermissions.CommissionRatesUpdate)]
     [EnableRateLimiting(RateLimitPolicies.Write)]
     [Tags("Admin: Commission Rates")]
     [ProducesResponseType<CommissionRateDto>(StatusCodes.Status200OK)]

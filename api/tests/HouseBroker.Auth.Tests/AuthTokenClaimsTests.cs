@@ -81,7 +81,9 @@ public class AuthTokenClaimsTests
         var identity = Build(roles: AdminRoles);
 
         var permissions = identity.FindAll("permission").Select(c => c.Value).ToList();
-        Assert.Equal([AppPermissions.CommissionRatesManage], permissions);
+        Assert.Contains(AppPermissions.CommissionRates, permissions);
+        Assert.Contains(AppPermissions.CommissionRatesCreate, permissions);
+        Assert.Contains(AppPermissions.CommissionRatesUpdate, permissions);
         Assert.All(identity.FindAll("permission"), claim =>
             Assert.Equal(AccessOnly, claim.GetDestinations()));
     }
@@ -93,8 +95,8 @@ public class AuthTokenClaimsTests
         var identity = Build(roles: BrokerRoles);
 
         var permissions = identity.FindAll("permission").Select(c => c.Value).ToList();
-        Assert.Contains(AppPermissions.ListingsCreate, permissions);
-        Assert.DoesNotContain(AppPermissions.CommissionRatesManage, permissions);
+        Assert.Contains(AppPermissions.MyListingsCreate, permissions);
+        Assert.DoesNotContain(AppPermissions.CommissionRates, permissions);
     }
 
     /// <summary>Granted scopes are emitted as scp claims, not as OpenIddict's own scope claim.</summary>

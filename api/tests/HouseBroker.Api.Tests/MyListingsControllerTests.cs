@@ -16,7 +16,7 @@ namespace HouseBroker.Api.Tests;
 /// prove the controller forwards to the service, passes the <c>If-Match</c> precondition through, and maps
 /// each expected outcome to the documented HTTP status.
 /// </summary>
-public sealed class BrokerListingsControllerTests
+public sealed class MyListingsControllerTests
 {
     /// <summary>A successful create returns 201 with the created owner DTO.</summary>
     [Fact]
@@ -136,7 +136,7 @@ public sealed class BrokerListingsControllerTests
         Assert.Same(mine, ok.Value);
     }
 
-    private static BrokerListingsController CreateController(IListingService service, params (string Name, string Value)[] headers)
+    private static MyListingsController CreateController(IListingService service, params (string Name, string Value)[] headers)
     {
         var httpContext = new DefaultHttpContext { RequestServices = new ServiceCollection().BuildServiceProvider() };
         foreach (var (name, value) in headers)
@@ -144,7 +144,7 @@ public sealed class BrokerListingsControllerTests
             httpContext.Request.Headers[name] = value;
         }
 
-        return new BrokerListingsController(service, Mock.Of<IImageStorage>())
+        return new MyListingsController(service, Mock.Of<IImageStorage>())
         {
             ControllerContext = new ControllerContext { HttpContext = httpContext },
         };

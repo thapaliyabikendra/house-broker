@@ -17,7 +17,7 @@ namespace HouseBroker.Api.Controllers;
 [ApiVersion("1.0")]
 [Route("v{version:apiVersion}/listings")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
-public sealed class BrokerListingsController(IListingService listingService, IImageStorage imageStorage) : ControllerBase
+public sealed class MyListingsController(IListingService listingService, IImageStorage imageStorage) : ControllerBase
 {
     /// <summary>Creates a listing.</summary>
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
@@ -29,7 +29,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     [HttpPost]
     [Idempotent]
     [EnableRateLimiting(RateLimitPolicies.Write)]
-    [HasPermission(AppPermissions.ListingsCreate)]
+    [HasPermission(AppPermissions.MyListingsCreate)]
     [Tags("Listings")]
     [ProducesResponseType<OwnerListingDto>(StatusCodes.Status201Created)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -52,7 +52,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpPut("{id:guid}")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
-    [HasPermission(AppPermissions.ListingsUpdate)]
+    [HasPermission(AppPermissions.MyListingsUpdate)]
     [Tags("Listings")]
     [ProducesResponseType<OwnerListingDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
@@ -72,7 +72,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpDelete("{id:guid}")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
-    [HasPermission(AppPermissions.ListingsDelete)]
+    [HasPermission(AppPermissions.MyListingsDelete)]
     [Tags("Listings")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -91,7 +91,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <response code="401">Unauthorized.</response>
     /// <response code="403">Forbidden.</response>
     [HttpGet("mine")]
-    [HasPermission(AppPermissions.CommissionView)]
+    [HasPermission(AppPermissions.MyListings)]
     [Tags("Listings")]
     [ProducesResponseType<IReadOnlyList<OwnerListingDto>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -105,7 +105,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <summary>Gets an owned listing.</summary>
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpGet("mine/{id:guid}")]
-    [HasPermission(AppPermissions.CommissionView)]
+    [HasPermission(AppPermissions.MyListings)]
     [Tags("Listings")]
     [ProducesResponseType<OwnerListingDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -127,7 +127,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     [HttpPost("{id:guid}/images")]
     [RequiresFeature(FeatureFlags.ImageUploads)]
     [EnableRateLimiting(RateLimitPolicies.Upload)]
-    [HasPermission(AppPermissions.ListingsImagesManage)]
+    [HasPermission(AppPermissions.MyListingsImagesManage)]
     [Tags("Images")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType<ListingImageDto>(StatusCodes.Status200OK)]
@@ -153,7 +153,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpDelete("{id:guid}/images/{imageId:guid}")]
     [RequiresFeature(FeatureFlags.ImageUploads)]
-    [HasPermission(AppPermissions.ListingsImagesManage)]
+    [HasPermission(AppPermissions.MyListingsImagesManage)]
     [Tags("Images")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -170,7 +170,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpPost("{id:guid}/publish")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
-    [HasPermission(AppPermissions.ListingsUpdate)]
+    [HasPermission(AppPermissions.MyListingsUpdate)]
     [Tags("Listings")]
     [ProducesResponseType<OwnerListingDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -187,7 +187,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpPost("{id:guid}/sold")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
-    [HasPermission(AppPermissions.ListingsUpdate)]
+    [HasPermission(AppPermissions.MyListingsUpdate)]
     [Tags("Listings")]
     [ProducesResponseType<OwnerListingDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
@@ -204,7 +204,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
     [HttpPost("{id:guid}/archive")]
     [EnableRateLimiting(RateLimitPolicies.Write)]
-    [HasPermission(AppPermissions.ListingsUpdate)]
+    [HasPermission(AppPermissions.MyListingsUpdate)]
     [Tags("Listings")]
     [ProducesResponseType<OwnerListingDto>(StatusCodes.Status200OK)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]

@@ -9,22 +9,21 @@ internal static class PermissionScopeMap
 {
     private static readonly Dictionary<string, string> Map = new(StringComparer.Ordinal)
     {
-        [AppPermissions.ListingsView] = Scopes.ListingsRead,
-        [AppPermissions.ListingsContactView] = Scopes.ContactsRead,
-        [AppPermissions.ListingsCreate] = Scopes.ListingsWrite,
-        [AppPermissions.ListingsUpdate] = Scopes.ListingsWrite,
-        [AppPermissions.ListingsDelete] = Scopes.ListingsWrite,
-        [AppPermissions.ListingsImagesManage] = Scopes.ListingsWrite,
-        [AppPermissions.CommissionView] = Scopes.CommissionRead,
-        [AppPermissions.CommissionRatesManage] = Scopes.AdminCommission,
+        [AppPermissions.MyListings] = Scopes.CommissionRead,
+        [AppPermissions.MyListingsCreate] = Scopes.ListingsWrite,
+        [AppPermissions.MyListingsUpdate] = Scopes.ListingsWrite,
+        [AppPermissions.MyListingsDelete] = Scopes.ListingsWrite,
+        [AppPermissions.MyListingsImagesManage] = Scopes.ListingsWrite,
+        [AppPermissions.CommissionRates] = Scopes.AdminCommission,
+        [AppPermissions.CommissionRatesCreate] = Scopes.AdminCommission,
+        [AppPermissions.CommissionRatesUpdate] = Scopes.AdminCommission,
     };
 
     /// <summary>Gets the required scope for a permission.</summary>
     public static string? GetScope(string permission) => Map.TryGetValue(permission, out var scope) ? scope : null;
 
     /// <summary>Determines whether a permission is read-only.</summary>
-    public static bool IsRead(string permission)
-        => permission is AppPermissions.ListingsView or AppPermissions.ListingsContactView;
+    public static bool IsRead(string permission) => false;
 }
 
 /// <summary>Requires a permission.</summary>
