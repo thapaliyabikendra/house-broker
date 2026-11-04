@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import type { OnInit } from '@angular/core';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -18,6 +19,7 @@ import type { ListingSearchCriteria } from '../../../core/data/listings-data.ser
   imports: [
     ReactiveFormsModule,
     RouterLink,
+    TranslocoPipe,
     LoadingStateComponent,
     EmptyStateComponent,
     ErrorStateComponent,
@@ -25,30 +27,47 @@ import type { ListingSearchCriteria } from '../../../core/data/listings-data.ser
   ],
   template: `
     <section class="search-page">
-      <h1>Search listings</h1>
+      <h1>{{ 'search.title' | transloco }}</h1>
       <form [formGroup]="criteriaForm" (ngSubmit)="applyFilters()" class="filters">
-        <input formControlName="location" placeholder="Location" />
-        <input type="number" formControlName="minPrice" placeholder="Min price" />
-        <input type="number" formControlName="maxPrice" placeholder="Max price" />
+        <input formControlName="location" [attr.placeholder]="'search.location' | transloco" />
+        <input
+          type="number"
+          formControlName="minPrice"
+          [attr.placeholder]="'search.minPrice' | transloco"
+        />
+        <input
+          type="number"
+          formControlName="maxPrice"
+          [attr.placeholder]="'search.maxPrice' | transloco"
+        />
         <select formControlName="propertyTypeId">
-          <option value="">Any type</option>
+          <option value="">{{ 'search.propertyType' | transloco }}</option>
           @for (type of store.propertyTypes(); track type.id) {
             <option [value]="type.id">{{ type.name }}</option>
           }
         </select>
-        <input type="number" formControlName="bedrooms" placeholder="Bedrooms" />
-        <button type="submit" [disabled]="store.loading()">Search</button>
+        <input
+          type="number"
+          formControlName="bedrooms"
+          [attr.placeholder]="'search.bedrooms' | transloco"
+        />
+        <button type="submit" [disabled]="store.loading()">
+          {{ 'search.submit' | transloco }}
+        </button>
       </form>
 
       @if (store.loading()) {
-        <hb-loading-state label="Loading listings..." />
+        <hb-loading-state [label]="'search.loading' | transloco" />
       } @else if (store.error()) {
         <hb-error-state
-          title="Could not load listings"
+          [title]="'search.errorTitle' | transloco"
           [description]="store.error() ?? undefined"
         />
       } @else if (store.results().length === 0) {
-        <hb-empty-state title="No listings found" description="Try adjusting your filters." />
+        <hb-empty-state
+          [title]="'search.emptyTitle' | transloco"
+          [description]="'search.emptyDescription' | transloco"
+        />
       } @else {
         <ul class="results">
           @for (listing of store.results(); track listing.id) {

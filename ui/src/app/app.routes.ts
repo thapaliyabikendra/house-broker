@@ -4,7 +4,7 @@ import { permissionGuard } from './core/auth/auth.guard';
 import { HomePlaceholderComponent } from './shared/layout/home-placeholder.component';
 
 export const routes: Routes = [
-  { path: 'auth/callback', component: AuthCallbackComponent },
+  { path: 'callback', component: AuthCallbackComponent },
   {
     path: 'broker/listings',
     loadComponent: () =>

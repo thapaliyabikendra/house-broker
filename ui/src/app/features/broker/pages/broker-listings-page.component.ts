@@ -5,7 +5,8 @@ import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
-import type { ListingSummaryDto, OwnerListingDto } from '../../../api/models';
+import { TranslocoPipe } from '@jsverse/transloco';
+import type { OwnerListingDto } from '../../../api/models';
 
 @Component({
   selector: 'hb-broker-listings-page',
@@ -16,25 +17,35 @@ import type { ListingSummaryDto, OwnerListingDto } from '../../../api/models';
     EmptyStateComponent,
     ErrorStateComponent,
     HbPricePipe,
+    TranslocoPipe,
   ],
   template: `
     <section class="my-listings">
-      <h1>My listings</h1>
-      <p><a routerLink="/broker/listings/new">Create listing</a></p>
+      <h1>{{ 'broker.listingsTitle' | transloco }}</h1>
+      <p>
+        <a routerLink="/broker/listings/new">{{ 'broker.create' | transloco }}</a>
+      </p>
 
       @if (loading()) {
-        <hb-loading-state label="Loading your listings..." />
+        <hb-loading-state [label]="'broker.loading' | transloco" />
       } @else if (error()) {
-        <hb-error-state [title]="error() ?? 'Error'" (retry)="load()" actionLabel="Retry" />
+        <hb-error-state [title]="error() ?? 'Error'" (retry)="load()" [actionLabel]="'Retry'" />
       } @else if (listings().length === 0) {
-        <hb-empty-state title="No listings yet" description="Create your first listing." />
+        <hb-empty-state
+          [title]="'broker.emptyTitle' | transloco"
+          [description]="'broker.emptyDescription' | transloco"
+        />
       } @else {
         <ul class="listing-list">
           @for (listing of listings(); track listing.id) {
             <li>
               <strong>{{ listing.title }}</strong>
               <span>{{ listing.price | hbPrice }}</span>
-              <span>{{ listing.status }}</span>
+              <span class="status-chip">{{ listing.status }}</span>
+              <span
+                >{{ 'broker.commission' | transloco }}:
+                {{ listing.commissionAmount ?? 0 | hbPrice }}</span
+              >
 
               <div class="actions">
                 <a [routerLink]="['/broker/listings', listing.id, 'edit']">Edit</a>
@@ -83,7 +94,7 @@ export class BrokerListingsPageComponent {
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
-  readonly listings = signal<ListingSummaryDto[]>([]);
+  readonly listings = signal<OwnerListingDto[]>([]);
   readonly uploadingId = signal<string | null>(null);
 
   constructor() {
@@ -94,7 +105,13 @@ export class BrokerListingsPageComponent {
     this.loading.set(true);
     this.error.set(null);
     try {
-      this.listings.set(await this.listingsData.getMine());
+      const summaries = await this.listingsData.getMine();
+      const details = await Promise.all(
+        summaries
+          .filter((item) => !!item.id)
+          .map((item) => this.listingsData.getMineById(item.id as string)),
+      );
+      this.listings.set(details);
     } catch (error) {
       this.error.set(error instanceof Error ? error.message : 'Failed to load listings');
     } finally {

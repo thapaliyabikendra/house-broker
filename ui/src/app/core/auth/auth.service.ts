@@ -64,7 +64,7 @@ export class AuthService {
     this.storage.setState(state);
 
     const cfg = this.config.value();
-    const redirectUri = `${window.location.origin}/auth/callback`;
+    const redirectUri = `${window.location.origin}/callback`;
     const params = new URLSearchParams({
       client_id: cfg.clientId,
       redirect_uri: redirectUri,
@@ -101,7 +101,7 @@ export class AuthService {
     this.storage.clearPkceVerifier();
 
     const cfg = this.config.value();
-    const redirectUri = `${window.location.origin}/auth/callback`;
+    const redirectUri = `${window.location.origin}/callback`;
     const body = new URLSearchParams({
       grant_type: 'authorization_code',
       client_id: cfg.clientId,

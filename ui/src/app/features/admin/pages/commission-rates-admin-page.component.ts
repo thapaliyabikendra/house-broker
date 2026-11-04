@@ -1,6 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminCommissionRatesDataService } from '../../../core/data/admin-commission-rates-data.service';
+import { TranslocoPipe } from '@jsverse/transloco';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
@@ -9,13 +10,19 @@ import type { CommissionRateDto, CommissionRateRequest } from '../../../api/mode
 @Component({
   selector: 'hb-commission-rates-admin-page',
   standalone: true,
-  imports: [ReactiveFormsModule, LoadingStateComponent, EmptyStateComponent, ErrorStateComponent],
+  imports: [
+    ReactiveFormsModule,
+    LoadingStateComponent,
+    EmptyStateComponent,
+    ErrorStateComponent,
+    TranslocoPipe,
+  ],
   template: `
     <section class="admin-page">
       <h1>Commission rates</h1>
 
       @if (loading()) {
-        <hb-loading-state label="Loading rates..." />
+        <hb-loading-state [label]="'admin.loading' | transloco" />
       } @else if (error()) {
         <hb-error-state [title]="error() ?? 'Error'" (retry)="load()" actionLabel="Retry" />
       } @else {
@@ -44,14 +51,16 @@ import type { CommissionRateDto, CommissionRateRequest } from '../../../api/mode
                 <td>{{ rate.ratePercent }}</td>
                 <td>{{ rate.effectiveFrom }}</td>
                 <td>{{ rate.isActive ? 'Yes' : 'No' }}</td>
-                <td><button type="button" (click)="edit(rate)">Edit</button></td>
+                <td>
+                  <button type="button" (click)="edit(rate)">{{ 'admin.edit' | transloco }}</button>
+                </td>
               </tr>
             }
           </tbody>
         </table>
 
         <form [formGroup]="form" (ngSubmit)="submit()" class="rate-form">
-          <h2>{{ editingId() ? 'Edit rate' : 'New rate' }}</h2>
+          <h2>{{ editingId() ? ('admin.edit' | transloco) : ('admin.newRate' | transloco) }}</h2>
 
           <label>
             Min price
@@ -83,7 +92,7 @@ import type { CommissionRateDto, CommissionRateRequest } from '../../../api/mode
           </label>
 
           <button type="submit" [disabled]="saving() || form.invalid">
-            {{ saving() ? 'Saving...' : 'Save' }}
+            {{ saving() ? ('admin.saving' | transloco) : ('admin.save' | transloco) }}
           </button>
         </form>
       }

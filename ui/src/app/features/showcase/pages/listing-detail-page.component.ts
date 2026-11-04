@@ -8,18 +8,28 @@ import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
+import { TranslocoPipe } from '@jsverse/transloco';
 import type { ListingDetailDto } from '../../../api/models';
 
 @Component({
   selector: 'hb-listing-detail-page',
   standalone: true,
-  imports: [LoadingStateComponent, EmptyStateComponent, ErrorStateComponent, HbPricePipe],
+  imports: [
+    LoadingStateComponent,
+    EmptyStateComponent,
+    ErrorStateComponent,
+    HbPricePipe,
+    TranslocoPipe,
+  ],
   template: `
     <section class="detail-page">
       @if (loading()) {
-        <hb-loading-state label="Loading listing..." />
+        <hb-loading-state [label]="'detail.loading' | transloco" />
       } @else if (error()) {
-        <hb-error-state title="Could not load listing" [description]="error() ?? undefined" />
+        <hb-error-state
+          [title]="'detail.errorTitle' | transloco"
+          [description]="error() ?? undefined"
+        />
       } @else if (!listing()) {
         <hb-empty-state
           title="Listing not found"
@@ -55,7 +65,7 @@ import type { ListingDetailDto } from '../../../api/models';
         }
 
         <section class="contact">
-          <h2>Broker contact</h2>
+          <h2>{{ 'detail.contactTitle' | transloco }}</h2>
           @if (canViewContact() && item.brokerContact) {
             <p>{{ item.brokerContact.fullName }}</p>
             @if (item.brokerContact.email) {
@@ -65,8 +75,8 @@ import type { ListingDetailDto } from '../../../api/models';
               <p>{{ item.brokerContact.phoneNumber }}</p>
             }
           } @else {
-            <p>Sign in to view broker contact details.</p>
-            <button type="button" (click)="auth.signIn()">Sign in</button>
+            <p>{{ 'detail.contactPrompt' | transloco }}</p>
+            <button type="button" (click)="auth.signIn()">{{ 'detail.signIn' | transloco }}</button>
           }
         </section>
       }

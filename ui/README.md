@@ -1,59 +1,37 @@
-# HouseBrokerUi
+# House Broker UI
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.5.
+Angular 22 SPA for the House Broker marketplace. The app runs behind the shared nginx origin in production and signs in through the `/sso` host.
 
-## Development server
-
-To start a local development server, run:
+## Setup
 
 ```bash
-ng serve
+npm ci
+npm start
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+The dev server runs at `http://localhost:4200/` and proxies `/api` and `/sso` to the local services through `proxy.conf.json`.
 
-## Code scaffolding
+## Scripts
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+- `npm run lint` - ESLint with Angular and TypeScript rules
+- `npm run format:check` - Prettier formatting check
+- `npm run test` - Vitest unit tests
+- `npm run build` - Production build
+- `npm run api:generate` - Regenerate `src/app/api` from `../docs/swagger.json`
+- `npm run api:check` - Verify generated API client freshness
+- `npm run i18n:check` - Verify `en`/`ne` translation key parity
 
-```bash
-ng generate component component-name
-```
+## Structure
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+- `src/app/api` - generated OpenAPI client (do not edit by hand)
+- `src/app/core` - auth, HTTP interceptors, config, data, i18n, time
+- `src/app/shared` - layout, pipes, and reusable state components
+- `src/app/features` - route-level feature pages
 
-```bash
-ng generate --help
-```
+## Standards
 
-## Building
-
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- Standalone components with `OnPush` and signal-based state
+- Typed reactive forms
+- Functional HTTP interceptors for auth, correlation id, `Accept-Language`, and errors
+- OpenID Connect authorization-code + PKCE against `/sso`
+- All formatting uses `hb*` pipes instead of Angular built-in date/currency/number/percent pipes

@@ -1,1 +1,42 @@
-{ "title": "House Broker", "loading": "Loading..." }
+{
+  "title": "House Broker",
+  "loading": "Loading...",
+  "search": {
+    "title": "Search listings",
+    "location": "Location",
+    "minPrice": "Min price",
+    "maxPrice": "Max price",
+    "propertyType": "Any type",
+    "bedrooms": "Bedrooms",
+    "submit": "Search",
+    "loading": "Loading listings...",
+    "errorTitle": "Could not load listings",
+    "emptyTitle": "No listings found",
+    "emptyDescription": "Try adjusting your filters."
+  },
+  "detail": {
+    "loading": "Loading listing...",
+    "errorTitle": "Could not load listing",
+    "emptyTitle": "Listing not found",
+    "emptyDescription": "The requested listing could not be found.",
+    "contactTitle": "Broker contact",
+    "contactPrompt": "Sign in to view broker contact details.",
+    "signIn": "Sign in"
+  },
+  "broker": {
+    "listingsTitle": "My listings",
+    "create": "Create listing",
+    "loading": "Loading your listings...",
+    "emptyTitle": "No listings yet",
+    "emptyDescription": "Create your first listing.",
+    "commission": "Commission"
+  },
+  "admin": {
+    "title": "Commission rates",
+    "loading": "Loading rates...",
+    "save": "Save",
+    "saving": "Saving...",
+    "edit": "Edit",
+    "newRate": "New rate"
+  }
+}
