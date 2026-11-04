@@ -19,7 +19,7 @@ public sealed class ListingFeatureTests
     {
         var unknownFeatureId = Guid.NewGuid();
         var (service, _, queries, _) = CreateService();
-        queries.Setup(query => query.GetFeaturesAsync(It.IsAny<CancellationToken>()))
+        queries.Setup(query => query.GetFeaturesByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<Feature>());
 
         var request = CreateRequest();
@@ -38,7 +38,7 @@ public sealed class ListingFeatureTests
     {
         var feature = Feature.Create("POOL", "Swimming pool", 1);
         var (service, _, queries, _) = CreateService();
-        queries.Setup(query => query.GetFeaturesAsync(It.IsAny<CancellationToken>()))
+        queries.Setup(query => query.GetFeaturesByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { feature });
 
         var request = CreateRequest();

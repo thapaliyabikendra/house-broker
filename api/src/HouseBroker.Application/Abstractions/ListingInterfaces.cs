@@ -52,4 +52,7 @@ public interface IListingQueries
 
     /// <summary>Gets features.</summary>
     Task<IReadOnlyList<Feature>> GetFeaturesAsync(CancellationToken cancellationToken);
+
+    /// <summary>Gets features by identifier from the database.</summary>
+    Task<IReadOnlyList<Feature>> GetFeaturesByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken);
 }

@@ -15,7 +15,7 @@ public sealed class CommissionRateProvider(AppDbContext dbContext) : ICommission
     {
         return await _dbContext.CommissionRates
             .AsNoTracking()
-            .Where(rate => rate.IsActive && rate.EffectiveFrom <= effectiveAtUtc)
+            .Where(rate => rate.IsActive)
             .ToListAsync(cancellationToken);
     }
 }

@@ -494,7 +494,7 @@ public sealed class ListingService(
             return new Dictionary<Guid, Feature>();
         }
 
-        var features = await _queries.GetFeaturesAsync(cancellationToken);
+        var features = await _queries.GetFeaturesByIdsAsync(featureIds, cancellationToken);
         return features
             .GroupBy(feature => feature.Id)
             .ToDictionary(group => group.Key, group => group.First());

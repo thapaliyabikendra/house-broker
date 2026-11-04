@@ -191,4 +191,20 @@ public sealed class ListingQueries(AppDbContext dbContext) : IListingQueries
     {
         return await _dbContext.Features.AsNoTracking().OrderBy(item => item.SortOrder).ToListAsync(cancellationToken);
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<HouseBroker.Domain.Feature>> GetFeaturesByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken)
+    {
+        if (ids is null || ids.Count == 0)
+        {
+            return Array.Empty<HouseBroker.Domain.Feature>();
+        }
+
+        var distinctIds = ids.Distinct().ToArray();
+        return await _dbContext.Features
+            .AsNoTracking()
+            .Where(feature => distinctIds.Contains(feature.Id))
+            .OrderBy(feature => feature.SortOrder)
+            .ToListAsync(cancellationToken);
+    }
 }

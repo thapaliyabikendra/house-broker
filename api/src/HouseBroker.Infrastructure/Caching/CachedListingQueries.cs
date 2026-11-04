@@ -117,6 +117,25 @@ public sealed class CachedListingQueries(IListingQueries inner, ICacheService ca
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<HouseBroker.Domain.Feature>> GetFeaturesByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken)
+    {
+        if (ids is null || ids.Count == 0)
+        {
+            return Array.Empty<HouseBroker.Domain.Feature>();
+        }
+
+        if (!CacheEnabled)
+        {
+            return await _inner.GetFeaturesByIdsAsync(ids, cancellationToken);
+        }
+
+        var token = await _cache.GetOrCreateAsync(MemoryCacheService.ListingCacheTokenKey, _ => Task.FromResult(Guid.NewGuid().ToString("N")), null, cancellationToken);
+        var idKey = string.Join(",", ids.Distinct().OrderBy(id => id));
+        var key = $"listing:{token}:lookup:features-by-ids:{Culture}:{idKey}";
+        return await _cache.GetOrCreateAsync(key, async ct => await _inner.GetFeaturesByIdsAsync(ids, ct), TimeSpan.FromMinutes(30), cancellationToken);
+    }
+
+    /// <inheritdoc />
     public Task UpsertBrokerProfileAsync(HouseBroker.Domain.BrokerProfile profile, CancellationToken cancellationToken)
         => _inner.UpsertBrokerProfileAsync(profile, cancellationToken);
 

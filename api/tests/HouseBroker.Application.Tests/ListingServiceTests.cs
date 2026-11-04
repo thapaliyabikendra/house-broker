@@ -121,7 +121,7 @@ public sealed class ListingServiceTests
         rates.Setup(provider => provider.GetActiveAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { CommissionRate.Create(0m, true, null, false, 3m, true, DateTime.MinValue) });
         unitOfWork.Setup(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success<int>(1));
-        queries.Setup(q => q.GetFeaturesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<Feature>());
+        queries.Setup(q => q.GetFeaturesByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<Feature>());
 
         var service = new ListingService(
             repository.Object,

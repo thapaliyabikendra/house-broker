@@ -151,7 +151,7 @@ public sealed class RateLimitingTests
     {
         var method = controller.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public)
             ?? throw new InvalidOperationException($"Method {controller.Name}.{methodName} was not found.");
-        return method.GetCustomAttribute<EnableRateLimitingAttribute>()?.PolicyName;
+        return method.GetCustomAttributes<EnableRateLimitingAttribute>().FirstOrDefault()?.PolicyName;
     }
 
     private static void AssertDocuments429(Type controller)

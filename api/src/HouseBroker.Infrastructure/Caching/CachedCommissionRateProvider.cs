@@ -23,7 +23,9 @@ public sealed class CachedCommissionRateProvider(ICommissionRateProvider inner, 
         }
 
         var token = await _cache.GetOrCreateAsync(MemoryCacheService.CommissionRateCacheTokenKey, _ => Task.FromResult(Guid.NewGuid().ToString("N")), TimeSpan.FromDays(30), cancellationToken);
-        var key = $"commission:{token}:active:{effectiveAtUtc:O}";
+        // The list of active tiers is time-independent at the query level; the calculator
+        // applies EffectiveFrom. Keying by token only avoids a cache miss on every second.
+        var key = $"commission:{token}:active";
         return await _cache.GetOrCreateAsync(key, async ct => await _inner.GetActiveAsync(effectiveAtUtc, ct), TimeSpan.FromMinutes(30), cancellationToken);
     }
 }
