@@ -43,11 +43,15 @@
     "account": "Account"
   },
   "footer": {
-    "text": "House Broker"
+    "tagline": "Property listings for seekers and brokers.",
+    "copyright": "© {{year}} House Broker. All rights reserved.",
+    "privacy": "Privacy"
   },
   "home": {
-    "welcome": "Welcome",
-    "signedInAs": "Signed in as {{name}}"
+    "signedInAs": "Signed in as {{name}}",
+    "heroTitle": "Find your next home",
+    "heroLead": "Search active listings by location, or browse them all.",
+    "browseAll": "Browse all listings"
   },
   "search": {
     "title": "Search listings",
@@ -64,7 +68,11 @@
     "sort": "Sort",
     "sortDefault": "Default",
     "sortPriceAsc": "Price: low to high",
-    "sortPriceDesc": "Price: high to low"
+    "sortPriceDesc": "Price: high to low",
+    "clearFilters": "Clear all",
+    "activeFilters": "Active filters",
+    "removeFilter": "Remove filter",
+    "resultCount": "{{count}} listings found"
   },
   "detail": {
     "loading": "Loading listing...",
@@ -72,14 +80,17 @@
     "emptyTitle": "Listing not found",
     "emptyDescription": "The requested listing could not be found.",
     "contactTitle": "Broker contact",
-    "contactPrompt": "Sign in to view broker contact details.",
-    "signIn": "Sign in",
     "bedrooms": "bedrooms",
     "bathrooms": "bathrooms",
     "sqft": "sq ft",
-    "imageAlt": "Listing image",
-    "contactDenied": "You do not have permission to view broker contact details.",
-    "back": "Back to search"
+    "back": "Back to search",
+    "description": "Description",
+    "features": "Features",
+    "factBedrooms": "Bedrooms",
+    "factBathrooms": "Bathrooms",
+    "factArea": "Area",
+    "photoAlt": "{{title}}, photo {{index}} of {{total}}",
+    "contactUnavailable": "No broker contact is available for this listing."
   },
   "broker": {
     "listingsTitle": "My listings",
@@ -123,7 +134,14 @@
       "cityError": "City is required.",
       "postalCodeError": "Postal code must be 5 digits.",
       "features": "Features",
-      "staleReload": "Someone else changed this listing. Reload to see their version? Your unsaved edits will be replaced."
+      "staleReload": "Someone else changed this listing. Reload to see their version? Your unsaved edits will be replaced.",
+      "groupBasics": "Basics",
+      "groupPriceType": "Price and type",
+      "groupLocation": "Location",
+      "groupDetails": "Details",
+      "priceHint": "Digits only, for example 5000000",
+      "discardConfirm": "Discard your unsaved changes?",
+      "discard": "Discard"
     },
     "publishConfirm": "Publish this listing?",
     "sellConfirm": "Mark this listing as sold?",
@@ -136,6 +154,14 @@
       "active": "Active",
       "sold": "Sold",
       "archived": "Archived"
+    },
+    "more": "More",
+    "moreActionsFor": "More actions for {{title}}",
+    "photos": "Photos",
+    "filter": {
+      "label": "Filter by status",
+      "all": "All",
+      "empty": "No listings with this status."
     }
   },
   "admin": {
@@ -150,15 +176,15 @@
     "ratePercent": "Rate %",
     "effectiveFrom": "Effective from",
     "active": "Active",
-    "inclusive": "incl",
-    "exclusive": "excl",
-    "open": "open",
     "yes": "Yes",
     "no": "No",
     "minPrice": "Min price",
     "minInclusive": "Min inclusive",
     "maxPrice": "Max price",
     "maxInclusive": "Max inclusive",
-    "staleReload": "Someone else changed this rate. Reload to see the latest version? Your unsaved edits will be replaced."
+    "staleReload": "Someone else changed this rate. Reload to see the latest version? Your unsaved edits will be replaced.",
+    "nonRetroactive": "This rate applies only from its effective date. Commission already stored on listings is not changed; a listing uses the new rate when its price next changes.",
+    "bandPreview": "Band",
+    "andAbove": "and above"
   }
 }

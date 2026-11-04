@@ -1,7 +1,6 @@
 ﻿import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AuthService } from '../../../core/auth/auth.service';
 import { ListingsDataService } from '../../../core/data/listings-data.service';
 import { RuntimeConfigService } from '../../../core/config/runtime-config.service';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
@@ -9,7 +8,7 @@ import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
-import type { ListingDetailDto } from '../../../api/models';
+import type { ListingDetailDto, ListingImageDto } from '../../../api/models';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 
@@ -51,7 +50,7 @@ import { MatButtonModule } from '@angular/material/button';
                 >
               </mat-card-header>
               <mat-card-content>
-                <p class="price">{{ item.price | hbPrice }}</p>
+                <p class="price">{{ item.price | hbPrice: wholeAmount }}</p>
 
                 <dl class="facts">
                   <div>
@@ -86,13 +85,17 @@ import { MatButtonModule } from '@angular/material/button';
 
             @if (item.images && item.images.length > 0) {
               <div class="gallery">
-                @for (image of item.images; track image.id; let i = $index) {
+                @for (image of sortedImages(item); track image.id; let i = $index) {
                   <img
                     class="gallery-image"
                     [class.hero-image]="i === 0"
                     [src]="imageUrl(item.id ?? '', image.id ?? '')"
-                    [alt]="(item.title || ('detail.imageAlt' | transloco)) + ' ' + (i + 1)"
-                    loading="lazy"
+                    [alt]="
+                      'detail.photoAlt'
+                        | transloco
+                          : { title: item.title ?? '', index: i + 1, total: item.images.length }
+                    "
+                    [attr.loading]="i === 0 ? 'eager' : 'lazy'"
                   />
                 }
               </div>
@@ -105,7 +108,8 @@ import { MatButtonModule } from '@angular/material/button';
                 <mat-card-title>{{ 'detail.contactTitle' | transloco }}</mat-card-title>
               </mat-card-header>
               <mat-card-content>
-                @if (canViewContact() && item.brokerContact) {
+                <!-- Broker contact is shown to every caller (AGENTS.md: listing detail is anonymous). -->
+                @if (item.brokerContact) {
                   <p class="contact-name">{{ item.brokerContact.fullName }}</p>
                   @if (item.brokerContact.email) {
                     <p>{{ item.brokerContact.email }}</p>
@@ -114,14 +118,7 @@ import { MatButtonModule } from '@angular/material/button';
                     <p>{{ item.brokerContact.phoneNumber }}</p>
                   }
                 } @else {
-                  @if (auth.isAuthenticated()) {
-                    <p>{{ 'detail.contactDenied' | transloco }}</p>
-                  } @else {
-                    <p>{{ 'detail.contactPrompt' | transloco }}</p>
-                    <button mat-raised-button color="primary" type="button" (click)="auth.signIn()">
-                      {{ 'detail.signIn' | transloco }}
-                    </button>
-                  }
+                  <p>{{ 'detail.contactUnavailable' | transloco }}</p>
                 }
               </mat-card-content>
             </mat-card>
@@ -229,7 +226,6 @@ export class ListingDetailPageComponent {
   private readonly listingsData = inject(ListingsDataService);
   private readonly config = inject(RuntimeConfigService);
   private readonly transloco = inject(TranslocoService);
-  readonly auth = inject(AuthService);
 
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
@@ -254,8 +250,16 @@ export class ListingDetailPageComponent {
     }
   }
 
-  canViewContact(): boolean {
-    return this.auth.hasPermission('listings:contact:view') && this.auth.hasScope('contacts.read');
+  /** Listing prices are whole amounts; hide the fractional part. */
+  readonly wholeAmount: Intl.NumberFormatOptions = { maximumFractionDigits: 0 };
+
+  /** Primary photo first, then sort order; the first photo is the hero image. */
+  sortedImages(listing: ListingDetailDto): ListingImageDto[] {
+    return [...(listing.images ?? [])].sort(
+      (a, b) =>
+        Number(b.isPrimary ?? false) - Number(a.isPrimary ?? false) ||
+        Number(a.sortOrder ?? 0) - Number(b.sortOrder ?? 0),
+    );
   }
 
   imageUrl(listingId: string, imageId: string): string {

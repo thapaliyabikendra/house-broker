@@ -77,6 +77,12 @@ public sealed class ListingSummaryDto
     /// <summary>Gets or sets the status.</summary>
     public string Status { get; set; } = string.Empty;
 
+    /// <summary>Gets or sets the property type identifier.</summary>
+    public Guid PropertyTypeId { get; set; }
+
+    /// <summary>Gets or sets the primary image identifier used for the search thumbnail; null when the listing has no image.</summary>
+    public Guid? PrimaryImageId { get; set; }
+
     /// <summary>Gets or sets the created timestamp.</summary>
     public DateTime CreatedAt { get; set; }
 }

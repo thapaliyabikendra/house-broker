@@ -9,6 +9,7 @@ import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
+import { RuntimeConfigService } from '../../../core/config/runtime-config.service';
 import type { ListingSearchCriteria } from '../../../core/data/listings-data.service';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -138,12 +139,16 @@ const SORT_LABEL_KEYS: Record<string, string> = {
       </mat-card>
 
       @if (activeFilters().length > 0) {
-        <div class="active-filters" role="group" [attr.aria-label]="'search.activeFilters' | transloco">
+        <div
+          class="active-filters"
+          role="group"
+          [attr.aria-label]="'search.activeFilters' | transloco"
+        >
           @for (filter of activeFilters(); track filter.key) {
             <button type="button" class="filter-chip" (click)="removeFilter(filter.key)">
               <span>{{ filter.labelKey | transloco }}:</span>
               @if (filter.kind === 'price') {
-                <span>{{ filter.value | hbPrice }}</span>
+                <span>{{ filter.value | hbPrice: wholeAmount }}</span>
               } @else if (filter.valueKey) {
                 <span>{{ filter.valueKey | transloco }}</span>
               } @else {
@@ -177,6 +182,18 @@ const SORT_LABEL_KEYS: Record<string, string> = {
         <div class="results">
           @for (listing of store.results(); track listing.id) {
             <mat-card appearance="outlined" class="result-card">
+              @if (listing.primaryImageId) {
+                <!-- Decorative: the title link beside it already names the listing. -->
+                <img
+                  mat-card-image
+                  class="thumb"
+                  alt=""
+                  loading="lazy"
+                  [src]="imageUrl(listing.id ?? '', listing.primaryImageId)"
+                />
+              } @else {
+                <div class="thumb thumb-placeholder" aria-hidden="true"></div>
+              }
               <mat-card-header>
                 <mat-card-title>
                   <a class="stretched" [routerLink]="['/listings', listing.id]">{{
@@ -186,7 +203,8 @@ const SORT_LABEL_KEYS: Record<string, string> = {
                 <mat-card-subtitle>{{ listing.city }}, {{ listing.locality }}</mat-card-subtitle>
               </mat-card-header>
               <mat-card-content>
-                <p class="price">{{ listing.price | hbPrice }}</p>
+                <p class="listing-type">{{ propertyTypeName(listing.propertyTypeId) }}</p>
+                <p class="price">{{ listing.price | hbPrice: wholeAmount }}</p>
                 <p class="facts">
                   {{ listing.bedrooms ?? '–' }} {{ 'detail.bedrooms' | transloco }} ·
                   {{ listing.bathrooms ?? '–' }} {{ 'detail.bathrooms' | transloco }}
@@ -255,6 +273,15 @@ const SORT_LABEL_KEYS: Record<string, string> = {
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 1rem;
     }
+    .thumb {
+      display: block;
+      inline-size: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+    }
+    .thumb-placeholder {
+      background: var(--mat-sys-surface-container-high);
+    }
     .result-card {
       position: relative;
     }
@@ -274,6 +301,14 @@ const SORT_LABEL_KEYS: Record<string, string> = {
     .stretched:focus-visible::after {
       outline: 2px solid var(--mat-sys-primary);
       outline-offset: 2px;
+    }
+    .listing-type {
+      margin: 0;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--mat-sys-primary);
     }
     .price {
       font-size: 1.1rem;
@@ -303,6 +338,18 @@ export class SearchPageComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   readonly store = inject(SearchStore);
+  private readonly config = inject(RuntimeConfigService);
+  /** Listing prices are whole amounts; hide the fractional part. */
+  readonly wholeAmount: Intl.NumberFormatOptions = { maximumFractionDigits: 0 };
+
+  /** Display name for a property type id, from the lookup list; empty while it loads or if unknown. */
+  propertyTypeName(propertyTypeId: string | null | undefined): string {
+    return this.store.propertyTypes().find((type) => type.id === propertyTypeId)?.name ?? '';
+  }
+
+  imageUrl(listingId: string, imageId: string): string {
+    return `${this.config.value().apiBaseUrl}/v1/listings/${listingId}/images/${imageId}`;
+  }
 
   readonly pageIndex = signal(0);
 
@@ -426,7 +473,14 @@ export class SearchPageComponent implements OnInit {
   }
 
   async clearFilters(): Promise<void> {
-    this.criteriaForm.reset({ location: '', minPrice: null, maxPrice: null, propertyTypeId: '', bedrooms: null, sort: '' });
+    this.criteriaForm.reset({
+      location: '',
+      minPrice: null,
+      maxPrice: null,
+      propertyTypeId: '',
+      bedrooms: null,
+      sort: '',
+    });
     await this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {

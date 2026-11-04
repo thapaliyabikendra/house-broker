@@ -31,7 +31,7 @@ function baseProviders(confirmService: { confirm: ReturnType<typeof vi.fn> }) {
     provideTranslocoLocale(),
     provideTranslocoLocaleLangMapping({ en: 'en-IN', ne: 'ne-NP' }),
     { provide: Router, useValue: { navigate: vi.fn() } },
-    { provide: ActivatedRoute, useValue: { snapshot: {} } },
+    { provide: ActivatedRoute, useValue: { snapshot: { data: {} } } },
     { provide: ConfirmService, useValue: confirmService },
   ];
 }

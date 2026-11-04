@@ -37,9 +37,13 @@ import { MatInputModule } from '@angular/material/input';
       <p class="secondary-actions">
         <a mat-stroked-button routerLink="/search">{{ 'home.browseAll' | transloco }}</a>
         @if (auth.user(); as user) {
-          <span>{{ 'home.signedInAs' | transloco: { name: user.name ?? ('header.account' | transloco) } }}</span>
+          <span>{{
+            'home.signedInAs' | transloco: { name: user.name ?? ('header.account' | transloco) }
+          }}</span>
         } @else {
-          <button mat-button type="button" (click)="signIn()">{{ 'header.signIn' | transloco }}</button>
+          <button mat-button type="button" (click)="signIn()">
+            {{ 'header.signIn' | transloco }}
+          </button>
         }
       </p>
     </section>

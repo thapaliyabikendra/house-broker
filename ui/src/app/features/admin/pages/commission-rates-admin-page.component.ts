@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, ElementRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { focusFirstInvalid } from '../../../shared/forms/focus-first-invalid';
 import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -20,6 +21,14 @@ import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTableModule } from '@angular/material/table';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+
+interface BandPreview {
+  min: number | null;
+  minInclusive: boolean;
+  max: number | null;
+  maxInclusive: boolean;
+  rate: number | null;
+}
 
 @Component({
   selector: 'hb-commission-rates-admin-page',
@@ -56,125 +65,145 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
           [actionLabel]="'common.retry' | transloco"
         />
       } @else {
-        <mat-card appearance="outlined" class="table-card">
-          <mat-card-content>
-            <div class="table-scroll">
-              <table mat-table [dataSource]="rates()" class="rates-table">
-                <ng-container matColumnDef="min">
-                  <th mat-header-cell *matHeaderCellDef>{{ 'admin.min' | transloco }}</th>
-                  <td mat-cell *matCellDef="let rate">
-                    {{ rate.minPrice | hbPrice }} ({{
-                      rate.minInclusive
-                        ? ('admin.inclusive' | transloco)
-                        : ('admin.exclusive' | transloco)
-                    }})
-                  </td>
-                </ng-container>
-                <ng-container matColumnDef="max">
-                  <th mat-header-cell *matHeaderCellDef>{{ 'admin.max' | transloco }}</th>
-                  <td mat-cell *matCellDef="let rate">
-                    @if (rate.maxPrice !== null && rate.maxPrice !== undefined) {
-                      {{ rate.maxPrice | hbPrice }} ({{
-                        rate.maxInclusive
-                          ? ('admin.inclusive' | transloco)
-                          : ('admin.exclusive' | transloco)
-                      }})
-                    } @else {
-                      {{ 'admin.open' | transloco }}
-                    }
-                  </td>
-                </ng-container>
-                <ng-container matColumnDef="rate">
-                  <th mat-header-cell *matHeaderCellDef>{{ 'admin.ratePercent' | transloco }}</th>
-                  <td mat-cell *matCellDef="let rate">
-                    {{ rate.ratePercent | hbNumber: percentOptions }}%
-                  </td>
-                </ng-container>
-                <ng-container matColumnDef="effective">
-                  <th mat-header-cell *matHeaderCellDef>{{ 'admin.effectiveFrom' | transloco }}</th>
-                  <td mat-cell *matCellDef="let rate">{{ rate.effectiveFrom | hbDateTime }}</td>
-                </ng-container>
-                <ng-container matColumnDef="active">
-                  <th mat-header-cell *matHeaderCellDef>{{ 'admin.active' | transloco }}</th>
-                  <td mat-cell *matCellDef="let rate">
-                    {{ rate.isActive ? ('admin.yes' | transloco) : ('admin.no' | transloco) }}
-                  </td>
-                </ng-container>
-                <ng-container matColumnDef="actions">
-                  <th mat-header-cell *matHeaderCellDef></th>
-                  <td mat-cell *matCellDef="let rate">
-                    <button mat-stroked-button type="button" (click)="edit(rate)">
-                      {{ 'admin.edit' | transloco }}
-                    </button>
-                  </td>
-                </ng-container>
-
-                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-                <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
-              </table>
-            </div>
-          </mat-card-content>
-        </mat-card>
-
-        <mat-card appearance="outlined" class="rate-card">
-          <mat-card-header>
-            <mat-card-title>
-              {{ editingId() ? ('admin.edit' | transloco) : ('admin.newRate' | transloco) }}
-            </mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            @if (actionError()) {
-              <p class="action-error" role="alert">{{ actionError() }}</p>
-            }
-            <form [formGroup]="form" (ngSubmit)="submit()" class="rate-form">
-              <mat-form-field appearance="outline">
-                <mat-label>{{ 'admin.minPrice' | transloco }}</mat-label>
-                <input matInput type="number" formControlName="minPrice" />
-              </mat-form-field>
-
-              <mat-slide-toggle formControlName="minInclusive" color="primary">
-                {{ 'admin.minInclusive' | transloco }}
-              </mat-slide-toggle>
-
-              <mat-form-field appearance="outline">
-                <mat-label>{{ 'admin.maxPrice' | transloco }}</mat-label>
-                <input matInput type="number" formControlName="maxPrice" />
-              </mat-form-field>
-
-              <mat-slide-toggle formControlName="maxInclusive" color="primary">
-                {{ 'admin.maxInclusive' | transloco }}
-              </mat-slide-toggle>
-
-              <mat-form-field appearance="outline">
-                <mat-label>{{ 'admin.ratePercent' | transloco }}</mat-label>
-                <input matInput type="number" formControlName="ratePercent" />
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>{{ 'admin.effectiveFrom' | transloco }}</mat-label>
-                <input matInput type="datetime-local" formControlName="effectiveFrom" />
-              </mat-form-field>
-
-              <mat-slide-toggle formControlName="isActive" color="primary">
-                {{ 'admin.active' | transloco }}
-              </mat-slide-toggle>
-
-              <div class="actions">
-                @if (editingId()) {
-                  <button mat-button type="button" (click)="cancelEdit()">
-                    {{ 'common.cancel' | transloco }}
-                  </button>
-                }
-                <button mat-raised-button color="primary" type="submit" [disabled]="saving()">
-                  @if (saving()) {
-                    <mat-spinner diameter="20" />
-                  }
-                  {{ saving() ? ('admin.saving' | transloco) : ('admin.save' | transloco) }}
+        <div class="admin-layout">
+          <mat-card appearance="outlined" class="table-card">
+            <mat-card-content>
+              <div class="table-toolbar">
+                <button mat-raised-button type="button" (click)="startNew()">
+                  {{ 'admin.newRate' | transloco }}
                 </button>
               </div>
-            </form>
-          </mat-card-content>
-        </mat-card>
+              <div class="table-scroll">
+                <table mat-table [dataSource]="rates()" class="rates-table">
+                  <ng-container matColumnDef="min">
+                    <th mat-header-cell *matHeaderCellDef>{{ 'admin.min' | transloco }}</th>
+                    <td mat-cell *matCellDef="let rate">
+                      {{ rate.minInclusive ? '≥' : '>' }} {{ rate.minPrice | hbPrice }}
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="max">
+                    <th mat-header-cell *matHeaderCellDef>{{ 'admin.max' | transloco }}</th>
+                    <td mat-cell *matCellDef="let rate">
+                      @if (rate.maxPrice !== null && rate.maxPrice !== undefined) {
+                        {{ rate.maxInclusive ? '≤' : '<' }} {{ rate.maxPrice | hbPrice }}
+                      } @else {
+                        {{ 'admin.andAbove' | transloco }}
+                      }
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="rate">
+                    <th mat-header-cell *matHeaderCellDef>{{ 'admin.ratePercent' | transloco }}</th>
+                    <td mat-cell *matCellDef="let rate">
+                      {{ rate.ratePercent | hbNumber: percentOptions }}%
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="effective">
+                    <th mat-header-cell *matHeaderCellDef>
+                      {{ 'admin.effectiveFrom' | transloco }}
+                    </th>
+                    <td mat-cell *matCellDef="let rate">{{ rate.effectiveFrom | hbDateTime }}</td>
+                  </ng-container>
+                  <ng-container matColumnDef="active">
+                    <th mat-header-cell *matHeaderCellDef>{{ 'admin.active' | transloco }}</th>
+                    <td mat-cell *matCellDef="let rate">
+                      {{ rate.isActive ? ('admin.yes' | transloco) : ('admin.no' | transloco) }}
+                    </td>
+                  </ng-container>
+                  <ng-container matColumnDef="actions">
+                    <th mat-header-cell *matHeaderCellDef></th>
+                    <td mat-cell *matCellDef="let rate">
+                      <button mat-stroked-button type="button" (click)="edit(rate)">
+                        {{ 'admin.edit' | transloco }}
+                      </button>
+                    </td>
+                  </ng-container>
+
+                  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                  <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+                </table>
+              </div>
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card appearance="outlined" class="rate-card">
+            <mat-card-header>
+              <mat-card-title>
+                {{ editingId() ? ('admin.edit' | transloco) : ('admin.newRate' | transloco) }}
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <p class="note">{{ 'admin.nonRetroactive' | transloco }}</p>
+              @if (actionError()) {
+                <p class="action-error" role="alert">{{ actionError() }}</p>
+              }
+              <form [formGroup]="form" (ngSubmit)="submit()" class="rate-form">
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ 'admin.minPrice' | transloco }}</mat-label>
+                  <input matInput type="number" formControlName="minPrice" />
+                </mat-form-field>
+
+                <mat-slide-toggle formControlName="minInclusive" color="primary">
+                  {{ 'admin.minInclusive' | transloco }}
+                </mat-slide-toggle>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ 'admin.maxPrice' | transloco }}</mat-label>
+                  <input matInput type="number" formControlName="maxPrice" />
+                </mat-form-field>
+
+                <mat-slide-toggle formControlName="maxInclusive" color="primary">
+                  {{ 'admin.maxInclusive' | transloco }}
+                </mat-slide-toggle>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ 'admin.ratePercent' | transloco }}</mat-label>
+                  <input matInput type="number" formControlName="ratePercent" />
+                  <span matTextSuffix>%</span>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>{{ 'admin.effectiveFrom' | transloco }}</mat-label>
+                  <input matInput type="datetime-local" formControlName="effectiveFrom" />
+                </mat-form-field>
+
+                <mat-slide-toggle formControlName="isActive" color="primary">
+                  {{ 'admin.active' | transloco }}
+                </mat-slide-toggle>
+
+                @if (preview(); as p) {
+                  <p class="band-preview" aria-live="polite">
+                    <span class="band-label">{{ 'admin.bandPreview' | transloco }}:</span>
+                    @if (p.min !== null) {
+                      <span>{{ p.minInclusive ? '≥' : '>' }} {{ p.min | hbPrice }}</span>
+                    }
+                    @if (p.max !== null) {
+                      <span>{{ p.maxInclusive ? '≤' : '<' }} {{ p.max | hbPrice }}</span>
+                    } @else {
+                      <span>{{ 'admin.andAbove' | transloco }}</span>
+                    }
+                    @if (p.rate !== null) {
+                      <span>→ {{ p.rate | hbNumber: percentOptions }}%</span>
+                    }
+                  </p>
+                }
+
+                <div class="actions">
+                  @if (editingId()) {
+                    <button mat-button type="button" (click)="cancelEdit()">
+                      {{ 'common.cancel' | transloco }}
+                    </button>
+                  }
+                  <button mat-raised-button color="primary" type="submit" [disabled]="saving()">
+                    @if (saving()) {
+                      <mat-spinner diameter="20" />
+                    }
+                    {{ saving() ? ('admin.saving' | transloco) : ('admin.save' | transloco) }}
+                  </button>
+                </div>
+              </form>
+            </mat-card-content>
+          </mat-card>
+        </div>
       }
     </section>
   `,
@@ -190,8 +219,45 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     .rates-table {
       width: 100%;
     }
+    .admin-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(20rem, 26rem);
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .table-toolbar {
+      display: flex;
+      justify-content: flex-end;
+      margin-block-end: 0.75rem;
+    }
     .rate-card {
-      max-inline-size: 32rem;
+      position: sticky;
+      inset-block-start: 1rem;
+    }
+    .note {
+      margin: 0 0 1rem;
+      color: var(--mat-sys-on-surface-variant);
+      font-size: 0.9rem;
+    }
+    .band-preview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0;
+      padding: 0.5rem 0.75rem;
+      border-radius: 8px;
+      background: var(--mat-sys-surface-container-low);
+    }
+    .band-label {
+      font-weight: 500;
+    }
+    @media (max-width: 900px) {
+      .admin-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .rate-card {
+        position: static;
+      }
     }
     .rate-form {
       display: grid;
@@ -243,8 +309,29 @@ export class CommissionRatesAdminPageComponent {
     isActive: new FormControl<boolean>(true, { nonNullable: true }),
   });
 
+  /** Live summary of the band being entered, so overlaps and gaps are visible before saving. */
+  readonly preview = signal<BandPreview | null>(null);
+
   constructor() {
+    this.form.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.updatePreview());
     void this.load();
+  }
+
+  private updatePreview(): void {
+    const value = this.form.getRawValue();
+    this.preview.set({
+      min: value.minPrice,
+      minInclusive: value.minInclusive,
+      max: value.maxPrice,
+      maxInclusive: value.maxInclusive,
+      rate: value.ratePercent,
+    });
+  }
+
+  /** Clears the form for a new tier and moves focus to its first field. */
+  startNew(): void {
+    this.cancelEdit();
+    this.host.nativeElement.querySelector<HTMLInputElement>('.rate-form input')?.focus();
   }
 
   async load(): Promise<void> {

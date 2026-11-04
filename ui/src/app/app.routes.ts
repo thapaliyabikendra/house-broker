@@ -1,7 +1,6 @@
 import type { Routes } from '@angular/router';
 import { AuthCallbackComponent } from './core/auth/auth-callback.component';
 import { authGuard, permissionGuard } from './core/auth/auth.guard';
-import { HomePlaceholderComponent } from './shared/layout/home-placeholder.component';
 
 export const routes: Routes = [
   { path: 'callback', component: AuthCallbackComponent },
@@ -25,23 +24,24 @@ export const routes: Routes = [
         (m) => m.ListingDetailPageComponent,
       ),
   },
+  // Deep links to the editor: the list page opens the create/edit dialog from this data.
   {
     path: 'broker/listings/new',
     canActivate: [authGuard],
+    data: { editor: 'new' },
     loadComponent: () =>
-      import('./features/broker/pages/broker-listing-editor.component').then(
-        (m) => m.BrokerListingEditorComponent,
+      import('./features/broker/pages/broker-listings-page.component').then(
+        (m) => m.BrokerListingsPageComponent,
       ),
-    canDeactivate: [unsavedChangesGuard],
   },
   {
     path: 'broker/listings/:id/edit',
     canActivate: [authGuard],
+    data: { editor: 'edit' },
     loadComponent: () =>
-      import('./features/broker/pages/broker-listing-editor.component').then(
-        (m) => m.BrokerListingEditorComponent,
+      import('./features/broker/pages/broker-listings-page.component').then(
+        (m) => m.BrokerListingsPageComponent,
       ),
-    canDeactivate: [unsavedChangesGuard],
   },
   {
     path: 'admin/commission-rates',
@@ -51,5 +51,9 @@ export const routes: Routes = [
         (m) => m.CommissionRatesAdminPageComponent,
       ),
   },
-  { path: '', component: HomePlaceholderComponent },
+  {
+    path: '',
+    loadComponent: () =>
+      import('./shared/layout/home-placeholder.component').then((m) => m.HomePlaceholderComponent),
+  },
 ];

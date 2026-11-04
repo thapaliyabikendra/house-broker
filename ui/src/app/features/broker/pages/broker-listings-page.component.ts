@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import type { OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
+import { MatDialog } from '@angular/material/dialog';
+import {
+  ListingEditorDialogComponent,
+  type ListingEditorDialogData,
+} from '../components/listing-editor-dialog.component';
 import { HttpEventType } from '@angular/common/http';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ListingsDataService } from '../../../core/data/listings-data.service';
@@ -23,7 +29,6 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    RouterLink,
     LoadingStateComponent,
     EmptyStateComponent,
     ErrorStateComponent,
@@ -40,9 +45,9 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     <section class="my-listings">
       <div class="header-row">
         <h1>{{ 'broker.listingsTitle' | transloco }}</h1>
-        <a mat-raised-button color="primary" routerLink="/broker/listings/new">{{
-          'broker.create' | transloco
-        }}</a>
+        <button mat-raised-button color="primary" type="button" (click)="openEditor(null)">
+          {{ 'broker.create' | transloco }}
+        </button>
       </div>
 
       @if (actionError()) {
@@ -69,11 +74,21 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
             [value]="statusFilter()"
             (change)="setFilter($event.value)"
           >
-            <mat-chip-option value="all">{{ 'broker.filter.all' | transloco }}</mat-chip-option>
-            <mat-chip-option value="draft">{{ statusLabel('draft') }}</mat-chip-option>
-            <mat-chip-option value="active">{{ statusLabel('active') }}</mat-chip-option>
-            <mat-chip-option value="sold">{{ statusLabel('sold') }}</mat-chip-option>
-            <mat-chip-option value="archived">{{ statusLabel('archived') }}</mat-chip-option>
+            <mat-chip-option value="all"
+              >{{ 'broker.filter.all' | transloco }} ({{ counts().all }})</mat-chip-option
+            >
+            <mat-chip-option value="draft"
+              >{{ statusLabel('draft') }} ({{ counts().draft }})</mat-chip-option
+            >
+            <mat-chip-option value="active"
+              >{{ statusLabel('active') }} ({{ counts().active }})</mat-chip-option
+            >
+            <mat-chip-option value="sold"
+              >{{ statusLabel('sold') }} ({{ counts().sold }})</mat-chip-option
+            >
+            <mat-chip-option value="archived"
+              >{{ statusLabel('archived') }} ({{ counts().archived }})</mat-chip-option
+            >
           </mat-chip-listbox>
         </div>
 
@@ -84,25 +99,42 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
         <div class="listing-stack">
           @for (listing of visibleListings(); track listing.id) {
             <mat-card appearance="outlined">
+              @if (coverImageId(listing); as imageId) {
+                <!-- Decorative: the title beside it names the listing. -->
+                <img
+                  mat-card-image
+                  class="cover"
+                  alt=""
+                  loading="lazy"
+                  [src]="imageUrl(listing.id ?? '', imageId)"
+                />
+              } @else {
+                <div class="cover cover-placeholder" aria-hidden="true"></div>
+              }
               <mat-card-header>
                 <mat-card-title>{{ listing.title }}</mat-card-title>
                 <mat-card-subtitle>
-                  {{ listing.price | hbPrice }} ·
+                  {{ listing.price | hbPrice: wholeAmount }} ·
                   <mat-chip-set>
                     <mat-chip>{{ statusLabel(listing.status) }}</mat-chip>
                   </mat-chip-set>
                 </mat-card-subtitle>
               </mat-card-header>
               <mat-card-content>
+                <p class="location">
+                  {{ listing.city }}, {{ listing.locality }} · {{ listing.bedrooms ?? '–' }}
+                  {{ 'detail.bedrooms' | transloco }} · {{ listing.bathrooms ?? '–' }}
+                  {{ 'detail.bathrooms' | transloco }}
+                </p>
                 <p class="commission">
                   {{ 'broker.commission' | transloco }}:
                   <strong>{{ listing.commissionAmount ?? 0 | hbPrice }}</strong>
                 </p>
 
                 <div class="actions">
-                  <a mat-stroked-button [routerLink]="['/broker/listings', listing.id, 'edit']">{{
-                    'broker.edit' | transloco
-                  }}</a>
+                  <button mat-stroked-button type="button" (click)="openEditor(listing.id ?? '')">
+                    {{ 'broker.edit' | transloco }}
+                  </button>
                   @if ((listing.status ?? '').toLowerCase() === 'draft') {
                     <button
                       mat-flat-button
@@ -145,56 +177,69 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
                   </mat-menu>
                 </div>
 
-                @if (listing.images?.length) {
-                  <div class="images">
-                    @for (image of listing.images; track image.id; let i = $index) {
-                      <figure class="image-item">
-                        <img
-                          [src]="imageUrl(listing.id ?? '', image.id ?? '')"
-                          [alt]="(listing.title || ('detail.imageAlt' | transloco)) + ' ' + (i + 1)"
-                          width="128"
-                          height="96"
-                          loading="lazy"
-                        />
-                        @if (image.isPrimary) {
-                          <mat-chip>{{ 'broker.primaryImage' | transloco }}</mat-chip>
-                        }
-                        <button
-                          mat-button
-                          color="warn"
-                          type="button"
-                          (click)="deleteImage(listing.id ?? '', image.id ?? '')"
-                          [disabled]="deletingImageId() === image.id"
-                        >
-                          {{ 'broker.deleteImage' | transloco }}
-                        </button>
-                      </figure>
+                <details class="photos">
+                  <summary>
+                    {{ 'broker.photos' | transloco }} ({{ listing.images?.length ?? 0 }})
+                  </summary>
+                  @if (listing.images?.length) {
+                    <div class="images">
+                      @for (image of listing.images; track image.id; let i = $index) {
+                        <figure class="image-item">
+                          <img
+                            [src]="imageUrl(listing.id ?? '', image.id ?? '')"
+                            [alt]="
+                              'detail.photoAlt'
+                                | transloco
+                                  : {
+                                      title: listing.title ?? '',
+                                      index: i + 1,
+                                      total: listing.images.length,
+                                    }
+                            "
+                            width="128"
+                            height="96"
+                            loading="lazy"
+                          />
+                          @if (image.isPrimary) {
+                            <mat-chip>{{ 'broker.primaryImage' | transloco }}</mat-chip>
+                          }
+                          <button
+                            mat-button
+                            color="warn"
+                            type="button"
+                            (click)="deleteImage(listing.id ?? '', image.id ?? '')"
+                            [disabled]="deletingImageId() === image.id"
+                          >
+                            {{ 'broker.deleteImage' | transloco }}
+                          </button>
+                        </figure>
+                      }
+                    </div>
+                  }
+
+                  <div class="upload">
+                    <label class="upload-label">
+                      {{ 'broker.uploadImage' | transloco }}
+                      <input
+                        #fileInput
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        (change)="upload(listing.id ?? '', $event)"
+                        [disabled]="uploadingId() === listing.id"
+                      />
+                    </label>
+                    @if (uploadingId() === listing.id && uploadProgress() !== null) {
+                      <mat-progress-bar
+                        mode="determinate"
+                        [value]="uploadProgress()"
+                      ></mat-progress-bar>
+                      <span>{{ uploadProgress() }}%</span>
+                    }
+                    @if (uploadingId() === listing.id) {
+                      <span>{{ 'broker.uploading' | transloco }}</span>
                     }
                   </div>
-                }
-
-                <div class="upload">
-                  <label class="upload-label">
-                    {{ 'broker.uploadImage' | transloco }}
-                    <input
-                      #fileInput
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      (change)="upload(listing.id ?? '', $event)"
-                      [disabled]="uploadingId() === listing.id"
-                    />
-                  </label>
-                  @if (uploadingId() === listing.id && uploadProgress() !== null) {
-                    <mat-progress-bar
-                      mode="determinate"
-                      [value]="uploadProgress()"
-                    ></mat-progress-bar>
-                    <span>{{ uploadProgress() }}%</span>
-                  }
-                  @if (uploadingId() === listing.id) {
-                    <span>{{ 'broker.uploading' | transloco }}</span>
-                  }
-                </div>
+                </details>
               </mat-card-content>
             </mat-card>
           }
@@ -234,6 +279,27 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     }
     .danger-item {
       color: var(--mat-sys-error);
+    }
+    .cover {
+      display: block;
+      inline-size: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+    .cover-placeholder {
+      background: var(--mat-sys-surface-container-high);
+    }
+    .location {
+      margin: 0 0 0.5rem;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .photos {
+      margin-block-start: 0.75rem;
+    }
+    .photos summary {
+      cursor: pointer;
+      font-weight: 500;
+      padding-block: 0.25rem;
     }
     .actions {
       display: flex;
@@ -275,12 +341,14 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     }
   `,
 })
-export class BrokerListingsPageComponent {
+export class BrokerListingsPageComponent implements OnInit {
   private readonly listingsData = inject(ListingsDataService);
   private readonly config = inject(RuntimeConfigService);
   private readonly transloco = inject(TranslocoService);
   readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
+  private readonly route = inject(ActivatedRoute);
   private readonly confirmService = inject(ConfirmService);
 
   readonly loading = signal(false);
@@ -308,6 +376,63 @@ export class BrokerListingsPageComponent {
 
   constructor() {
     void this.load();
+  }
+
+  /**
+   * Deep links /broker/listings/new and /broker/listings/:id/edit open the same dialog on
+   * this page; closing it returns to the plain list URL.
+   */
+  ngOnInit(): void {
+    const mode = this.route.snapshot.data['editor'] as 'new' | 'edit' | undefined;
+    if (mode === 'new') {
+      this.openEditor(null, true);
+    } else if (mode === 'edit') {
+      this.openEditor(this.route.snapshot.paramMap.get('id'), true);
+    }
+  }
+
+  /** Opens the create (listingId null) or edit dialog; reloads the list after a save. */
+  openEditor(listingId: string | null, fromRoute = false): void {
+    const ref = this.dialog.open<ListingEditorDialogComponent, ListingEditorDialogData, boolean>(
+      ListingEditorDialogComponent,
+      {
+        data: { listingId },
+        width: '56rem',
+        maxWidth: '95vw',
+        maxHeight: '90vh',
+        disableClose: true,
+      },
+    );
+    ref.afterClosed().subscribe((saved) => {
+      if (saved) {
+        void this.load();
+      }
+      if (fromRoute) {
+        void this.router.navigate(['/broker/listings'], { replaceUrl: true });
+      }
+    });
+  }
+
+  readonly wholeAmount: Intl.NumberFormatOptions = { maximumFractionDigits: 0 };
+
+  /** Chip counts per status, so the filter bar shows how many listings each view holds. */
+  readonly counts = computed(() => {
+    const items = this.listings();
+    const countOf = (status: string) =>
+      items.filter((item) => (item.status ?? '').toLowerCase() === status).length;
+    return {
+      all: items.length,
+      draft: countOf('draft'),
+      active: countOf('active'),
+      sold: countOf('sold'),
+      archived: countOf('archived'),
+    };
+  });
+
+  /** Primary image if the listing has one, otherwise the first image; null when it has none. */
+  coverImageId(listing: OwnerListingDto): string | null {
+    const images = listing.images ?? [];
+    return (images.find((image) => image.isPrimary) ?? images[0])?.id ?? null;
   }
 
   async load(): Promise<void> {

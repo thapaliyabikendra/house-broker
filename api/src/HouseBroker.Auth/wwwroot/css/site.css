@@ -9,7 +9,7 @@ html {
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem rgba(24, 106, 87, 0.35);
 }
 
 html {
@@ -29,23 +29,51 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
-:focus-visible { outline: 3px solid #0d6efd; outline-offset: 2px; }
+:focus-visible { outline: 3px solid #186a57; outline-offset: 2px; }
 
 /* ---- Sign-in page -------------------------------------------------------- */
 
+/* Brand palette: deep teal, the same tones as ui/src/brand-palette.scss (Angular Material). */
 :root {
-  --hb-ink: #1c2430;
-  --hb-muted: #5b6573;
-  --hb-brand: #0b5cad;
-  --hb-brand-strong: #084a8a;
+  --hb-ink: #191c1b;
+  --hb-muted: #57605c;
+  --hb-brand: #186a57;
+  --hb-brand-strong: #005141;
   --hb-surface: #ffffff;
-  --hb-canvas: #eef3f8;
-  --hb-border: #c9d2de;
-  --hb-danger: #a4161a;
+  --hb-canvas: #f2f4f1;
+  --hb-border: #bfc9c4;
+  --hb-danger: #ba1a1a;
+
+  /* Bootstrap uses these for links, focus rings and the primary button. */
+  --bs-primary: #186a57;
+  --bs-primary-rgb: 24, 106, 87;
+  --bs-link-color: #186a57;
+  --bs-link-color-rgb: 24, 106, 87;
+  --bs-link-hover-color: #005141;
+  --bs-link-hover-color-rgb: 0, 81, 65;
+  --bs-focus-ring-color: rgba(24, 106, 87, 0.35);
+  font-family: Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.btn-primary {
+  --bs-btn-bg: #186a57;
+  --bs-btn-border-color: #186a57;
+  --bs-btn-hover-bg: #005141;
+  --bs-btn-hover-border-color: #005141;
+  --bs-btn-focus-shadow-rgb: 24, 106, 87;
+  --bs-btn-active-bg: #00382c;
+  --bs-btn-active-border-color: #00382c;
+  --bs-btn-disabled-bg: #186a57;
+  --bs-btn-disabled-border-color: #186a57;
+}
+
+.navbar-brand {
+  color: var(--hb-brand);
+  font-weight: 600;
 }
 
 body {
-  background: linear-gradient(180deg, var(--hb-canvas) 0%, #f7f9fc 60%);
+  background: linear-gradient(180deg, var(--hb-canvas) 0%, #f8faf8 60%);
   color: var(--hb-ink);
 }
 
@@ -156,7 +184,7 @@ body {
 }
 
 .auth-password__toggle:hover {
-  background: #e8f0fa;
+  background: #e6fff5;
   color: var(--hb-brand-strong);
 }
 

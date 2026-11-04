@@ -136,6 +136,12 @@ public sealed class ListingQueries(AppDbContext dbContext) : IListingQueries
                 Bedrooms = listing.Bedrooms,
                 Bathrooms = listing.Bathrooms,
                 Status = listing.Status.ToString(),
+                PropertyTypeId = listing.PropertyTypeId,
+                PrimaryImageId = listing.Images
+                    .OrderByDescending(image => image.IsPrimary)
+                    .ThenBy(image => image.SortOrder)
+                    .Select(image => (Guid?)image.Id)
+                    .FirstOrDefault(),
                 CreatedAt = listing.CreatedAt,
             })
             .ToListAsync(cancellationToken);
