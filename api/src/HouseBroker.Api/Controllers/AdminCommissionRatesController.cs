@@ -3,6 +3,7 @@ using HouseBroker.Api.Filters;
 using HouseBroker.Api.RateLimiting;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Domain.Common;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -11,6 +12,7 @@ namespace HouseBroker.Api.Controllers;
 /// <summary>Administrator commission rate management endpoints.</summary>
 /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
 [ApiController]
+[ApiVersion("1.0")]
 [Route("v{version:apiVersion}/admin/commission-rates")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
 public sealed class AdminCommissionRatesController(ICommissionRateAdminService service) : ControllerBase
@@ -49,6 +51,7 @@ public sealed class AdminCommissionRatesController(ICommissionRateAdminService s
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CommissionRateRequest request, CancellationToken cancellationToken)
     {
         var result = await service.CreateAsync(request, cancellationToken);

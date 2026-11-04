@@ -6,30 +6,48 @@ namespace HouseBroker.Application.Mapping;
 
 /// <summary>Generated mapping profiles for listing entities and DTOs.</summary>
 [Mapper(RequiredMappingStrategy = RequiredMappingStrategy.None)]
-internal sealed partial class ListingMapper
+public sealed partial class ListingMapper
 {
     /// <summary>Shared instance for static mapping helpers.</summary>
     public static readonly ListingMapper Instance = new();
 
-    /// <summary>Maps a listing to a public detail DTO.</summary>
+    /// <summary>Maps a listing to a public detail DTO without commission fields.</summary>
     [MapProperty(nameof(Listing.RowVersion), nameof(ListingDetailDto.Version))]
     public partial ListingDetailDto ToDetail(Listing source);
 
-    /// <summary>Maps a listing to an owner detail DTO.</summary>
+    /// <summary>Maps a listing to an owner detail DTO including commission.</summary>
     [MapProperty(nameof(Listing.RowVersion), nameof(ListingDetailDto.Version))]
     public partial OwnerListingDto ToOwner(Listing source);
+
+    /// <summary>Maps a listing to a summary DTO.</summary>
+    public partial ListingSummaryDto ToSummary(Listing source);
 
     /// <summary>Maps a listing image to its DTO.</summary>
     public partial ListingImageDto ToImage(ListingImage source);
 
+    /// <summary>Maps a broker profile to a contact DTO.</summary>
+    public static BrokerContactDto ToBrokerContact(BrokerProfile source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        return new()
+        {
+            FullName = source.FullName,
+            Email = source.Email,
+            PhoneNumber = source.PhoneNumber,
+        };
+    }
+
     /// <summary>Maps a listing feature to its DTO.</summary>
     public static ListingFeatureDto ToFeature(ListingFeature source)
-        => new()
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        return new()
         {
             Id = source.FeatureId,
             Code = source.Feature?.Code ?? string.Empty,
             Name = source.Feature?.Name ?? string.Empty,
         };
+    }
 
     /// <summary>Maps a commission rate to its DTO.</summary>
     [MapProperty(nameof(CommissionRate.RowVersion), nameof(CommissionRateDto.Version))]

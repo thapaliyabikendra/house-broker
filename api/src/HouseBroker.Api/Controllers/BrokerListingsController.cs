@@ -4,6 +4,7 @@ using HouseBroker.Api.RateLimiting;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Domain.Common;
 using HouseBroker.ServiceDefaults;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -12,6 +13,7 @@ namespace HouseBroker.Api.Controllers;
 /// <summary>Broker listing management endpoints.</summary>
 /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
 [ApiController]
+[ApiVersion("1.0")]
 [Route("v{version:apiVersion}/listings")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
 public sealed class BrokerListingsController(IListingService listingService, IImageStorage imageStorage) : ControllerBase
@@ -33,6 +35,7 @@ public sealed class BrokerListingsController(IListingService listingService, IIm
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Create([FromBody] CreateListingRequest request, CancellationToken cancellationToken)
     {
         var result = await listingService.CreateAsync(request, cancellationToken);

@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\HouseBroker.Application\HouseBroker.Application.csproj" />
+    <ProjectReference Include="..\..\src\HouseBroker.Domain.Shared\HouseBroker.Domain.Shared.csproj" />
     <ProjectReference Include="..\..\tests\HouseBroker.TestSupport\HouseBroker.TestSupport.csproj" />
   </ItemGroup>
 

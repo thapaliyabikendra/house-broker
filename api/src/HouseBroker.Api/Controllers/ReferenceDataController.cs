@@ -1,5 +1,6 @@
 using HouseBroker.Api.RateLimiting;
 using HouseBroker.Application.Contracts;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
@@ -8,6 +9,7 @@ namespace HouseBroker.Api.Controllers;
 /// <summary>Shared reference data used by every page.</summary>
 /// <remarks>Executes this endpoint according to the House Broker API contract.</remarks>
 [ApiController]
+[ApiVersion("1.0")]
 [Route("v{version:apiVersion}")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
 public sealed class ReferenceDataController(ILookupService lookupService) : ControllerBase

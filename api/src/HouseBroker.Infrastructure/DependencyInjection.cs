@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 namespace HouseBroker.Infrastructure;
 
 /// <summary>Infrastructure dependency injection.</summary>
-public static class InfrastructureExtensions
+public static class InfrastructureServiceCollectionExtensions
 {
     /// <summary>Adds infrastructure services.</summary>
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)

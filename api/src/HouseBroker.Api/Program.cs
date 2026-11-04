@@ -1,5 +1,6 @@
 using HouseBroker.Api;
 using HouseBroker.Api.Authorization;
+using HouseBroker.Application;
 using HouseBroker.Api.RateLimiting;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Infrastructure;
@@ -65,25 +66,12 @@ builder.Services.AddCors(options =>
 builder.AddServiceDefaults();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
-builder.Services.AddScoped<IListingService, HouseBroker.Application.Services.ListingService>();
-builder.Services.AddScoped<IValidator<HouseBroker.Application.Contracts.CreateListingRequest>, HouseBroker.Application.Services.CreateListingRequestValidator>();
-builder.Services.AddScoped<IValidator<HouseBroker.Application.Contracts.UpdateListingRequest>, HouseBroker.Application.Services.UpdateListingRequestValidator>();
+builder.Services.AddHouseBrokerApplication();
 builder.Services.AddScoped<IIdempotencyService, HouseBroker.Infrastructure.IdempotencyService>();
 builder.Services.AddScoped<HouseBroker.Application.ICommissionRateRepository, HouseBroker.Infrastructure.CommissionRateRepository>();
 builder.Services.AddScoped<ICommissionRateAdminService, HouseBroker.Application.Services.CommissionRateAdminService>();
 builder.Services.AddHostedService<HouseBroker.Infrastructure.IdempotencyCleanupService>();
-builder.Services.AddScoped<ILookupService, HouseBroker.Application.Services.LookupService>();
-builder.Services.AddControllers();
-builder.Services.AddApiVersioning(options =>
-{
-    options.DefaultApiVersion = new ApiVersion(1, 0);
-    options.ReportApiVersions = true;
-    options.ApiVersionReader = new UrlSegmentApiVersionReader();
-}).AddMvc().AddApiExplorer(options =>
-{
-    options.GroupNameFormat = "'v'VVV";
-    options.SubstituteApiVersionInUrl = true;
-});
+builder.Services.AddHouseBrokerApi(builder.Configuration);
 builder.Services.AddHouseBrokerJsonOptions();
 builder.Services.AddHouseBrokerRateLimiting(builder.Configuration);
 builder.Services.AddHouseBrokerOpenApi();

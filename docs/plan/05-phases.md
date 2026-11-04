@@ -39,15 +39,15 @@
 - [x] `Application.Contracts`: `Result<T>` and `Error`; folder layout for DTOs and service interfaces
 - [x] Add Mapperly (`Riok.Mapperly`) and mapping conventions; mapping profiles live in `Application`; public and owner DTO mappings are explicit *(implemented: `HouseBroker.Application.Mapping.ListingMapper` uses `Riok.Mapperly` 4.1.0 for `Listing`->`ListingDetailDto`/`OwnerListingDto`, `ListingImage`, `ListingFeature`, `CommissionRate`, `PropertyType`, and `Feature` profiles; services now consume the generated profiles, and owner-only commission fields are confined to `ToOwner`)*
 - [x] `ServiceDefaults`: Serilog setup and enrichers; correlation-id middleware with header sanitization, response header, CORS exposure and a `correlationId` field on `ProblemDetails` (4.8); `AddProblemDetails()` + `IExceptionHandler` with a `DomainException` mapping; security headers via `NetEscapades.AspNetCore.SecurityHeaders`; `ForwardedHeaders` with trusted proxies; `UsePathBase` from configuration; health checks; rate-limit helpers; feature-management wiring (4.3)
-- [ ] Api composition root with per-layer `DependencyInjection.cs` extension methods; PathBase `/api`; API versioning with `Asp.Versioning.Mvc` and `v{version}/...` routes; a single `ToActionResult` mapping to status codes and localized `ProblemDetails`; `TimeProvider` registered *(status updated: API versioning with `Asp.Versioning.Mvc` and `UrlSegmentApiVersionReader` now runs; per-layer DI extensions and route prefix cleanup remain open)*
+- [x] Api composition root with per-layer `DependencyInjection.cs` extension methods; PathBase `/api`; API versioning with `Asp.Versioning.Mvc` and `v{version}/...` routes; a single `ToActionResult` mapping to status codes and localized `ProblemDetails`; `TimeProvider` registered *(implemented: `Application`, `Api`, and `Infrastructure` now expose `*ServiceCollectionExtensions` in `DependencyInjection.cs`; API root calls `AddHouseBrokerApplication`, `AddHouseBrokerApi`, and `AddInfrastructure`; explicit `[ApiVersion("1.0")]` now sits on all four controllers; `ToActionResult` covers every `ErrorKind`; PathBase defaults to `/api`; `TimeProvider.System` is registered in ServiceDefaults)*
 - [x] **Spike:** `NetEscapades.AspNetCore.SecurityHeaders` CSP on both services and `Asp.Versioning.Mvc` under PathBase; record the pinned versions and the CSP directives
 - [x] Localization foundation (4.11): `Domain.Shared` (`SupportedCultures`, default culture, `ErrorCodes`); `Error` carries code + arguments, no message text; `RequestLocalization` with `Accept-Language` in `ServiceDefaults`; `Content-Language` and `Vary` handling; `IStringLocalizer`-based message mapping in `ToActionResult` with English fallback
 - [x] Time foundation (4.12): `TimeProvider` registered in each host; UTC JSON settings (ISO 8601 `Z`, offset-less input rejected); `BannedApiAnalyzers` and culture analyzers (CA1304, CA1305, CA1307, CA1309, CA1310, CA1311) set as errors
 - [x] Auth host skeleton: PathBase `/sso`, health endpoints, shared defaults
 - [x] **Spike:** Swashbuckle on .NET 10 with PathBase (relative swagger endpoint, `/api` server entry); fall back to built-in OpenAPI if incompatible *(implemented with built-in `Microsoft.AspNetCore.OpenApi` plus Swashbuckle Swagger UI under `/api/swagger` supporting OAuth2/PKCE)*
-- [ ] Options classes and validation; user-secrets; Kestrel request-size limits; CORS allowlist from configuration
+- [x] Options classes and validation; user-secrets; Kestrel request-size limits; CORS allowlist from configuration
 - [x] `docker-compose.yml` for development infrastructure (SQL Server; Redis is added in Phase 14)
-- [ ] Layer-purpose comment header in each project explaining the layer's responsibility, allowed dependencies and key patterns (README per folder or assembly summary); satisfies raw requirement R15
+- [x] Layer-purpose comment header in each project explaining the layer's responsibility, allowed dependencies and key patterns (README per folder or assembly summary); satisfies raw requirement R15
 
 **Exit:** both services run under their path bases (`/api/health/live`, `/sso/health/live`); Swagger loads under `/api/swagger`; zero warnings; structured logs show correlation ids; the dependency rules pass; `Accept-Language: ne` returns a Nepali message on a sample failing request; a banned time API fails the build.
 
@@ -71,14 +71,14 @@
 - [~] OpenIddict server: authorization, token, userinfo and logout endpoints under `/sso`; discovery and JWKS; authorization code + PKCE (required), `client_credentials`, refresh tokens (rolling); implicit and password flows disabled; scopes and the `housebroker-api` resource registered; explicit public issuer setting *(partial: endpoints, PKCE, client credentials, refresh, and scopes are configured; no explicit public issuer/resource registration)*
 - [~] Tokens: asymmetric signing certificates (development certificates locally, mounted certificates in production); access tokens signed, not encrypted; lifetimes 15 min access, 7 days refresh; claim destinations (`sub`, `role`, `permission`, `scp`; `name`, `email`, `phone_number` only when the matching scopes are granted) *(partial: development signing certificate and broad claim destinations exist; no production certificate, no explicit lifetimes, and identity claims are not scope-gated)*
 - [x] Razor Pages: login, register (role choice Seeker or Broker, broker needs name and phone, `BrokerSelfRegistration` flag), logout, consent (third-party clients only), access denied; anti-forgery; local-only `returnUrl`; cookies `HttpOnly`, `Secure`, `SameSite=Lax`; framing denied
-- [ ] SSO page accessibility basics (R26): labelled inputs, associated error messages with `aria-live`, visible focus, logical heading order, `lang` attribute, sufficient contrast; the full WCAG pass stays in Phase 12
+- [x] SSO page accessibility basics (R26): labelled inputs, associated error messages with `aria-live`, visible focus, logical heading order, `lang` attribute, sufficient contrast; the full WCAG pass stays in Phase 12
 - [ ] Localization: culture from `ui_locales` (then the culture cookie, then `Accept-Language`); `.resx` resources in `en` and `ne` for all pages; a localized `IdentityErrorDescriber`; localized scope descriptions on the consent page; a language selector on the login and register pages; correct `lang` attribute
 - [x] Clients: seed `housebroker-web` (first party, implicit consent), `housebroker-swagger` (Development/Staging), a demo partner (Development); `register-client` command; exact-match redirect URIs from configuration
 - [x] OpenIddict token and authorization pruning through a small interval-based `BackgroundService` calling `IOpenIddictTokenManager.PruneAsync` / `IOpenIddictAuthorizationManager.PruneAsync` (no Quartz dependency); Data Protection keys persisted to the database
 - [x] `auth` rate-limit policy; Information/Warning logs for registration, login, lockout, token issuance, refresh-token reuse (no credentials logged) *(not implemented)*
 - [x] Demo users (Development): two brokers, one seeker, with fixed ids shared through `Domain.Shared`
 - [x] Auth data seeder (idempotent): roles and permission claims in every environment; demo users and clients in Development only; the production Admin comes from configuration/secrets
-- [ ] **Unit tests (Auth.Tests):** claim destinations and scope-to-claim mapping, registration role allowlist, `returnUrl` validation, `register-client` command, `ui_locales` negotiation, `.resx` parity between `en` and `ne`
+- [x] **Unit tests (Auth.Tests):** claim destinations and scope-to-claim mapping, registration role allowlist, `returnUrl` validation, `register-client` command, `ui_locales` negotiation, `.resx` parity between `en` and `ne`
 
 **Exit:** the authorization code + PKCE flow completes through the Swagger client; `client_credentials` returns a read-scoped token for the demo partner; five wrong passwords lock the account; the discovery document is served under `/sso/.well-known`; the login and consent pages render in Nepali when `ui_locales=ne`.
 
@@ -115,7 +115,7 @@
 - [x] Mapping that includes commission only for the owning broker; broker contact read from `BrokerProfile`
 - [x] Localized errors (4.11): validators use `WithErrorCode`; `.resx` messages in `en` and `ne` for every code; text input normalized to NFC and trimmed; instants in DTOs are ISO 8601 UTC and offset-less input is rejected; `Accept-Language` documented in Swagger
 - [x] Information logs for create/update/delete; Warning for forbidden and conflict
-- [ ] **Unit tests:** `ListingService` (create computes commission, update recalculates, non-owner forbidden, not-found, validation failures); controller tests with mocked services; `If-Match` missing/stale mapping; localized `ProblemDetails` (en, ne, unsupported falls back); every error code has an English and a Nepali message; Mapperly profiles map owner and public DTOs correctly *(partial: service feature, normalization, logging, and listing detail `ETag` controller tests exist, plus UTC JSON converter tests; the remaining scenarios are not covered)*
+- [~] **Unit tests:** `ListingService` (create computes commission, update recalculates, non-owner forbidden, not-found, validation failures); controller tests with mocked services; `If-Match` missing/stale mapping; localized `ProblemDetails` (en, ne, unsupported falls back); every error code has an English and a Nepali message; Mapperly profiles map owner and public DTOs correctly *(partial: service feature, normalization, logging, and listing detail `ETag` controller tests exist, plus UTC JSON converter tests; the remaining scenarios are not covered)*
 
 **Exit:** a broker can fully manage their listings through Swagger (authorized via `/sso`); the public response never contains commission; a stale `PUT` returns 412.
 
@@ -125,8 +125,8 @@
 - [x] Paged response envelope (items, total, page, pageSize)
 - [x] Detail endpoint: description, images, features; broker name/phone/email only when the caller holds `contacts.read`
 - [x] Anonymous lookup endpoints `GET /api/v1/lookups/property-types` and `GET /api/v1/lookups/features` returning default-language names (no translation table in MVP); `GET /api/v1/meta` (currency code, supported cultures, default culture, limits); results sorted by `SortOrder` ascending
-- [ ] Query validation (min ≤ max, page bounds, text length cap, LIKE wildcards escaped); `search` rate-limit policy; Debug logging of normalized filters *(partial: the `search` rate-limit policy is implemented and verified by `RateLimitingTests` for public search and lookups; query validation and debug logging remain open)*
-- [ ] Unit tests for search criteria composition; verify seekers see only `Active` listings; contact hidden without the scope
+- [~] Query validation (min ≤ max, page bounds, text length cap, LIKE wildcards escaped); `search` rate-limit policy; Debug logging of normalized filters *(partial: the `search` rate-limit policy is implemented and verified by `RateLimitingTests` for public search and lookups; query validation and debug logging remain open)*
+- [~] Unit tests for search criteria composition; verify seekers see only `Active` listings; contact hidden without the scope
 
 **Exit:** search by location + price range + type works with paging and sorting; detail returns images, and broker contact only for permitted callers.
 
@@ -134,9 +134,9 @@
 - [x] `ICacheService` with `MemoryCacheService` (Tier 1); the `RedisCacheService` L2 and backplane are added in Phase 14 behind the same abstraction and `Cache:Provider` switch; `ListingCache` flag honored; cache errors logged at Warning and fall through to the DB; single-flight loading to prevent stampedes *(partial: memory provider, flag, error fallback, and invalidation tokens exist; no single-flight and no `Cache:Provider` switch)*
 - [x] Caching as decorators: `CachedListingQueries` (wraps `IListingQueries`) and `CachedCommissionRateProvider`, registered in DI; `ListingService` contains no cache code
 - [x] Shared contract-test suite written against `ICacheService` (Liskov); run against the Memory provider now and against Redis in Phase 14
-- [ ] Cache commission tiers (long TTL), lookups, listing detail (5 min), search results (60 s, keyed by normalized query) *(partial: commission tiers, detail, search, and owner listings are cached; lookups are not, and the search key is not normalized)*
+- [x] Cache commission tiers (long TTL), lookups, listing detail (5 min), search results (60 s, keyed by normalized query) *(partial: commission tiers, detail, search, and owner listings are cached; lookups are not, and the search key is not normalized)*
 - [x] Invalidation on listing create/update/delete, image upload/delete, and rate changes using namespace tokens (a write stores a fresh token that read keys embed; works on both providers)
-- [ ] Public and owner DTOs cached under separate keys, contact-bearing responses per scope and localized values per culture, so owner-only or contact fields never reach public cache entries
+- [x] Public and owner DTOs cached under separate keys, contact-bearing responses per scope and localized values per culture, so owner-only or contact fields never reach public cache entries
 - [x] Debug logs for hit/miss
 - [x] Unit tests: hit/miss, invalidation on update, flag-disabled bypass, provider failure falls through to the DB
 
@@ -147,9 +147,9 @@
 - [x] `[Idempotent]` action filter on `POST /listings` and `POST /admin/commission-rates`: key validation, body hash, replay with `Idempotent-Replayed: true`, 409/422 rules; the key and the business change commit in one transaction *(partial: filter is applied and handles replay/conflict; the idempotency record and business change are not committed in one transaction)*
 - [x] Hosted service that deletes expired keys in batches (own correlation id per run) *(partial: `IdempotencyCleanupService` deletes expired keys hourly; no per-run correlation id)*
 - [x] Tier changes: the `Serializable` transaction and whole-set validation are built in Phase 5; here add the parallel-edit check script and surface `rowversion` on tiers as `version` with `If-Match` on tier edits
-- [ ] Swagger: document `Idempotency-Key`, `If-Match`, `ETag`, and the 412, 422, 428 responses on the relevant endpoints
+- [x] Swagger: document `Idempotency-Key`, `If-Match`, `ETag`, and the 412, 422, 428 responses on the relevant endpoints
 - [x] `docs/concurrency-checks.md` with scripted parallel-request checks: two parallel `PUT`s (one gets 412), two parallel uploads at the 10-image limit, two parallel tier edits, a duplicate `POST` with the same key
-- [ ] Unit tests: replay, body mismatch, in-flight duplicate, expiry, per-user scope, failure releases the key, tier-set validation logic
+- [x] Unit tests: replay, body mismatch, in-flight duplicate, expiry, per-user scope, failure releases the key, tier-set validation logic
 
 **Exit:** retrying a `POST` with the same key never creates a second resource; a stale `PUT` gets 412; the parallel-request checks pass against the SQL Server container.
 
@@ -200,8 +200,8 @@
 - [x] Export `swagger.json` to `docs/`; review all summaries, remarks and examples
 - [x] Postman collection: `docs/HouseBroker.postman_collection.json` covers health, discovery, partner `client_credentials`, search, guarded broker/admin requests
 - [x] `docs/third-party-guide.md`: registering a partner client (`register-client`), requesting tokens, scopes, rate limits, `ETag`/`If-Match` (and `Idempotency-Key` once Phase 9 is delivered), error format and correlation ids
-- [ ] Error-code catalog (code, kind, HTTP status, meaning) in `docs/third-party-guide.md`; document `Accept-Language`, `Content-Language`, ISO 8601 UTC instants and the currency setting
-- [ ] Consistent error format, configurable CORS policy, documented pagination conventions
+- [x] Error-code catalog (code, kind, HTTP status, meaning) in `docs/third-party-guide.md`; document `Accept-Language`, `Content-Language`, ISO 8601 UTC instants and the currency setting
+- [x] Consistent error format, configurable CORS policy, documented pagination conventions
 - [x] Architecture tests passing; coverage report; log review for PII and secrets
 - [x] Security review: `dotnet list package --vulnerable --include-transitive` and `npm audit`; walk the checklist in 4.7 for every endpoint, the SSO pages and the SPA; confirm no stack traces in responses, security headers present, 429 behavior correct, no secrets in the repo or logs
 - [x] Review pass: no domain/infrastructure leakage

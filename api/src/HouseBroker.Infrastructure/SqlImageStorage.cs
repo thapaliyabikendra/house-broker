@@ -1,4 +1,5 @@
 using HouseBroker.Application.Contracts;
+using HouseBroker.Application.Mapping;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Common;
 using HouseBroker.Infrastructure.Persistence;
@@ -86,15 +87,7 @@ public sealed class SqlImageStorage(AppDbContext dbContext, ICurrentUserService 
         await transaction.CommitAsync(cancellationToken);
         await _cache.InvalidateListingsAsync(cancellationToken);
 
-        return Result.Success<ListingImageDto>(new ListingImageDto
-        {
-            Id = image.Id,
-            FileName = image.FileName,
-            ContentType = image.ContentType,
-            ContentLength = image.ContentLength,
-            IsPrimary = image.IsPrimary,
-            SortOrder = image.SortOrder,
-        });
+        return Result.Success<ListingImageDto>(ListingMapper.Instance.ToImage(image));
     }
 
     /// <inheritdoc />

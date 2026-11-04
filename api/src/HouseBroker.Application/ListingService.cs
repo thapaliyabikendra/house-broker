@@ -258,12 +258,7 @@ public sealed class ListingService(
             var profile = await _queries.GetBrokerProfileAsync(listing.BrokerId, cancellationToken);
             if (profile is not null)
             {
-                dto.BrokerContact = new BrokerContactDto
-                {
-                    FullName = profile.FullName,
-                    Email = profile.Email,
-                    PhoneNumber = profile.PhoneNumber,
-                };
+                dto.BrokerContact = ListingMapper.ToBrokerContact(profile);
             }
         }
 
