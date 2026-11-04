@@ -55,5 +55,24 @@ public sealed class CommissionTierValidatorTests
 
         Assert.NotEmpty(errors);
     }
+
+    /// <summary>Future-dated invalid sets are detected at their effective instant.</summary>
+    [Fact]
+    public void Validate_FutureTier_DetectsInvalidFutureSet()
+    {
+        var now = DateTime.UtcNow;
+        var future = now.AddHours(1);
+        var tiers = new[]
+        {
+            CommissionRate.Create(0m, true, null, false, 2m, true, DateTime.MinValue),
+            CommissionRate.Create(0m, true, null, false, 99m, true, future),
+        };
+
+        var nowErrors = CommissionTierValidator.Validate(tiers, now);
+        var futureErrors = CommissionTierValidator.Validate(tiers, future);
+
+        Assert.Empty(nowErrors);
+        Assert.NotEmpty(futureErrors);
+    }
 }
 
