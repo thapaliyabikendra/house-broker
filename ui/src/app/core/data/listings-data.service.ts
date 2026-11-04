@@ -14,10 +14,9 @@ import { v1ListingsMineIdGet$Json } from '../../api/fn/listings/v-1-listings-min
 import type {
   CreateListingRequest,
   ListingDetailDto,
-  ListingSummaryDto,
   ListingImageDto,
   OwnerListingDto,
-  ListingSummaryDtoPagedResult,
+  PagedResultOfListingSummaryDto,
   UpdateListingRequest,
 } from '../../api/models';
 
@@ -39,7 +38,7 @@ export class ListingsDataService {
   private readonly http = inject(HttpClient);
   private readonly config = inject(RuntimeConfigService);
 
-  search(criteria: ListingSearchCriteria = {}): Promise<ListingSummaryDtoPagedResult> {
+  search(criteria: ListingSearchCriteria = {}): Promise<PagedResultOfListingSummaryDto> {
     return this.api.invoke(v1ListingsGet$Json, {
       Location: criteria.location,
       MinPrice: criteria.minPrice,
@@ -57,7 +56,7 @@ export class ListingsDataService {
     return this.api.invoke(v1ListingsIdGet$Json, { id });
   }
 
-  getMine(): Promise<ListingSummaryDto[]> {
+  getMine(): Promise<OwnerListingDto[]> {
     return this.api.invoke(v1ListingsMineGet$Json, {});
   }
 

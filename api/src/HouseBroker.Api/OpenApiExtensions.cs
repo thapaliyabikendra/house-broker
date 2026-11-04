@@ -82,6 +82,19 @@ internal static class OpenApiExtensions
                 return Task.CompletedTask;
             });
 
+            options.AddDocumentTransformer((document, _, _) =>
+            {
+                if (document?.Components?.Schemas is not null)
+                {
+                    foreach (var schema in document.Components.Schemas.Values)
+                    {
+                        NormalizeSchema(schema);
+                    }
+                }
+
+                return Task.CompletedTask;
+            });
+
             options.AddOperationTransformer((operation, context, _) =>
             {
                 if (context.Description.ActionDescriptor.EndpointMetadata.OfType<IAllowAnonymous>().Any())
@@ -195,4 +208,60 @@ internal static class OpenApiExtensions
                 return Task.CompletedTask;
             });
         });
+
+    private static void NormalizeSchema(IOpenApiSchema? schema, HashSet<object>? visited = null)
+    {
+        if (schema is not OpenApiSchema concrete)
+        {
+            return;
+        }
+
+        visited ??= new HashSet<object>(ReferenceEqualityComparer.Instance);
+        if (!visited.Add(concrete))
+        {
+            return;
+        }
+
+        if (concrete.Type.HasValue)
+        {
+            var type = concrete.Type.Value;
+            if (type.HasFlag(JsonSchemaType.Array) && type.HasFlag(JsonSchemaType.Null))
+            {
+                concrete.Type = JsonSchemaType.Array;
+            }
+        }
+
+        if (concrete.Properties is not null)
+        {
+            foreach (var property in concrete.Properties.Values)
+            {
+                NormalizeSchema(property, visited);
+            }
+        }
+
+        if (concrete.Items is not null)
+        {
+            NormalizeSchema(concrete.Items, visited);
+        }
+
+        if (concrete.AdditionalProperties is OpenApiSchema additionalProperties)
+        {
+            NormalizeSchema(additionalProperties, visited);
+        }
+
+        foreach (var subschema in concrete.AllOf ?? Array.Empty<IOpenApiSchema>())
+        {
+            NormalizeSchema(subschema, visited);
+        }
+
+        foreach (var subschema in concrete.AnyOf ?? Array.Empty<IOpenApiSchema>())
+        {
+            NormalizeSchema(subschema, visited);
+        }
+
+        foreach (var subschema in concrete.OneOf ?? Array.Empty<IOpenApiSchema>())
+        {
+            NormalizeSchema(subschema, visited);
+        }
+    }
 }

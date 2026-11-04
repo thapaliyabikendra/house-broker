@@ -3,7 +3,11 @@ import { TranslocoService } from '@jsverse/transloco';
 import { ListingsDataService } from '../../../core/data/listings-data.service';
 import type { ListingSearchCriteria } from '../../../core/data/listings-data.service';
 import { LookupsDataService } from '../../../core/data/lookups-data.service';
-import type { ListingSummaryDto, PropertyTypeDto } from '../../../api/models';
+import type {
+  ListingSummaryDto,
+  PagedResultOfListingSummaryDto,
+  PropertyTypeDto,
+} from '../../../api/models';
 
 @Injectable()
 export class SearchStore {
@@ -30,7 +34,7 @@ export class SearchStore {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const page = await this.listingsData.search(criteria);
+      const page = (await this.listingsData.search(criteria)) as PagedResultOfListingSummaryDto;
       this.results.set(page.items ?? []);
     } catch (error) {
       this.error.set(

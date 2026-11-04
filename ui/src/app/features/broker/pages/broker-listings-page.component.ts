@@ -52,7 +52,7 @@ import { ApiError } from '../../../core/http/api-error';
               <span class="status-chip">{{ listing.status }}</span>
               <span
                 >{{ 'broker.commission' | transloco }}:
-                {{ listing.commissionAmount ?? 0 | hbPrice }}</span
+                {{ (listing.commissionAmount ?? 0) | hbPrice }}</span
               >
 
               <div class="actions">

@@ -131,7 +131,7 @@ public sealed class CachedListingQueries(IListingQueries inner, ICacheService ca
 
         var featureIds = string.Join(",", query.FeatureIds.Distinct().OrderBy(id => id));
         var page = Math.Max(1, query.Page);
-        var pageSize = Math.Clamp(query.PageSize, 1, 100);
+        var pageSize = Math.Clamp(query.PageSize, 1, HouseBroker.Domain.Common.Limits.MaxPageSize);
         var sort = (query.Sort ?? string.Empty).Trim().ToLowerInvariant();
         if (string.IsNullOrWhiteSpace(sort))
         {

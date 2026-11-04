@@ -1,5 +1,10 @@
 import type { ApplicationConfig } from '@angular/core';
-import { provideAppInitializer, provideBrowserGlobalErrorListeners, inject } from '@angular/core';
+import {
+  isDevMode,
+  provideAppInitializer,
+  provideBrowserGlobalErrorListeners,
+  inject,
+} from '@angular/core';
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { Api } from './api/api';
@@ -38,7 +43,7 @@ export const appConfig: ApplicationConfig = {
         defaultLang: 'en',
         fallbackLang: 'en',
         reRenderOnLangChange: true,
-        prodMode: false,
+        prodMode: !isDevMode(),
       },
       loader: AppTranslocoLoader,
     }),

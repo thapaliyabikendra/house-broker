@@ -1,4 +1,4 @@
-﻿import { Component, inject, signal } from '@angular/core';
+﻿import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -14,6 +14,7 @@ import type { ListingDetailDto } from '../../../api/models';
 @Component({
   selector: 'hb-listing-detail-page',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     LoadingStateComponent,
     EmptyStateComponent,
@@ -37,6 +38,7 @@ import type { ListingDetailDto } from '../../../api/models';
         />
       } @else {
         @let item = listing()!;
+        <!-- listing is guaranteed non-null here because of the @else branch -->
         <h1>{{ item.title }}</h1>
         <p class="price">{{ item.price | hbPrice }}</p>
         <p>{{ item.city }}, {{ item.locality }}, {{ item.province }}</p>
@@ -122,7 +124,7 @@ export class ListingDetailPageComponent {
   }
 
   canViewContact(): boolean {
-    return this.auth.hasPermission('contacts.read') || this.auth.hasScope('contacts.read');
+    return this.auth.hasPermission('listings:contact:view') && this.auth.hasScope('contacts.read');
   }
 
   imageUrl(listingId: string, imageId: string): string {

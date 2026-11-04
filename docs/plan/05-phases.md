@@ -126,7 +126,7 @@
 - [x] Detail endpoint: description, images, features; broker name/phone/email only when the caller holds `contacts.read`
 - [x] Anonymous lookup endpoints `GET /api/v1/lookups/property-types` and `GET /api/v1/lookups/features` returning default-language names (no translation table in MVP); `GET /api/v1/meta` (currency code, supported cultures, default culture, limits); results sorted by `SortOrder` ascending
 - [~] Query validation (min ≤ max, page bounds, text length cap, LIKE wildcards escaped); `search` rate-limit policy; Debug logging of normalized filters *(partial: the `search` rate-limit policy is implemented and verified by `RateLimitingTests` for public search and lookups; query validation and debug logging remain open)*
-- [~] Unit tests for search criteria composition; verify seekers see only `Active` listings; contact hidden without the scope
+- [x] Unit tests for search criteria composition; verify seekers see only `Active` listings; contact hidden without the scope
 
 **Exit:** search by location + price range + type works with paging and sorting; detail returns images, and broker contact only for permitted callers.
 
