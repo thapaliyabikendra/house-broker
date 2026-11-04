@@ -1,3 +1,4 @@
+using HouseBroker.Application.Contracts.Listings;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Application.Mapping;
 using HouseBroker.Domain;
@@ -15,8 +16,8 @@ public sealed class ListingService(
     ICurrentUserService currentUser,
     IUnitOfWork unitOfWork,
     TimeProvider clock,
-    FluentValidation.IValidator<HouseBroker.Application.Contracts.CreateListingRequest> createValidator,
-    FluentValidation.IValidator<HouseBroker.Application.Contracts.UpdateListingRequest> updateValidator,
+    FluentValidation.IValidator<HouseBroker.Application.Contracts.Listings.CreateListingRequest> createValidator,
+    FluentValidation.IValidator<HouseBroker.Application.Contracts.Listings.UpdateListingRequest> updateValidator,
     ILogger<ListingService> logger) : IListingService
 {
     private readonly IListingRepository _repository = repository;
@@ -25,8 +26,8 @@ public sealed class ListingService(
     private readonly ICurrentUserService _currentUser = currentUser;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly TimeProvider _clock = clock;
-    private readonly FluentValidation.IValidator<HouseBroker.Application.Contracts.CreateListingRequest> _createValidator = createValidator;
-    private readonly FluentValidation.IValidator<HouseBroker.Application.Contracts.UpdateListingRequest> _updateValidator = updateValidator;
+    private readonly FluentValidation.IValidator<HouseBroker.Application.Contracts.Listings.CreateListingRequest> _createValidator = createValidator;
+    private readonly FluentValidation.IValidator<HouseBroker.Application.Contracts.Listings.UpdateListingRequest> _updateValidator = updateValidator;
     private readonly ILogger<ListingService> _logger = logger;
 
     /// <inheritdoc />

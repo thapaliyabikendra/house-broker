@@ -1,3 +1,4 @@
+using HouseBroker.Application.Contracts.Listings;
 namespace HouseBroker.Application.Contracts;
 
 /// <summary>Image storage abstraction.</summary>

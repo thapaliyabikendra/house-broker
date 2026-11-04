@@ -1,4 +1,4 @@
-namespace HouseBroker.Application.Contracts;
+namespace HouseBroker.Application.Contracts.CommissionRates;
 
 /// <summary>Commission rate DTO.</summary>
 public sealed class CommissionRateDto

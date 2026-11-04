@@ -1,5 +1,4 @@
-
-namespace HouseBroker.Application.Contracts;
+namespace HouseBroker.Application.Contracts.Listings;
 
 /// <summary>Listing service.</summary>
 public interface IListingService

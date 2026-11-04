@@ -1,4 +1,4 @@
-namespace HouseBroker.Application.Contracts;
+namespace HouseBroker.Application.Contracts.Listings;
 
 using System.Collections.ObjectModel;
 

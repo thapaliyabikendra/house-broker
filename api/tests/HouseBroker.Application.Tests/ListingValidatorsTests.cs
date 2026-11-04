@@ -1,4 +1,4 @@
-using HouseBroker.Application.Contracts;
+using HouseBroker.Application.Contracts.Listings;
 using HouseBroker.Application.Services;
 using Xunit;
 

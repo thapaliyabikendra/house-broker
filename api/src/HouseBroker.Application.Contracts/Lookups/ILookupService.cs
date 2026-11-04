@@ -1,4 +1,4 @@
-namespace HouseBroker.Application.Contracts;
+namespace HouseBroker.Application.Contracts.Lookups;
 
 /// <summary>Lookup and metadata service.</summary>
 public interface ILookupService

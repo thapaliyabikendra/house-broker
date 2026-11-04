@@ -1,3 +1,4 @@
+using HouseBroker.Application.Contracts.Listings;
 using System.Globalization;
 using System.Text;
 using HouseBroker.Application;

@@ -1,5 +1,5 @@
+using HouseBroker.Application.Contracts.Listings;
 using FluentValidation;
-using HouseBroker.Application.Contracts;
 using HouseBroker.Domain.Common;
 using System.Text.RegularExpressions;
 

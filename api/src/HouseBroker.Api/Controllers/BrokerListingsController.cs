@@ -1,3 +1,4 @@
+using HouseBroker.Application.Contracts.Listings;
 using HouseBroker.Api.Authorization;
 using HouseBroker.Api.Filters;
 using HouseBroker.Api.RateLimiting;

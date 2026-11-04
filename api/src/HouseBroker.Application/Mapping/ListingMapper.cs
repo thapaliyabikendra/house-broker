@@ -1,5 +1,7 @@
+using HouseBroker.Application.Contracts.Listings;
+using HouseBroker.Application.Contracts.Lookups;
+using HouseBroker.Application.Contracts.CommissionRates;
 using HouseBroker.Domain;
-using HouseBroker.Application.Contracts;
 using Riok.Mapperly.Abstractions;
 
 namespace HouseBroker.Application.Mapping;

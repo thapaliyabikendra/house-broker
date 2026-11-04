@@ -1,4 +1,4 @@
-namespace HouseBroker.Application.Contracts;
+namespace HouseBroker.Application.Contracts.Lookups;
 
 /// <summary>Property type DTO.</summary>
 public sealed class PropertyTypeDto

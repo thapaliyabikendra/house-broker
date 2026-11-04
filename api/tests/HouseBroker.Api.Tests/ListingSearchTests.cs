@@ -1,4 +1,4 @@
-using HouseBroker.Application.Contracts;
+using HouseBroker.Application.Contracts.Listings;
 using HouseBroker.Infrastructure;
 using HouseBroker.Infrastructure.Persistence;
 using HouseBroker.Domain;

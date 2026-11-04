@@ -1,3 +1,4 @@
+using HouseBroker.Application.Contracts.Lookups;
 using HouseBroker.Api.RateLimiting;
 using HouseBroker.Application.Contracts;
 using Asp.Versioning;

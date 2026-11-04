@@ -1,3 +1,4 @@
+using HouseBroker.Application.Contracts.Listings;
 using HouseBroker.Api.Controllers;
 using HouseBroker.Application.Contracts;
 using Microsoft.AspNetCore.Http;

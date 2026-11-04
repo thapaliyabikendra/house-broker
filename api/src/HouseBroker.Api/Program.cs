@@ -1,3 +1,4 @@
+using HouseBroker.Application.Contracts.CommissionRates;
 using HouseBroker.Api;
 using HouseBroker.Api.Authorization;
 using HouseBroker.Application;

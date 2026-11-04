@@ -1,3 +1,4 @@
+using HouseBroker.Application.Contracts.Lookups;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Application.Mapping;
 using HouseBroker.Domain.Common;

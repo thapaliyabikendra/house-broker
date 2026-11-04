@@ -1,5 +1,5 @@
+using HouseBroker.Application.Contracts.Listings;
 using HouseBroker.Application;
-using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Common;
 using HouseBroker.Infrastructure.Persistence;
