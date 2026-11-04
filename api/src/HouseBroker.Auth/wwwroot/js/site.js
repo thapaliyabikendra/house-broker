@@ -63,8 +63,22 @@
     });
   }
 
+  // Language picker submits its GET form on change; the noscript button covers browsers without JavaScript.
+  function initLanguageSwitch() {
+    var select = document.getElementById('lang-select');
+    var form = document.getElementById('lang-form');
+    if (!select || !form) {
+      return;
+    }
+
+    select.addEventListener('change', function () {
+      form.submit();
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     initPasswordToggle();
     initSubmitState();
+    initLanguageSwitch();
   });
 })();

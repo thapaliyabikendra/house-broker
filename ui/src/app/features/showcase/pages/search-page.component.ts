@@ -1,10 +1,9 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type { OnInit } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { SearchStore } from '../data/search.store';
 import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
@@ -18,6 +17,22 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatPaginatorModule } from '@angular/material/paginator';
 import type { PageEvent } from '@angular/material/paginator';
+
+type FilterKey = 'location' | 'minPrice' | 'maxPrice' | 'propertyTypeId' | 'bedrooms' | 'sort';
+
+interface ActiveFilter {
+  key: FilterKey;
+  labelKey: string;
+  kind: 'text' | 'price' | 'number';
+  value?: string | number;
+  /** Translation key for a value that is a fixed option (for example a sort order). */
+  valueKey?: string;
+}
+
+const SORT_LABEL_KEYS: Record<string, string> = {
+  priceAsc: 'search.sortPriceAsc',
+  priceDesc: 'search.sortPriceDesc',
+};
 
 @Component({
   selector: 'hb-search-page',
@@ -42,18 +57,13 @@ import type { PageEvent } from '@angular/material/paginator';
   template: `
     <section class="search-page">
       <h1>{{ 'search.title' | transloco }}</h1>
+
       <mat-card appearance="outlined" class="filters-card">
         <mat-card-content>
           <form [formGroup]="criteriaForm" (ngSubmit)="applyFilters(true)" class="filters">
             <mat-form-field appearance="outline">
               <mat-label>{{ 'search.location' | transloco }}</mat-label>
-              <input
-                matInput
-                id="search-location"
-                name="location"
-                formControlName="location"
-                [attr.placeholder]="'search.location' | transloco"
-              />
+              <input matInput id="search-location" name="location" formControlName="location" />
             </mat-form-field>
 
             <mat-form-field appearance="outline">
@@ -65,7 +75,6 @@ import type { PageEvent } from '@angular/material/paginator';
                 type="number"
                 min="0"
                 formControlName="minPrice"
-                [attr.placeholder]="'search.minPrice' | transloco"
               />
             </mat-form-field>
 
@@ -78,7 +87,6 @@ import type { PageEvent } from '@angular/material/paginator';
                 type="number"
                 min="0"
                 formControlName="maxPrice"
-                [attr.placeholder]="'search.maxPrice' | transloco"
               />
             </mat-form-field>
 
@@ -105,7 +113,6 @@ import type { PageEvent } from '@angular/material/paginator';
                 type="number"
                 min="0"
                 formControlName="bedrooms"
-                [attr.placeholder]="'search.bedrooms' | transloco"
               />
             </mat-form-field>
 
@@ -119,6 +126,9 @@ import type { PageEvent } from '@angular/material/paginator';
             </mat-form-field>
 
             <div class="actions">
+              <button mat-button type="button" (click)="clearFilters()">
+                {{ 'search.clearFilters' | transloco }}
+              </button>
               <button mat-raised-button color="primary" type="submit" [disabled]="store.loading()">
                 {{ 'search.submit' | transloco }}
               </button>
@@ -126,6 +136,25 @@ import type { PageEvent } from '@angular/material/paginator';
           </form>
         </mat-card-content>
       </mat-card>
+
+      @if (activeFilters().length > 0) {
+        <div class="active-filters" role="group" [attr.aria-label]="'search.activeFilters' | transloco">
+          @for (filter of activeFilters(); track filter.key) {
+            <button type="button" class="filter-chip" (click)="removeFilter(filter.key)">
+              <span>{{ filter.labelKey | transloco }}:</span>
+              @if (filter.kind === 'price') {
+                <span>{{ filter.value | hbPrice }}</span>
+              } @else if (filter.valueKey) {
+                <span>{{ filter.valueKey | transloco }}</span>
+              } @else {
+                <span>{{ filter.value }}</span>
+              }
+              <span class="visually-hidden">{{ 'search.removeFilter' | transloco }}</span>
+              <span aria-hidden="true">×</span>
+            </button>
+          }
+        </div>
+      }
 
       @if (store.loading()) {
         <hb-loading-state [label]="'search.loading' | transloco" />
@@ -142,17 +171,26 @@ import type { PageEvent } from '@angular/material/paginator';
           [description]="'search.emptyDescription' | transloco"
         />
       } @else {
+        <p class="result-count" aria-live="polite">
+          {{ 'search.resultCount' | transloco: { count: store.total() ?? 0 } }}
+        </p>
         <div class="results">
           @for (listing of store.results(); track listing.id) {
             <mat-card appearance="outlined" class="result-card">
               <mat-card-header>
                 <mat-card-title>
-                  <a [routerLink]="['/listings', listing.id]">{{ listing.title }}</a>
+                  <a class="stretched" [routerLink]="['/listings', listing.id]">{{
+                    listing.title
+                  }}</a>
                 </mat-card-title>
                 <mat-card-subtitle>{{ listing.city }}, {{ listing.locality }}</mat-card-subtitle>
               </mat-card-header>
               <mat-card-content>
                 <p class="price">{{ listing.price | hbPrice }}</p>
+                <p class="facts">
+                  {{ listing.bedrooms ?? '–' }} {{ 'detail.bedrooms' | transloco }} ·
+                  {{ listing.bathrooms ?? '–' }} {{ 'detail.bathrooms' | transloco }}
+                </p>
               </mat-card-content>
             </mat-card>
           }
@@ -173,33 +211,91 @@ import type { PageEvent } from '@angular/material/paginator';
       flex-direction: column;
       gap: 1.5rem;
     }
-    .filters-card {
-      width: 100%;
-    }
     .filters {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-      gap: 1rem;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0 1rem;
       align-items: center;
     }
     .actions {
+      grid-column: 1 / -1;
       display: flex;
-      align-items: end;
+      align-items: center;
       justify-content: flex-end;
+      gap: 0.5rem;
+    }
+    .active-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-block-start: -0.5rem;
+    }
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.75rem;
+      border: 1px solid var(--mat-sys-outline);
+      border-radius: 999px;
+      background: var(--mat-sys-surface-container-low);
+      color: var(--mat-sys-on-surface);
+      font: inherit;
+      cursor: pointer;
+    }
+    .filter-chip:focus-visible {
+      outline: 2px solid var(--mat-sys-primary);
+      outline-offset: 2px;
+    }
+    .result-count {
+      margin: 0;
+      color: var(--mat-sys-on-surface-variant);
     }
     .results {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
       gap: 1rem;
     }
-    .result-card a {
-      text-decoration: none;
+    .result-card {
+      position: relative;
+    }
+    /* Stretches the title link over the whole card so the entire card is clickable. */
+    .stretched::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
+    .stretched {
       color: inherit;
+      text-decoration: none;
+    }
+    .stretched:focus-visible {
+      outline: none;
+    }
+    .stretched:focus-visible::after {
+      outline: 2px solid var(--mat-sys-primary);
+      outline-offset: 2px;
     }
     .price {
       font-size: 1.1rem;
       font-weight: 600;
+      margin: 0 0 0.25rem;
+    }
+    .facts {
       margin: 0;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+      white-space: nowrap;
+    }
+    @media (max-width: 900px) {
+      .filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
   `,
 })
@@ -217,6 +313,64 @@ export class SearchPageComponent implements OnInit {
     propertyTypeId: new FormControl<string>('', { nonNullable: true }),
     bedrooms: new FormControl<number | null>(null),
     sort: new FormControl<string>('', { nonNullable: true }),
+  });
+
+  /** Filters currently applied (from the URL), shown as removable chips. */
+  readonly activeFilters = computed<ActiveFilter[]>(() => {
+    const criteria = this.store.criteria();
+    const filters: ActiveFilter[] = [];
+    if (criteria.location) {
+      filters.push({
+        key: 'location',
+        labelKey: 'search.location',
+        kind: 'text',
+        value: criteria.location,
+      });
+    }
+    if (criteria.minPrice != null) {
+      filters.push({
+        key: 'minPrice',
+        labelKey: 'search.minPrice',
+        kind: 'price',
+        value: criteria.minPrice,
+      });
+    }
+    if (criteria.maxPrice != null) {
+      filters.push({
+        key: 'maxPrice',
+        labelKey: 'search.maxPrice',
+        kind: 'price',
+        value: criteria.maxPrice,
+      });
+    }
+    if (criteria.propertyTypeId) {
+      const name = this.store
+        .propertyTypes()
+        .find((type) => type.id === criteria.propertyTypeId)?.name;
+      filters.push({
+        key: 'propertyTypeId',
+        labelKey: 'search.propertyType',
+        kind: 'text',
+        value: name ?? criteria.propertyTypeId,
+      });
+    }
+    if (criteria.bedrooms != null) {
+      filters.push({
+        key: 'bedrooms',
+        labelKey: 'search.bedrooms',
+        kind: 'number',
+        value: criteria.bedrooms,
+      });
+    }
+    if (criteria.sort) {
+      filters.push({
+        key: 'sort',
+        labelKey: 'search.sort',
+        kind: 'text',
+        valueKey: SORT_LABEL_KEYS[criteria.sort],
+      });
+    }
+    return filters;
   });
 
   constructor() {
@@ -239,20 +393,15 @@ export class SearchPageComponent implements OnInit {
       } else {
         this.pageIndex.set(0);
       }
-      void this.executeSearch(this.formToCriteria());
+      void this.store.search(this.formToCriteria());
     });
-
-    this.criteriaForm.controls.location.valueChanges
-      .pipe(debounceTime(350), distinctUntilChanged(), takeUntilDestroyed())
-      .subscribe(() => {
-        void this.applyFilters(true);
-      });
   }
 
   ngOnInit(): void {
     void this.store.init();
   }
 
+  /** Filters apply on submit only, so every field behaves the same way. */
   async applyFilters(resetPage = false): Promise<void> {
     if (resetPage) {
       this.pageIndex.set(0);
@@ -261,6 +410,34 @@ export class SearchPageComponent implements OnInit {
     await this.router.navigate([], {
       relativeTo: this.route,
       queryParams: criteria,
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  /** Removes one filter from the URL; `undefined` drops the query parameter. */
+  async removeFilter(key: FilterKey): Promise<void> {
+    await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { [key]: undefined, page: undefined },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
+
+  async clearFilters(): Promise<void> {
+    this.criteriaForm.reset({ location: '', minPrice: null, maxPrice: null, propertyTypeId: '', bedrooms: null, sort: '' });
+    await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        location: undefined,
+        minPrice: undefined,
+        maxPrice: undefined,
+        propertyTypeId: undefined,
+        bedrooms: undefined,
+        sort: undefined,
+        page: undefined,
+      },
       queryParamsHandling: 'merge',
       replaceUrl: true,
     });
@@ -283,10 +460,6 @@ export class SearchPageComponent implements OnInit {
       page: this.pageIndex() + 1,
       pageSize: 10,
     };
-  }
-
-  private async executeSearch(criteria: ListingSearchCriteria): Promise<void> {
-    await this.store.search(criteria);
   }
 
   private toNumber(value: unknown): number | null {

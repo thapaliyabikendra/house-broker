@@ -7,7 +7,9 @@
     "error": "Error",
     "retry": "Retry",
     "cancel": "Cancel",
-    "saved": "Saved."
+    "saved": "Saved.",
+    "deleted": "Deleted.",
+    "reload": "Reload"
   },
   "authCallback": {
     "working": "Completing sign in...",
@@ -37,7 +39,8 @@
     "english": "English",
     "nepali": "Nepali",
     "signIn": "Sign in",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "account": "Account"
   },
   "footer": {
     "text": "House Broker"
@@ -75,7 +78,8 @@
     "bathrooms": "bathrooms",
     "sqft": "sq ft",
     "imageAlt": "Listing image",
-    "contactDenied": "You do not have permission to view broker contact details."
+    "contactDenied": "You do not have permission to view broker contact details.",
+    "back": "Back to search"
   },
   "broker": {
     "listingsTitle": "My listings",
@@ -118,11 +122,21 @@
       "priceError": "Price is required and must be valid.",
       "cityError": "City is required.",
       "postalCodeError": "Postal code must be 5 digits.",
-      "features": "Features"
+      "features": "Features",
+      "staleReload": "Someone else changed this listing. Reload to see their version? Your unsaved edits will be replaced."
     },
     "publishConfirm": "Publish this listing?",
     "sellConfirm": "Mark this listing as sold?",
-    "archiveConfirm": "Archive this listing?"
+    "archiveConfirm": "Archive this listing?",
+    "published": "Listing published.",
+    "sold": "Listing marked as sold.",
+    "archived": "Listing archived.",
+    "status": {
+      "draft": "Draft",
+      "active": "Active",
+      "sold": "Sold",
+      "archived": "Archived"
+    }
   },
   "admin": {
     "title": "Commission rates",
@@ -144,6 +158,7 @@
     "minPrice": "Min price",
     "minInclusive": "Min inclusive",
     "maxPrice": "Max price",
-    "maxInclusive": "Max inclusive"
+    "maxInclusive": "Max inclusive",
+    "staleReload": "Someone else changed this rate. Reload to see the latest version? Your unsaved edits will be replaced."
   }
 }

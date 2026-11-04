@@ -121,7 +121,9 @@
 | Area | Decision |
 |------|----------|
 | Framework | Angular, latest stable at project start, versions pinned; standalone components, signals, native control flow, `inject()`, typed reactive forms, OnPush |
-| UI toolkit | Angular Material + CDK; responsive; WCAG 2.1 AA target (keyboard, focus, labels, contrast, `aria-live`, reduced motion) |
+| UI toolkit | Angular Material + CDK; WCAG 2.1 AA target (keyboard, focus, labels, contrast, `aria-live`, reduced motion) |
+| Theme | Material 3 default palette (azure primary, blue tertiary), light theme only; no brand tokens, logo or dark mode in the MVP; design tokens (radius, spacing) are taken from theme variables, not hard-coded values |
+| Layout | Desktop-first (designed and verified at 1024 px and above); the mobile/tablet pass (navigation collapse, filter drawer, 320 px reflow) is a follow-up, not MVP scope |
 | Authentication | `angular-auth-oidc-client`: authorization code + PKCE, refresh-token rotation; the bearer token is attached to `/api` calls only |
 | API client | Generated from the exported `swagger.json` with `ng-openapi-gen`, committed under `ui/src/app/api/`; an npm script regenerates it and CI fails when it is stale |
 | State | Signal-based stores per feature; no NgRx |

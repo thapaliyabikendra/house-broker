@@ -31,11 +31,13 @@ import { MatSelectModule } from '@angular/material/select';
         (selectionChange)="setLanguage($event.value)"
         [attr.aria-label]="'header.language' | transloco"
       >
+        <!-- Explicit trigger label: mat-select otherwise shows the projected option text, which can stay stale while transloco loads the new language. -->
+        <mat-select-trigger>{{ languageLabelKey(lang()) | transloco }}</mat-select-trigger>
         <mat-option value="en">{{ 'header.english' | transloco }}</mat-option>
         <mat-option value="ne">{{ 'header.nepali' | transloco }}</mat-option>
       </mat-select>
       @if (auth.user(); as user) {
-        <span class="user">{{ user.name ?? user.sub }}</span>
+        <span class="user">{{ user.name ?? ('header.account' | transloco) }}</span>
         <button mat-button (click)="auth.signOut()">{{ 'header.signOut' | transloco }}</button>
       } @else {
         <button mat-button (click)="auth.signIn()">{{ 'header.signIn' | transloco }}</button>
@@ -70,6 +72,10 @@ export class HeaderComponent {
   private readonly languageService = inject(LanguageService);
   readonly auth = inject(AuthService);
   readonly lang = this.languageService.currentLang;
+
+  languageLabelKey(lang: 'en' | 'ne'): 'header.english' | 'header.nepali' {
+    return lang === 'ne' ? 'header.nepali' : 'header.english';
+  }
 
   setLanguage(value: string): void {
     if (value === 'en' || value === 'ne') {

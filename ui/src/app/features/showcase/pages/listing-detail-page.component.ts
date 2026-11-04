@@ -1,5 +1,5 @@
 ﻿import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ListingsDataService } from '../../../core/data/listings-data.service';
@@ -12,7 +12,6 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import type { ListingDetailDto } from '../../../api/models';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
-import { MatChipsModule } from '@angular/material/chips';
 
 @Component({
   selector: 'hb-listing-detail-page',
@@ -24,12 +23,14 @@ import { MatChipsModule } from '@angular/material/chips';
     ErrorStateComponent,
     HbPricePipe,
     TranslocoPipe,
+    RouterLink,
     MatCardModule,
     MatButtonModule,
-    MatChipsModule,
   ],
   template: `
     <section class="detail-page">
+      <a mat-button routerLink="/search" class="back-link">{{ 'detail.back' | transloco }}</a>
+
       @if (loading()) {
         <hb-loading-state [label]="'detail.loading' | transloco" />
       } @else if (error()) {
@@ -40,73 +41,92 @@ import { MatChipsModule } from '@angular/material/chips';
           (retry)="retry()"
         />
       } @else if (listing(); as item) {
-        <mat-card appearance="outlined" class="overview">
-          <mat-card-header>
-            <mat-card-title>{{ item.title }}</mat-card-title>
-            <mat-card-subtitle
-              >{{ item.city }}, {{ item.locality }}, {{ item.province }}</mat-card-subtitle
-            >
-          </mat-card-header>
-          <mat-card-content>
-            <p class="price">{{ item.price | hbPrice }}</p>
-            <mat-chip-set>
-              <mat-chip>{{ item.bedrooms }} {{ 'detail.bedrooms' | transloco }}</mat-chip>
-              <mat-chip>{{ item.bathrooms }} {{ 'detail.bathrooms' | transloco }}</mat-chip>
-              <mat-chip>{{ item.areaSqFt }} {{ 'detail.sqft' | transloco }}</mat-chip>
-            </mat-chip-set>
-            @if (item.description) {
-              <p class="description">{{ item.description }}</p>
-            }
+        <div class="detail-layout">
+          <div class="main-column">
+            <mat-card appearance="outlined" class="overview">
+              <mat-card-header>
+                <mat-card-title class="title">{{ item.title }}</mat-card-title>
+                <mat-card-subtitle
+                  >{{ item.city }}, {{ item.locality }}, {{ item.province }}</mat-card-subtitle
+                >
+              </mat-card-header>
+              <mat-card-content>
+                <p class="price">{{ item.price | hbPrice }}</p>
+
+                <dl class="facts">
+                  <div>
+                    <dt>{{ 'detail.factBedrooms' | transloco }}</dt>
+                    <dd>{{ item.bedrooms ?? '–' }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'detail.factBathrooms' | transloco }}</dt>
+                    <dd>{{ item.bathrooms ?? '–' }}</dd>
+                  </div>
+                  <div>
+                    <dt>{{ 'detail.factArea' | transloco }}</dt>
+                    <dd>{{ item.areaSqFt ?? '–' }} {{ 'detail.sqft' | transloco }}</dd>
+                  </div>
+                </dl>
+
+                @if (item.description) {
+                  <h2 class="section-title">{{ 'detail.description' | transloco }}</h2>
+                  <p class="description">{{ item.description }}</p>
+                }
+
+                @if (item.features && item.features.length > 0) {
+                  <h2 class="section-title">{{ 'detail.features' | transloco }}</h2>
+                  <ul class="features">
+                    @for (feature of item.features; track feature.id) {
+                      <li>{{ feature.name || feature.code }}</li>
+                    }
+                  </ul>
+                }
+              </mat-card-content>
+            </mat-card>
 
             @if (item.images && item.images.length > 0) {
               <div class="gallery">
                 @for (image of item.images; track image.id; let i = $index) {
                   <img
+                    class="gallery-image"
+                    [class.hero-image]="i === 0"
                     [src]="imageUrl(item.id ?? '', image.id ?? '')"
                     [alt]="(item.title || ('detail.imageAlt' | transloco)) + ' ' + (i + 1)"
-                    width="192"
-                    height="144"
                     loading="lazy"
                   />
                 }
               </div>
             }
+          </div>
 
-            @if (item.features && item.features.length > 0) {
-              <mat-chip-set class="features">
-                @for (feature of item.features; track feature.id) {
-                  <mat-chip>{{ feature.name || feature.code }}</mat-chip>
+          <aside class="side-column">
+            <mat-card appearance="outlined" class="contact">
+              <mat-card-header>
+                <mat-card-title>{{ 'detail.contactTitle' | transloco }}</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                @if (canViewContact() && item.brokerContact) {
+                  <p class="contact-name">{{ item.brokerContact.fullName }}</p>
+                  @if (item.brokerContact.email) {
+                    <p>{{ item.brokerContact.email }}</p>
+                  }
+                  @if (item.brokerContact.phoneNumber) {
+                    <p>{{ item.brokerContact.phoneNumber }}</p>
+                  }
+                } @else {
+                  @if (auth.isAuthenticated()) {
+                    <p>{{ 'detail.contactDenied' | transloco }}</p>
+                  } @else {
+                    <p>{{ 'detail.contactPrompt' | transloco }}</p>
+                    <button mat-raised-button color="primary" type="button" (click)="auth.signIn()">
+                      {{ 'detail.signIn' | transloco }}
+                    </button>
+                  }
                 }
-              </mat-chip-set>
-            }
-          </mat-card-content>
-        </mat-card>
-
-        <mat-card appearance="outlined" class="contact">
-          <mat-card-header>
-            <mat-card-title>{{ 'detail.contactTitle' | transloco }}</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            @if (canViewContact() && item.brokerContact) {
-              <p class="contact-name">{{ item.brokerContact.fullName }}</p>
-              @if (item.brokerContact.email) {
-                <p>{{ item.brokerContact.email }}</p>
-              }
-              @if (item.brokerContact.phoneNumber) {
-                <p>{{ item.brokerContact.phoneNumber }}</p>
-              }
-            } @else {
-              @if (auth.isAuthenticated()) {
-                <p>{{ 'detail.contactDenied' | transloco }}</p>
-              } @else {
-                <p>{{ 'detail.contactPrompt' | transloco }}</p>
-                <button mat-raised-button color="primary" type="button" (click)="auth.signIn()">
-                  {{ 'detail.signIn' | transloco }}
-                </button>
-              }
-            }
-          </mat-card-content>
-        </mat-card>
+              </mat-card-content>
+            </mat-card>
+          </aside>
+        </div>
       } @else {
         <hb-empty-state
           [title]="'detail.emptyTitle' | transloco"
@@ -119,31 +139,88 @@ import { MatChipsModule } from '@angular/material/chips';
     .detail-page {
       display: flex;
       flex-direction: column;
+      gap: 1rem;
+    }
+    .back-link {
+      align-self: flex-start;
+    }
+    .detail-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
       gap: 1.5rem;
+      align-items: start;
+    }
+    .main-column {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      min-inline-size: 0;
+    }
+    .side-column {
+      position: sticky;
+      inset-block-start: 1rem;
+    }
+    .title {
+      font-size: 1.5rem;
     }
     .price {
       font-size: 1.5rem;
       font-weight: 600;
-      margin: 0 0 0.75rem;
+      margin: 0.5rem 0 1rem;
+    }
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+      margin: 0 0 1rem;
+    }
+    .facts dt {
+      color: var(--mat-sys-on-surface-variant);
+      font-size: 0.85rem;
+    }
+    .facts dd {
+      margin: 0;
+      font-weight: 500;
+    }
+    .section-title {
+      font-size: 1.05rem;
+      margin: 1.25rem 0 0.5rem;
+    }
+    .description {
+      white-space: pre-line;
+      margin: 0;
+    }
+    .features {
+      margin: 0;
+      padding-inline-start: 1.25rem;
+      columns: 2;
     }
     .gallery {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
-      gap: 0.5rem;
-      margin-block: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+      gap: 0.75rem;
     }
-    .gallery img {
+    .gallery-image {
       inline-size: 100%;
       block-size: auto;
       aspect-ratio: 4 / 3;
       object-fit: cover;
       border-radius: 8px;
     }
-    .description {
-      margin-block-start: 1rem;
+    .gallery-image.hero-image {
+      grid-column: 1 / -1;
+      aspect-ratio: 16 / 9;
     }
     .contact-name {
       font-weight: 600;
+    }
+    @media (max-width: 900px) {
+      .detail-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+      .side-column {
+        position: static;
+      }
     }
   `,
 })

@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, signal } from '@angular/core';
+import { focusFirstInvalid } from '../../../shared/forms/focus-first-invalid';
+import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminCommissionRatesDataService } from '../../../core/data/admin-commission-rates-data.service';
 import { ApiError } from '../../../core/http/api-error';
@@ -163,12 +165,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
                     {{ 'common.cancel' | transloco }}
                   </button>
                 }
-                <button
-                  mat-raised-button
-                  color="primary"
-                  type="submit"
-                  [disabled]="saving() || form.invalid"
-                >
+                <button mat-raised-button color="primary" type="submit" [disabled]="saving()">
                   @if (saving()) {
                     <mat-spinner diameter="20" />
                   }
@@ -214,6 +211,8 @@ export class CommissionRatesAdminPageComponent {
   private readonly data = inject(AdminCommissionRatesDataService);
   private readonly transloco = inject(TranslocoService);
   private readonly snack = inject(MatSnackBar);
+  private readonly confirmService = inject(ConfirmService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly loading = signal(false);
   readonly saving = signal(false);
@@ -262,6 +261,27 @@ export class CommissionRatesAdminPageComponent {
     }
   }
 
+  /**
+   * 412 means another admin changed the rate first. Offer a reload; on agreement the rate is
+   * reloaded with its current version, and unsaved edits are replaced.
+   */
+  private async offerReload(id: string | null): Promise<void> {
+    const reload = await this.confirmService.confirm({
+      message: this.transloco.translate('admin.staleReload'),
+      confirmLabel: this.transloco.translate('common.reload'),
+    });
+    if (!reload) {
+      return;
+    }
+    await this.load();
+    const fresh = id ? this.rates().find((rate) => rate.id === id) : undefined;
+    if (fresh) {
+      this.edit(fresh);
+    } else {
+      this.cancelEdit();
+    }
+  }
+
   cancelEdit(): void {
     this.editingId.set(null);
     this.editingVersion.set(null);
@@ -306,6 +326,7 @@ export class CommissionRatesAdminPageComponent {
   async submit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      focusFirstInvalid(this.host.nativeElement);
       return;
     }
     this.saving.set(true);
@@ -337,6 +358,11 @@ export class CommissionRatesAdminPageComponent {
       await this.load();
       this.snack.open(this.transloco.translate('common.saved'), undefined, { duration: 3000 });
     } catch (error) {
+      if (error instanceof ApiError && error.status === 412) {
+        this.saving.set(false);
+        await this.offerReload(id);
+        return;
+      }
       if (error instanceof ApiError && error.fieldErrors) {
         for (const [field, messages] of Object.entries(error.fieldErrors)) {
           const control = this.form.get(field);

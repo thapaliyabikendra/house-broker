@@ -14,6 +14,10 @@
                 <a asp-page="/Login" class="btn btn-primary">@L["Home_SignIn"]</a>
                 <a asp-page="/Register" class="btn btn-outline-primary">@L["Home_CreateAccount"]</a>
             </div>
+            <p class="mt-4 mb-0">
+                @* Public listings are served by the Angular portal at the gateway root, outside the /sso/ path base. *@
+                <a href="/search" class="link-primary">@L["Nav_Portal"]</a>
+            </p>
         </div>
     </div>
 </div>

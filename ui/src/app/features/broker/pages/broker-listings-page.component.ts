@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { HttpEventType } from '@angular/common/http';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
@@ -8,11 +8,13 @@ import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
+import { ConfirmService } from '../../../shared/ui/confirm.service';
 import type { OwnerListingDto } from '../../../api/models';
 import { ApiError } from '../../../core/http/api-error';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
@@ -30,6 +32,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     MatCardModule,
     MatButtonModule,
     MatChipsModule,
+    MatMenuModule,
     MatProgressBarModule,
     MatSnackBarModule,
   ],
@@ -60,15 +63,33 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
           [description]="'broker.emptyDescription' | transloco"
         />
       } @else {
+        <div class="filter-bar">
+          <mat-chip-listbox
+            [attr.aria-label]="'broker.filter.label' | transloco"
+            [value]="statusFilter()"
+            (change)="setFilter($event.value)"
+          >
+            <mat-chip-option value="all">{{ 'broker.filter.all' | transloco }}</mat-chip-option>
+            <mat-chip-option value="draft">{{ statusLabel('draft') }}</mat-chip-option>
+            <mat-chip-option value="active">{{ statusLabel('active') }}</mat-chip-option>
+            <mat-chip-option value="sold">{{ statusLabel('sold') }}</mat-chip-option>
+            <mat-chip-option value="archived">{{ statusLabel('archived') }}</mat-chip-option>
+          </mat-chip-listbox>
+        </div>
+
+        @if (visibleListings().length === 0) {
+          <p class="filter-empty">{{ 'broker.filter.empty' | transloco }}</p>
+        }
+
         <div class="listing-stack">
-          @for (listing of listings(); track listing.id) {
+          @for (listing of visibleListings(); track listing.id) {
             <mat-card appearance="outlined">
               <mat-card-header>
                 <mat-card-title>{{ listing.title }}</mat-card-title>
                 <mat-card-subtitle>
                   {{ listing.price | hbPrice }} ·
                   <mat-chip-set>
-                    <mat-chip>{{ listing.status }}</mat-chip>
+                    <mat-chip>{{ statusLabel(listing.status) }}</mat-chip>
                   </mat-chip-set>
                 </mat-card-subtitle>
               </mat-card-header>
@@ -96,18 +117,32 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
                     <button mat-stroked-button type="button" (click)="markSold(listing.id ?? '')">
                       {{ 'broker.sell' | transloco }}
                     </button>
-                    <button mat-stroked-button type="button" (click)="archive(listing.id ?? '')">
-                      {{ 'broker.archive' | transloco }}
-                    </button>
                   }
-                  @if ((listing.status ?? '').toLowerCase() === 'sold') {
-                    <button mat-stroked-button type="button" (click)="archive(listing.id ?? '')">
-                      {{ 'broker.archive' | transloco }}
-                    </button>
-                  }
-                  <button mat-button color="warn" type="button" (click)="remove(listing.id ?? '')">
-                    {{ 'broker.delete' | transloco }}
+                  <button
+                    mat-stroked-button
+                    type="button"
+                    [matMenuTriggerFor]="moreMenu"
+                    [attr.aria-label]="
+                      'broker.moreActionsFor' | transloco: { title: listing.title ?? '' }
+                    "
+                  >
+                    {{ 'broker.more' | transloco }}
                   </button>
+                  <mat-menu #moreMenu="matMenu">
+                    @if ((listing.status ?? '').toLowerCase() !== 'archived') {
+                      <button mat-menu-item type="button" (click)="archive(listing.id ?? '')">
+                        {{ 'broker.archive' | transloco }}
+                      </button>
+                    }
+                    <button
+                      mat-menu-item
+                      type="button"
+                      class="danger-item"
+                      (click)="remove(listing.id ?? '')"
+                    >
+                      {{ 'broker.delete' | transloco }}
+                    </button>
+                  </mat-menu>
                 </div>
 
                 @if (listing.images?.length) {
@@ -188,6 +223,18 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
     .commission {
       margin: 0 0 0.75rem;
     }
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filter-empty {
+      margin: 0;
+      color: var(--mat-sys-on-surface-variant);
+    }
+    .danger-item {
+      color: var(--mat-sys-error);
+    }
     .actions {
       display: flex;
       flex-wrap: wrap;
@@ -234,6 +281,7 @@ export class BrokerListingsPageComponent {
   private readonly transloco = inject(TranslocoService);
   readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
+  private readonly confirmService = inject(ConfirmService);
 
   readonly loading = signal(false);
   /** Failure of the last load; replaces the list. */
@@ -244,6 +292,19 @@ export class BrokerListingsPageComponent {
   readonly uploadingId = signal<string | null>(null);
   readonly uploadProgress = signal<number | null>(null);
   readonly deletingImageId = signal<string | null>(null);
+  /** Status chip filter: 'all' or a lowercase status value. */
+  readonly statusFilter = signal<string>('all');
+  readonly visibleListings = computed(() => {
+    const filter = this.statusFilter();
+    if (filter === 'all') {
+      return this.listings();
+    }
+    return this.listings().filter((item) => (item.status ?? '').toLowerCase() === filter);
+  });
+
+  setFilter(value: string): void {
+    this.statusFilter.set(value);
+  }
 
   constructor() {
     void this.load();
@@ -264,35 +325,64 @@ export class BrokerListingsPageComponent {
   }
 
   async publish(id: string): Promise<void> {
-    if (!window.confirm(this.transloco.translate('broker.publishConfirm'))) {
+    const confirmed = await this.confirmService.confirm({
+      message: this.transloco.translate('broker.publishConfirm'),
+      confirmLabel: this.transloco.translate('broker.publish'),
+    });
+    if (!confirmed) {
       return;
     }
-    await this.transition(id, (listing) => this.listingsData.publish(id, listing.version));
+    await this.transition(
+      id,
+      (listing) => this.listingsData.publish(id, listing.version),
+      this.transloco.translate('broker.published'),
+    );
   }
 
   async markSold(id: string): Promise<void> {
-    if (!window.confirm(this.transloco.translate('broker.sellConfirm'))) {
+    const confirmed = await this.confirmService.confirm({
+      message: this.transloco.translate('broker.sellConfirm'),
+      confirmLabel: this.transloco.translate('broker.sell'),
+    });
+    if (!confirmed) {
       return;
     }
-    await this.transition(id, (listing) => this.listingsData.markSold(id, listing.version));
+    await this.transition(
+      id,
+      (listing) => this.listingsData.markSold(id, listing.version),
+      this.transloco.translate('broker.sold'),
+    );
   }
 
   async archive(id: string): Promise<void> {
-    if (!window.confirm(this.transloco.translate('broker.archiveConfirm'))) {
+    const confirmed = await this.confirmService.confirm({
+      message: this.transloco.translate('broker.archiveConfirm'),
+      confirmLabel: this.transloco.translate('broker.archive'),
+    });
+    if (!confirmed) {
       return;
     }
-    await this.transition(id, (listing) => this.listingsData.archive(id, listing.version));
+    await this.transition(
+      id,
+      (listing) => this.listingsData.archive(id, listing.version),
+      this.transloco.translate('broker.archived'),
+    );
   }
 
   async remove(id: string): Promise<void> {
-    if (!window.confirm(this.transloco.translate('broker.deleteConfirm'))) {
+    const confirmed = await this.confirmService.confirm({
+      message: this.transloco.translate('broker.deleteConfirm'),
+      confirmLabel: this.transloco.translate('broker.delete'),
+      destructive: true,
+    });
+    if (!confirmed) {
       return;
     }
     this.actionError.set(null);
     try {
       await this.listingsData.delete(id);
       this.listings.update((items) => items.filter((item) => item.id !== id));
-      this.snack.open(this.transloco.translate('common.saved'), undefined, { duration: 3000 });
+      this.snack.open(this.transloco.translate('common.deleted'), undefined, { duration: 3000 });
     } catch (error) {
       this.actionError.set(
         error instanceof Error ? error.message : this.transloco.translate('errors.deleteFailed'),
@@ -308,7 +398,12 @@ export class BrokerListingsPageComponent {
   }
 
   async deleteImage(listingId: string, imageId: string): Promise<void> {
-    if (!window.confirm(this.transloco.translate('broker.deleteImageConfirm'))) {
+    const confirmed = await this.confirmService.confirm({
+      message: this.transloco.translate('broker.deleteImageConfirm'),
+      confirmLabel: this.transloco.translate('broker.deleteImage'),
+      destructive: true,
+    });
+    if (!confirmed) {
       return;
     }
     this.deletingImageId.set(imageId);
@@ -376,15 +471,33 @@ export class BrokerListingsPageComponent {
     });
   }
 
+  /** Localised label for a listing status; unknown values are shown as received. */
+  statusLabel(status: string | undefined): string {
+    // Literal keys (not a template string) so the Transloco key scanner can see them.
+    switch ((status ?? '').toLowerCase()) {
+      case 'draft':
+        return this.transloco.translate('broker.status.draft');
+      case 'active':
+        return this.transloco.translate('broker.status.active');
+      case 'sold':
+        return this.transloco.translate('broker.status.sold');
+      case 'archived':
+        return this.transloco.translate('broker.status.archived');
+      default:
+        return status ?? '';
+    }
+  }
+
   private async transition(
     id: string,
     action: (listing: OwnerListingDto) => Promise<OwnerListingDto>,
+    successMessage: string,
   ): Promise<void> {
     this.actionError.set(null);
     try {
       const listing = await this.listingsData.getMineById(id);
       await action(listing);
-      this.snack.open(this.transloco.translate('common.saved'), undefined, { duration: 3000 });
+      this.snack.open(successMessage, undefined, { duration: 3000 });
       await this.load();
     } catch (error) {
       this.actionError.set(

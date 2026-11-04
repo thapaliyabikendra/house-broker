@@ -32,6 +32,7 @@ export const routes: Routes = [
       import('./features/broker/pages/broker-listing-editor.component').then(
         (m) => m.BrokerListingEditorComponent,
       ),
+    canDeactivate: [unsavedChangesGuard],
   },
   {
     path: 'broker/listings/:id/edit',
@@ -40,6 +41,7 @@ export const routes: Routes = [
       import('./features/broker/pages/broker-listing-editor.component').then(
         (m) => m.BrokerListingEditorComponent,
       ),
+    canDeactivate: [unsavedChangesGuard],
   },
   {
     path: 'admin/commission-rates',

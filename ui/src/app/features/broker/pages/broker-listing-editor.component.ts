@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, signal } from '@angular/core';
+import { focusFirstInvalid } from '../../../shared/forms/focus-first-invalid';
+import { ConfirmService } from '../../../shared/ui/confirm.service';
 import type { AbstractControl, ValidationErrors } from '@angular/forms';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -71,6 +73,7 @@ function numberRange(min: number, max: number) {
             }
 
             <form [formGroup]="form" (ngSubmit)="submit()" class="editor-form">
+              <h2 class="group-title">{{ 'broker.editor.groupBasics' | transloco }}</h2>
               <mat-form-field appearance="outline">
                 <mat-label>{{ 'broker.editor.title' | transloco }}</mat-label>
                 <input matInput formControlName="title" />
@@ -84,9 +87,11 @@ function numberRange(min: number, max: number) {
                 <textarea matInput formControlName="description" rows="4"></textarea>
               </mat-form-field>
 
+              <h2 class="group-title">{{ 'broker.editor.groupPriceType' | transloco }}</h2>
               <mat-form-field appearance="outline">
                 <mat-label>{{ 'broker.editor.price' | transloco }}</mat-label>
                 <input matInput type="number" formControlName="price" />
+                <mat-hint>{{ 'broker.editor.priceHint' | transloco }}</mat-hint>
                 @if (form.controls.price.invalid && form.controls.price.touched) {
                   <mat-error>{{ 'broker.editor.priceError' | transloco }}</mat-error>
                 }
@@ -101,6 +106,7 @@ function numberRange(min: number, max: number) {
                 </mat-select>
               </mat-form-field>
 
+              <h2 class="group-title">{{ 'broker.editor.groupLocation' | transloco }}</h2>
               <mat-form-field appearance="outline">
                 <mat-label>{{ 'broker.editor.city' | transloco }}</mat-label>
                 <input matInput formControlName="city" />
@@ -127,6 +133,7 @@ function numberRange(min: number, max: number) {
                 }
               </mat-form-field>
 
+              <h2 class="group-title">{{ 'broker.editor.groupDetails' | transloco }}</h2>
               <mat-form-field appearance="outline">
                 <mat-label>{{ 'broker.editor.bedrooms' | transloco }}</mat-label>
                 <input matInput type="number" formControlName="bedrooms" />
@@ -152,12 +159,10 @@ function numberRange(min: number, max: number) {
               </mat-form-field>
 
               <div class="actions">
-                <button
-                  mat-raised-button
-                  color="primary"
-                  type="submit"
-                  [disabled]="saving() || form.invalid"
-                >
+                <button mat-button type="button" (click)="cancel()">
+                  {{ 'common.cancel' | transloco }}
+                </button>
+                <button mat-raised-button color="primary" type="submit" [disabled]="saving()">
                   @if (saving()) {
                     <mat-spinner diameter="20" />
                   }
@@ -181,17 +186,33 @@ function numberRange(min: number, max: number) {
       padding-block-start: 1rem;
     }
     mat-card {
-      max-inline-size: 36rem;
+      max-inline-size: 56rem;
       width: 100%;
     }
     .editor-form {
       display: grid;
-      grid-template-columns: 1fr;
-      gap: 1rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 1rem;
+    }
+    .group-title {
+      grid-column: 1 / -1;
+      margin: 0.75rem 0 0;
+      font-size: 1.05rem;
+      font-weight: 500;
+    }
+    .editor-form mat-form-field:has(textarea) {
+      grid-column: 1 / -1;
     }
     .actions {
+      grid-column: 1 / -1;
       display: flex;
       justify-content: flex-end;
+      gap: 0.5rem;
+    }
+    @media (max-width: 720px) {
+      .editor-form {
+        grid-template-columns: minmax(0, 1fr);
+      }
     }
   `,
 })
@@ -203,6 +224,8 @@ export class BrokerListingEditorComponent {
   private readonly transloco = inject(TranslocoService);
   readonly auth = inject(AuthService);
   private readonly snack = inject(MatSnackBar);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly confirmService = inject(ConfirmService);
 
   readonly isEdit = signal(false);
   readonly loading = signal(false);
@@ -287,6 +310,30 @@ export class BrokerListingEditorComponent {
     }
   }
 
+  /** Read by unsavedChangesGuard when the user navigates away. */
+  hasUnsavedChanges(): boolean {
+    return this.form.dirty && !this.saving();
+  }
+
+  cancel(): void {
+    void this.router.navigate(['/broker/listings']);
+  }
+
+  /**
+   * 412 means someone else saved first. Offer a reload; the user's unsaved edits are
+   * replaced only if they agree.
+   */
+  private async offerReload(): Promise<void> {
+    const id = this.route.snapshot.paramMap.get('id');
+    const reload = await this.confirmService.confirm({
+      message: this.transloco.translate('broker.editor.staleReload'),
+      confirmLabel: this.transloco.translate('common.reload'),
+    });
+    if (reload && id) {
+      await this.load(id);
+    }
+  }
+
   private idempotencyKeyFor(payload: CreateListingRequest): string {
     const body = JSON.stringify(payload);
     if (this.idempotency?.body !== body) {
@@ -298,6 +345,7 @@ export class BrokerListingEditorComponent {
   async submit(): Promise<void> {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      focusFirstInvalid(this.host.nativeElement);
       return;
     }
     this.saving.set(true);
@@ -327,8 +375,14 @@ export class BrokerListingEditorComponent {
         await this.listingsData.create(payload, this.idempotencyKeyFor(payload));
       }
       this.snack.open(this.transloco.translate('common.saved'), undefined, { duration: 3000 });
+      this.form.markAsPristine();
       await this.router.navigate(['/broker/listings']);
     } catch (error) {
+      if (error instanceof ApiError && error.status === 412) {
+        this.saving.set(false);
+        await this.offerReload();
+        return;
+      }
       if (error instanceof ApiError && error.fieldErrors) {
         for (const [field, messages] of Object.entries(error.fieldErrors)) {
           const control = this.form.get(field);

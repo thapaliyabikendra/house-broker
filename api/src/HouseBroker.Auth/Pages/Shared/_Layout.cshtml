@@ -1,7 +1,6 @@
 ﻿@inject Microsoft.Extensions.Localization.IStringLocalizer<HouseBroker.Auth.Resources.Resources> L
 @{
     var currentCulture = System.Globalization.CultureInfo.CurrentUICulture.Name;
-    var existingQuery = Context.Request.QueryString.HasValue ? Context.Request.QueryString.Value + "&" : "?";
 }
 <!DOCTYPE html>
 <html lang="@currentCulture">
@@ -19,11 +18,6 @@
         <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3" aria-label="@L["Nav_Home"]">
             <div class="container">
                 <a class="navbar-brand" asp-area="" asp-page="/Index">@L["Brand_Name"]</a>
-                <div class="ms-auto d-flex gap-2 align-items-center">
-                    <span class="visually-hidden">@L["Nav_Language"]</span>
-                    <a class="nav-link @(currentCulture.StartsWith("en") ? "fw-bold" : "")" href="@(existingQuery)culture=en&amp;ui-culture=en" hreflang="en" lang="en">@L["Language_English"]</a>
-                    <a class="nav-link @(currentCulture.StartsWith("ne") ? "fw-bold" : "")" href="@(existingQuery)culture=ne&amp;ui-culture=ne" hreflang="ne" lang="ne">@L["Language_Nepali"]</a>
-                </div>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -31,12 +25,36 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="nav navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Index">@L["Nav_Home"]</a>
+                            <a class="nav-link text-dark" asp-area="" asp-page="/Login">@L["Home_SignIn"]</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-dark" asp-area="" asp-page="/Privacy">@L["Nav_Privacy"]</a>
                         </li>
+                        <li class="nav-item">
+                            @* Public listings live in the Angular portal served at the gateway root, outside the /sso/ path base. *@
+                            <a class="nav-link text-dark" href="/search">@L["Nav_Portal"]</a>
+                        </li>
                     </ul>
+                    <div class="ms-sm-auto d-flex gap-2 align-items-center">
+                        <form method="get" id="lang-form" class="d-flex align-items-center gap-2">
+                            <label class="visually-hidden" for="lang-select">@L["Nav_Language"]</label>
+                            @* Keep every other query parameter (for example returnUrl) when the language changes. *@
+                            @foreach (var pair in Context.Request.Query.Where(q => q.Key is not ("culture" or "ui-culture")))
+                            {
+                                foreach (var value in pair.Value)
+                                {
+                                    <input type="hidden" name="@pair.Key" value="@value" />
+                                }
+                            }
+                            <select id="lang-select" name="culture" class="form-select form-select-sm lang-switch__select">
+                                <option value="en" lang="en" selected="@(currentCulture.StartsWith("en") ? "selected" : null)">@L["Language_English"]</option>
+                                <option value="ne" lang="ne" selected="@(currentCulture.StartsWith("ne") ? "selected" : null)">@L["Language_Nepali"]</option>
+                            </select>
+                            <noscript>
+                                <button type="submit" class="btn btn-sm btn-outline-primary">@L["Language_Apply"]</button>
+                            </noscript>
+                        </form>
+                    </div>
                 </div>
             </div>
         </nav>

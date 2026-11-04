@@ -77,6 +77,7 @@
   <data name="Brand_Name" xml:space="preserve">House Broker</data>
   <data name="Nav_Home" xml:space="preserve">Home</data>
   <data name="Nav_Privacy" xml:space="preserve">Privacy</data>
+  <data name="Nav_Portal" xml:space="preserve">Browse listings</data>
   <data name="Nav_Language" xml:space="preserve">Language</data>
   <data name="Language_English" xml:space="preserve">English</data>
   <data name="Language_Nepali" xml:space="preserve">Nepali</data>
@@ -117,4 +118,5 @@
   <data name="Login_Subtitle" xml:space="preserve">Sign in to manage listings and your account.</data>
   <data name="Login_ShowPassword" xml:space="preserve">Show password</data>
   <data name="Login_HidePassword" xml:space="preserve">Hide password</data>
+  <data name="Language_Apply" xml:space="preserve">Apply</data>
 </root>

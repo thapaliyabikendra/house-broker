@@ -184,7 +184,13 @@ body {
   font-size: 0.95rem;
 }
 
-.auth-alert:not(:has(li)) {
+.lang-switch__select {
+  inline-size: auto;
+  min-inline-size: 7rem;
+}
+
+/* ASP.NET renders validation-summary-valid (with a hidden <li>) when there are no errors. */
+.auth-alert.validation-summary-valid {
   display: none;
 }
 

@@ -77,6 +77,7 @@
   <data name="Brand_Name" xml:space="preserve">हाउस ब्रोकर</data>
   <data name="Nav_Home" xml:space="preserve">गृह</data>
   <data name="Nav_Privacy" xml:space="preserve">गोपनीयता</data>
+  <data name="Nav_Portal" xml:space="preserve">सूचीहरू हेर्नुहोस्</data>
   <data name="Nav_Language" xml:space="preserve">भाषा</data>
   <data name="Language_English" xml:space="preserve">अंग्रेजी</data>
   <data name="Language_Nepali" xml:space="preserve">नेपाली</data>
@@ -117,4 +118,5 @@
   <data name="Login_Subtitle" xml:space="preserve">लिस्टिङ र आफ्नो खाता व्यवस्थापन गर्न साइन इन गर्नुहोस्।</data>
   <data name="Login_ShowPassword" xml:space="preserve">पासवर्ड देखाउनुहोस्</data>
   <data name="Login_HidePassword" xml:space="preserve">पासवर्ड लुकाउनुहोस्</data>
+  <data name="Language_Apply" xml:space="preserve">लागू गर्नुहोस्</data>
 </root>
