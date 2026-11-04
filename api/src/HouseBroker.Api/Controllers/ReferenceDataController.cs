@@ -7,7 +7,7 @@ namespace HouseBroker.Api.Controllers;
 
 /// <summary>Shared reference data used by every page.</summary>
 [ApiController]
-[Route("v1")]
+[Route("v{version:apiVersion}")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
 public sealed class ReferenceDataController(ILookupService lookupService) : ControllerBase
 {

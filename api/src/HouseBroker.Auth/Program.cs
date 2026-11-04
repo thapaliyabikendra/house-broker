@@ -10,6 +10,18 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddPolicy("auth", context =>
+        System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0,
+            }));
+});
 builder.Services.AddHouseBrokerJsonOptions();
 
 var connectionString = builder.Configuration.GetConnectionString("HouseBroker")
@@ -26,6 +38,7 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 });
 
 builder.Services.AddScoped<AuthDataSeeder>();
+builder.Services.AddHostedService<TokenPruningService>();
 
 builder.Services
     .AddIdentity<ApplicationUser, IdentityRole<Guid>>(options =>
@@ -46,7 +59,8 @@ builder.Services
         options.SetAuthorizationEndpointUris("/connect/authorize")
             .SetTokenEndpointUris("/connect/token")
             .SetUserInfoEndpointUris("/connect/userinfo")
-            .SetEndSessionEndpointUris("/connect/logout");
+            .SetEndSessionEndpointUris("/connect/logout")
+            .SetIssuer(new Uri(builder.Configuration["Auth:Issuer"] ?? "http://localhost:5000/sso"));
 
         options.AllowAuthorizationCodeFlow().RequireProofKeyForCodeExchange();
         options.AllowClientCredentialsFlow();
@@ -159,6 +173,7 @@ var pathBase = builder.Configuration["PathBase"] ?? "/sso";
         await next();
     });
     app.UseServiceDefaults();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

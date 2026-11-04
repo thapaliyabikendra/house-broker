@@ -8,6 +8,7 @@ using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using Asp.Versioning;
 using Microsoft.OpenApi;
 using Microsoft.Extensions.Hosting;
 
@@ -25,6 +26,16 @@ builder.Services.AddScoped<ICommissionRateAdminService, HouseBroker.Application.
 builder.Services.AddHostedService<HouseBroker.Infrastructure.IdempotencyCleanupService>();
 builder.Services.AddScoped<ILookupService, HouseBroker.Application.Services.LookupService>();
 builder.Services.AddControllers();
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = new UrlSegmentApiVersionReader();
+}).AddMvc().AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";
+    options.SubstituteApiVersionInUrl = true;
+});
 builder.Services.AddHouseBrokerJsonOptions();
 builder.Services.AddHouseBrokerRateLimiting(builder.Configuration);
 builder.Services.AddHouseBrokerOpenApi();
@@ -94,6 +105,7 @@ builder.Services.AddScoped<Microsoft.AspNetCore.Authorization.IAuthorizationHand
 
 var app = builder.Build();
 
+app.UseForwardedHeaders();
 var pathBase = builder.Configuration["PathBase"] ?? "/api";
 app.UsePathBase(pathBase);
 

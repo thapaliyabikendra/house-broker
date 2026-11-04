@@ -8,7 +8,7 @@ namespace HouseBroker.Api.Controllers;
 
 /// <summary>Public listing browse and detail endpoints.</summary>
 [ApiController]
-[Route("v1/listings")]
+[Route("v{version:apiVersion}/listings")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
 public sealed class PublicListingsController(IListingService listingService, IImageStorage imageStorage) : ControllerBase
 {

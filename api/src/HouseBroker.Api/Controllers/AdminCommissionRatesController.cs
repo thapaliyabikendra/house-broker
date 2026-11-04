@@ -10,7 +10,7 @@ namespace HouseBroker.Api.Controllers;
 
 /// <summary>Administrator commission rate management endpoints.</summary>
 [ApiController]
-[Route("v1/admin/commission-rates")]
+[Route("v{version:apiVersion}/admin/commission-rates")]
 [ProducesResponseType<ProblemDetails>(StatusCodes.Status429TooManyRequests)]
 public sealed class AdminCommissionRatesController(ICommissionRateAdminService service) : ControllerBase
 {

@@ -39,8 +39,11 @@ public sealed class ListingService(
             return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
-        // Sync broker profile from token claims
-        await SyncBrokerProfileAsync(brokerId.Value, cancellationToken);
+        var syncResult = await SyncBrokerProfileAsync(brokerId.Value, cancellationToken);
+        if (!syncResult.IsSuccess)
+        {
+            return Result.Failure<OwnerListingDto>(syncResult.Error!);
+        }
 
         NormalizeRequest(request);
 
@@ -101,8 +104,11 @@ public sealed class ListingService(
             return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
-        // Sync broker profile from token claims
-        await SyncBrokerProfileAsync(brokerId.Value, cancellationToken);
+        var syncResult = await SyncBrokerProfileAsync(brokerId.Value, cancellationToken);
+        if (!syncResult.IsSuccess)
+        {
+            return Result.Failure<OwnerListingDto>(syncResult.Error!);
+        }
 
         var listing = await _repository.GetByIdAsync(id, cancellationToken);
         if (listing is null)
@@ -415,7 +421,7 @@ public sealed class ListingService(
         return Result.Success<OwnerListingDto>(MapOwner(listing));
     }
 
-    private async Task SyncBrokerProfileAsync(Guid brokerId, CancellationToken cancellationToken)
+    private async Task<Result> SyncBrokerProfileAsync(Guid brokerId, CancellationToken cancellationToken)
     {
         var fullName = _currentUser.FullName;
         var email = _currentUser.Email;
@@ -424,11 +430,12 @@ public sealed class ListingService(
         if (string.IsNullOrEmpty(fullName) || string.IsNullOrEmpty(email))
         {
             _logger.LogWarning("Broker profile synchronization failed for broker {BrokerId} due to missing required claims.", brokerId);
-            return;
+            return Result.Failure(new ApplicationError(ErrorCodes.Forbidden, ErrorKind.Forbidden, "insufficient_scope"));
         }
 
         var profile = BrokerProfile.Create(brokerId, fullName, email, phone);
         await _queries.UpsertBrokerProfileAsync(profile, cancellationToken);
+        return Result.Success();
     }
 
     private static ListingDetailDto MapDetail(Listing listing)

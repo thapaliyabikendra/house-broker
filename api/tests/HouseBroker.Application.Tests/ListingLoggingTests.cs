@@ -19,8 +19,7 @@ public sealed class ListingLoggingTests
         var (service, _) = CreateService(Guid.NewGuid(), logger);
 
         var result = await service.CreateAsync(ValidCreateRequest(), CancellationToken.None);
-
-        Assert.True(result.IsSuccess);
+        Assert.True(result.IsSuccess, result.Error?.Code ?? "null");
         Assert.Contains(logger.Entries, entry =>
             entry.Level == LogLevel.Information &&
             entry.Message.Contains(result.Value!.Id.ToString(), StringComparison.Ordinal));
@@ -85,6 +84,8 @@ public sealed class ListingLoggingTests
         var unitOfWork = new Mock<IUnitOfWork>();
 
         currentUser.SetupGet(user => user.UserId).Returns(brokerId);
+        currentUser.SetupGet(user => user.FullName).Returns("Broker Name");
+        currentUser.SetupGet(user => user.Email).Returns("broker@example.com");
         rates.Setup(provider => provider.GetActiveAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new[] { CommissionRate.Create(0m, true, null, false, 2m, true, DateTime.MinValue) });
         unitOfWork.Setup(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
