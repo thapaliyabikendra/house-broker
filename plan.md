@@ -22,6 +22,7 @@
 | 6. Testing strategy summary | [06-testing.md](docs/plan/06-testing.md) |
 | 7. Delivery tiers, risks and cut order | [07-delivery-and-risks.md](docs/plan/07-delivery-and-risks.md) |
 | 8. Out of scope | [08-out-of-scope.md](docs/plan/08-out-of-scope.md) |
+| 9. End-to-end testing | [09-e2e-testing.md](docs/plan/09-e2e-testing.md) |
 
 ---
 

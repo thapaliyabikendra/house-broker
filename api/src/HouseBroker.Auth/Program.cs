@@ -37,6 +37,8 @@ builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options => 
 
 builder.WebHost.ConfigureKestrel(options =>
 {
+    // Security header policy: never advertise the server implementation.
+    options.AddServerHeader = false;
     options.Limits.MaxRequestBodySize = builder.Configuration.GetValue("Kestrel:Limits:MaxRequestBodySize", 10 * 1024 * 1024);
     options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
     options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(30);
@@ -58,15 +60,27 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
     }.Concat(options.RequestCultureProviders).ToList();
 });
 builder.Services.AddControllers();
+var authRateLimit = builder.Configuration.GetSection("RateLimiting:Auth");
+var authPermitLimit = authRateLimit.GetValue("PermitLimit", 10);
+var authWindowSeconds = authRateLimit.GetValue("WindowSeconds", 60);
+
 builder.Services.AddRateLimiter(options =>
 {
+    // Rejections are 429 with Retry-After (API rule), not the framework default of 503.
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = (context, _) =>
+    {
+        context.HttpContext.Response.Headers.RetryAfter = authWindowSeconds.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return ValueTask.CompletedTask;
+    };
+
     options.AddPolicy("auth", context =>
         System.Threading.RateLimiting.RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
             factory: _ => new System.Threading.RateLimiting.FixedWindowRateLimiterOptions
             {
-                PermitLimit = 10,
-                Window = TimeSpan.FromMinutes(1),
+                PermitLimit = authPermitLimit,
+                Window = TimeSpan.FromSeconds(authWindowSeconds),
                 QueueLimit = 0,
             }));
 });
@@ -152,6 +166,10 @@ builder.Services
             "openid", "profile", "email", "phone", "offline_access",
             "listings.read", "contacts.read", "listings.write", "commission.read", "admin.commission");
 
+        // Resource servers validate access tokens locally against the published JWKS (signing keys only),
+        // so access tokens are signed JWTs, not encrypted. Identities set aud=housebroker-api.
+        options.DisableAccessTokenEncryption();
+
         if (builder.Environment.IsDevelopment())
         {
             options.AddEphemeralEncryptionKey();
@@ -198,7 +216,10 @@ builder.Services
             options.AddSigningCertificate(signingCertificate);
         }
 
-        var aspNetCoreBuilder = options.UseAspNetCore().EnableTokenEndpointPassthrough();
+        // Authorization and token requests are handled by AuthorizationController and TokenController.
+        var aspNetCoreBuilder = options.UseAspNetCore()
+            .EnableAuthorizationEndpointPassthrough()
+            .EnableTokenEndpointPassthrough();
         if (builder.Environment.IsDevelopment())
         {
             aspNetCoreBuilder.DisableTransportSecurityRequirement();

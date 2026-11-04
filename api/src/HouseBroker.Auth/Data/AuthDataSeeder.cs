@@ -91,9 +91,11 @@ public sealed class AuthDataSeeder(
                 Id = "housebroker-swagger",
                 Name = "House Broker Swagger",
                 Secret = "swagger_secret_123",
-                RedirectUris = new[] { "http://localhost:5000/swagger/oauth2-redirect.html" },
+                // Swagger UI is served under the /api path base (see Program.cs UseSwaggerUI).
+                RedirectUris = new[] { "http://localhost:4200/api/swagger/oauth2-redirect.html", "http://localhost:5049/api/swagger/oauth2-redirect.html" },
                 Types = new[] { OpenIddictConstants.ClientTypes.Confidential },
                 Permissions = new[] {
+                    OpenIddictConstants.Permissions.Endpoints.Authorization,
                     OpenIddictConstants.Permissions.Endpoints.Token,
                     OpenIddictConstants.Permissions.ResponseTypes.Code,
                     OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,

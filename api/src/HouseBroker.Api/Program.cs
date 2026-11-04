@@ -43,6 +43,8 @@ builder.Services.Configure<Microsoft.Extensions.Hosting.HostOptions>(options => 
 
 builder.WebHost.ConfigureKestrel(options =>
 {
+    // Security header policy: never advertise the server implementation.
+    options.AddServerHeader = false;
     options.Limits.MaxRequestBodySize = builder.Configuration.GetValue("Kestrel:Limits:MaxRequestBodySize", 10 * 1024 * 1024);
     options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(2);
     options.Limits.RequestHeadersTimeout = TimeSpan.FromSeconds(30);
@@ -75,7 +77,7 @@ builder.Services.AddHostedService<HouseBroker.Infrastructure.IdempotencyCleanupS
 builder.Services.AddHouseBrokerApi(builder.Configuration);
 builder.Services.AddHouseBrokerJsonOptions();
 builder.Services.AddHouseBrokerRateLimiting(builder.Configuration);
-builder.Services.AddHouseBrokerOpenApi();
+builder.Services.AddHouseBrokerOpenApi(builder.Configuration);
 builder.Services.AddResponseCompression(options => options.EnableForHttps = true);
 builder.Services.AddRequestTimeouts();
 
@@ -167,6 +169,9 @@ builder.Services
         options.Authority = issuer;
         options.Audience = "housebroker-api";
         options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        // Keep the claim names the SSO issues ("scp", "permission", "role") instead of the mapped
+        // Microsoft long names, which the permission and scope checks would not find.
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,

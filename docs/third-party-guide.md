@@ -55,8 +55,8 @@ grant_type=client_credentials
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/public/listings` | Search listings with paging/sorting/filters. |
-| GET | `/api/v1/public/listings/{id}` | Listing detail. Contact is only returned with `contacts.read`. |
+| GET | `/api/v1/listings` | Search listings with paging/sorting/filters. |
+| GET | `/api/v1/listings/{id}` | Listing detail. Contact is only returned with `contacts.read`. |
 | GET | `/api/v1/lookups/property-types` | Property type lookup. |
 | GET | `/api/v1/lookups/features` | Feature lookup. |
 | GET | `/api/v1/meta` | Supported cultures, currency, limits. |
@@ -121,7 +121,7 @@ Configuration keys:
   `2026-11-04T05:27:42Z`); offset-less input is rejected.
 - Embedded list values use Unicode NFC.
 - Currency is deployment-global: `meta.currencyCode` (default `NPR`) and matching
-  `Pricing:Culture` formatting. Amounts are never converted server-side.
+  `Pricing:CurrencyCode` formatting. Amounts are never converted server-side.
 
 ## CORS and pagination
 

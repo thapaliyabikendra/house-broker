@@ -37,9 +37,10 @@ public sealed class TokenController(IOpenIddictApplicationManager applicationMan
 
             foreach (var scope in request.GetScopes())
             {
-                identity.AddClaim("scope", scope, OpenIddictConstants.Destinations.AccessToken);
+                identity.AddClaim(new Claim("scp", scope).SetDestinations(OpenIddictConstants.Destinations.AccessToken));
             }
 
+            identity.SetAudiences(System.Collections.Immutable.ImmutableArray.Create("housebroker-api"));
             var principal = new ClaimsPrincipal(identity);
             principal.SetScopes(request.GetScopes());
 

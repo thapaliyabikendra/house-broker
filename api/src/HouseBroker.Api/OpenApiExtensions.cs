@@ -1,5 +1,6 @@
 using HouseBroker.Api.Filters;
 using Microsoft.OpenApi;
+using Microsoft.Extensions.Configuration;
 
 namespace HouseBroker.Api;
 
@@ -10,11 +11,14 @@ internal static class OpenApiExtensions
     private const string AcceptLanguage = "Accept-Language";
 
     /// <summary>Registers the API explorer document with shared metadata.</summary>
-    internal static IServiceCollection AddHouseBrokerOpenApi(this IServiceCollection services)
+    internal static IServiceCollection AddHouseBrokerOpenApi(this IServiceCollection services, IConfiguration configuration)
         => services.AddOpenApi(options =>
         {
             options.AddDocumentTransformer((document, _, _) =>
             {
+                // Same issuer resolution as the JWT bearer setup, so the documented OAuth URLs match the running SSO.
+                var authIssuer = configuration["Auth:Issuer"] ?? configuration["Auth:Authority"] ?? "http://localhost:5000/sso";
+
                 document.Info = new OpenApiInfo
                 {
                     Title = "House Broker API",
@@ -40,8 +44,8 @@ internal static class OpenApiExtensions
                     {
                         AuthorizationCode = new OpenApiOAuthFlow
                         {
-                            AuthorizationUrl = new Uri("http://localhost:5000/sso/connect/authorize"),
-                            TokenUrl = new Uri("http://localhost:5000/sso/connect/token"),
+                            AuthorizationUrl = new Uri(authIssuer + "/connect/authorize"),
+                            TokenUrl = new Uri(authIssuer + "/connect/token"),
                             Scopes = new Dictionary<string, string>
                             {
                                 ["openid"] = "OpenID Connect",

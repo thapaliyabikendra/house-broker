@@ -38,7 +38,7 @@ Full layout, dependency rules and modeling choices are in [architecture](plan/03
 | API style | Controllers, URL versioning, OpenAPI documented; exposed for third parties |
 | Auth | OpenIddict + Identity; authorization code + PKCE, `client_credentials` for partners; permission ∩ scope, resource ownership |
 | Commission | Flat rate by price tier, snapshotted on the listing; tiers in DB; owner-only DTO |
-| Persistence | EF Core code-first, two MSSQL databases, GUID v7 primary keys, UTC `datetime2(3)`, audit columns, `rowversion` concurrency, guided by indexes |
+| Persistence | EF Core code-first, one SQL Server database (`HouseBroker`: business tables in `dbo`, Identity/OpenIddict in `identity`), GUID v7 primary keys, UTC `datetime2(3)`, audit columns, `rowversion` concurrency, guided by indexes |
 | Caching | `ICacheService` with Memory (dev) and Redis (multi-instance) providers; decorators; never fails a request |
 | Reliability | Correlation ids, idempotent creates, optimistic concurrency, retried transient faults |
 | Localization & time | English/Nepali via resources and `Accept-Language`/`ui_locales`; NPR default currency; UTC storage, injectable clock, zone-aware display |

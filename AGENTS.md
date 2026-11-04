@@ -4,7 +4,7 @@ Guidance for AI coding agents working in this repository. Read this before chang
 
 ## Project status
 
-- **Planning phase.** The repo currently contains only documentation; no solution or source code exists yet.
+- **Implementation in progress.** The .NET API/SSO services, Angular app, tests, CI and documentation are implemented; the delivery plan remains the source of truth for scope and sequencing. See [README.md](README.md) for current build/test gates.
 - **The plan is the source of truth:** [plan.md](plan.md) and [docs/plan/](docs/plan/). Do not invent architecture, APIs or decisions that contradict them.
 - If a requirement is missing or ambiguous, update the relevant plan document and call it out; do not silently choose a different design.
 - Work phase by phase using [05-phases.md](docs/plan/05-phases.md); each phase has an explicit exit criteria.
@@ -23,10 +23,10 @@ A property marketplace MVP: a .NET 10 Clean Architecture API, a separate OpenIdd
 | `docs/plan/` | Scope, decisions, architecture, standards, phases, testing, delivery, out-of-scope |
 | `docs/business-overview.md`, `docs/technical-overview.md` | High-level summaries |
 | `raw-requirements.md` | Original assignment text (do not edit) |
-| `api/` _(planned)_ | .NET solution: 8 `src` projects, 5 test projects |
-| `ui/` _(planned)_ | Angular app served at `/` |
-| `deploy/` _(planned)_ | nginx gateway config |
-| `.github/workflows/ci.yml` _(planned)_ | .NET + web CI jobs and Docker build |
+| `api/` | .NET solution: 8 `src` projects, 5 test projects |
+| `ui/` | Angular app served at `/` |
+| `deploy/` | nginx gateway config |
+| `.github/workflows/ci.yml` | .NET + web CI jobs and Docker build |
 
 ## Glossary
 
@@ -63,9 +63,9 @@ Api, Auth and ServiceDefaults are hosts/support projects.
 - Architecture tests enforce these rules and must stay green.
 - Full detail: [03-architecture.md](docs/plan/03-architecture.md).
 
-## Commands (targets; confirm once the solution exists)
+## Commands
 
-> These are the planned commands. Before using them, verify paths in `README.md`, `package.json` and the actual `.sln`. Do not assume a command exists.
+> These commands match the implemented solution. Confirm local paths in `README.md` and the actual `.sln` before running.
 
 ```powershell
 # .NET

@@ -228,20 +228,13 @@ The full local gate list from this README was run on 2026-11-04. Results:
 | dotnet test api/HouseBroker.sln --no-build | Pass (Auth 21, Application 28, Architecture 1, Api 32) |
 | dotnet format api/HouseBroker.sln --verify-no-changes | Pass |
 | dotnet list api/HouseBroker.sln package --vulnerable --include-transitive | Advisory report: known transitive advisories in .NET 10 test dependencies; exit code 0 |
-| 
-pm --prefix ui ci | Pass (dependencies installed) |
-| 
-pm --prefix ui run lint | Pass |
-| 
-pm --prefix ui run format:check | Pass |
-| 
-pm --prefix ui run test | Pass (32 tests, 16 files) |
-| 
-pm --prefix ui run build | Pass |
-| 
-pm --prefix ui run api:check | Pass |
-| 
-pm --prefix ui run i18n:check | Pass |
+| npm --prefix ui ci | Pass (dependencies installed) |
+| npm --prefix ui run lint | Pass |
+| npm --prefix ui run format:check | Pass |
+| npm --prefix ui run test | Pass (32 tests, 16 files) |
+| npm --prefix ui run build | Pass |
+| npm --prefix ui run api:check | Pass |
+| npm --prefix ui run i18n:check | Pass |
 | docker compose -f docker-compose.prod.yml build | Pass (api, auth, gateway) |
 | Scaled smoke (--scale api=3) | Pass (gateway 200, health/ready 200, meta returns NPR, SQL/Redis/migrations pass) |
 | Anonymous search / lookups / meta smoke | Pass |
@@ -249,4 +242,4 @@ pm --prefix ui run i18n:check | Pass |
 
 Notes:
 - Docker-based smoke uses the development environment override for ephemeral SSO signing keys; production requires a mounted signing certificate via OpenIddict:SigningCertificate:Path.
-- Seed data for local smoke: demo brokers roker1@demo.com / roker2@demo.com, seeker seeker@demo.com, admin dmin@housebroker.com, all with password Password123! except admin AdminPassword123!; partner client demo-partner / partner_secret_123.
+- Seed data for local smoke: demo brokers broker1@demo.com / broker2@demo.com, seeker seeker@demo.com, admin admin@housebroker.com, all with password Password123! except admin AdminPassword123!; partner client demo-partner / partner_secret_123.
