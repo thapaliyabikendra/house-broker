@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -20,6 +21,12 @@ public static class ServiceDefaultsExtensions
         ArgumentNullException.ThrowIfNull(builder);
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddHealthChecks();
+        builder.Services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.KnownIPNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
         builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
         builder.Services.AddFeatureManagement();
         builder.Services.AddProblemDetails();
@@ -47,7 +54,8 @@ public static class ServiceDefaultsExtensions
             options.SupportedUICultures = supportedCultures;
             options.RequestCultureProviders = new IRequestCultureProvider[]
             {
-                new QueryStringRequestCultureProvider(),
+                new UILocalesRequestCultureProvider(),
+            new QueryStringRequestCultureProvider(),
                 new CookieRequestCultureProvider(),
                 new AcceptLanguageHeaderRequestCultureProvider(),
             };
@@ -64,7 +72,7 @@ public static class ServiceDefaultsExtensions
         app.UseMiddleware<CorrelationIdMiddleware>();
         app.UseMiddleware<CultureResponseMiddleware>();
 
-        app.UseSerilogRequestLogging();
+        // app.UseSerilogRequestLogging();
 
         app.UseSecurityHeaders();
 

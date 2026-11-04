@@ -1,0 +1,6 @@
+M:System.DateTime.get_Now;Use TimeProvider instead of DateTime.Now.
+M:System.DateTime.get_UtcNow;Use TimeProvider instead of DateTime.UtcNow.
+M:System.DateTime.get_Today;Use TimeProvider instead of DateTime.Today.
+M:System.DateTimeOffset.get_Now;Use TimeProvider instead of DateTimeOffset.Now.
+M:System.DateTimeOffset.get_UtcNow;Use TimeProvider instead of DateTimeOffset.UtcNow.
+P:System.TimeZoneInfo.Local;Do not use local time zone.

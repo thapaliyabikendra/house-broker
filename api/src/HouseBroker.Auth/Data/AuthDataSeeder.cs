@@ -13,7 +13,8 @@ public sealed class AuthDataSeeder(
     RoleManager<IdentityRole<Guid>> roleManager,
     IOpenIddictApplicationManager applicationManager,
     ILogger<AuthDataSeeder> logger,
-    IConfiguration configuration)
+    IConfiguration configuration,
+    IHostEnvironment environment)
 {
     /// <summary>Seeds the database with roles, users and clients.</summary>
     public async Task SeedAsync(CancellationToken ct = default)
@@ -29,15 +30,17 @@ public sealed class AuthDataSeeder(
         }
 
         // Admin created from configuration/secrets
-        var adminEmail = configuration["Auth:AdminEmail"] ?? "admin@housebroker.com";
-        var adminPassword = configuration["Auth:AdminPassword"] ?? "DefaultAdminPassword123!";
-        
+        var adminEmail = configuration["Auth:AdminEmail"]
+            ?? throw new InvalidOperationException("Auth:AdminEmail is not configured.");
+        var adminPassword = configuration["Auth:AdminPassword"]
+            ?? throw new InvalidOperationException("Auth:AdminPassword is not configured.");
+
         if (await userManager.FindByEmailAsync(adminEmail) is null)
         {
-            var admin = new ApplicationUser 
-            { 
-                UserName = adminEmail, 
-                Email = adminEmail, 
+            var admin = new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email = adminEmail,
                 EmailConfirmed = true,
                 FullName = "System Administrator"
             };
@@ -57,7 +60,7 @@ public sealed class AuthDataSeeder(
         await SeedClientsAsync(ct);
 
         // Demo users only in Development
-        if (configuration.GetValue<string>("Environment") == "Development")
+        if (environment.IsDevelopment())
         {
             await SeedDemoUsersAsync(ct);
         }
@@ -69,41 +72,44 @@ public sealed class AuthDataSeeder(
 
         var clients = new[]
         {
-            new { 
-                Id = "housebroker-web", 
-                Name = "House Broker Web SPA", 
-                Secret = "web_secret_123", 
-                RedirectUris = new[] { "http://localhost:4200/callback" }, 
+            new {
+                Id = "housebroker-web",
+                Name = "House Broker Web SPA",
+                Secret = "web_secret_123",
+                RedirectUris = new[] { "http://localhost:4200/callback" },
                 Types = new[] { OpenIddictConstants.ClientTypes.Public },
-                Permissions = new[] { 
-                    OpenIddictConstants.Permissions.Endpoints.Authorization, 
+                Permissions = new[] {
+                    OpenIddictConstants.Permissions.Endpoints.Authorization,
                     OpenIddictConstants.Permissions.Endpoints.Token,
                     OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
                     OpenIddictConstants.Permissions.GrantTypes.RefreshToken
-                } 
+                },
+                Scopes = new[] { "openid", "profile", "email", "phone", "offline_access", "listings.read", "contacts.read", "listings.write", "commission.read", "admin.commission" },
             },
-            new { 
-                Id = "housebroker-swagger", 
-                Name = "House Broker Swagger", 
-                Secret = "swagger_secret_123", 
-                RedirectUris = new[] { "http://localhost:5000/swagger/oauth2-redirect.html" }, 
+            new {
+                Id = "housebroker-swagger",
+                Name = "House Broker Swagger",
+                Secret = "swagger_secret_123",
+                RedirectUris = new[] { "http://localhost:5000/swagger/oauth2-redirect.html" },
                 Types = new[] { OpenIddictConstants.ClientTypes.Confidential },
-                Permissions = new[] { 
+                Permissions = new[] {
                     OpenIddictConstants.Permissions.Endpoints.Token,
                     OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
                     OpenIddictConstants.Permissions.GrantTypes.RefreshToken
-                } 
+                },
+                Scopes = new[] { "openid", "profile", "email", "phone", "offline_access", "listings.read", "contacts.read", "listings.write", "commission.read", "admin.commission" },
             },
-            new { 
-                Id = "demo-partner", 
-                Name = "Demo Partner", 
-                Secret = "partner_secret_123", 
-                RedirectUris = Array.Empty<string>(), 
+            new {
+                Id = "demo-partner",
+                Name = "Demo Partner",
+                Secret = "partner_secret_123",
+                RedirectUris = Array.Empty<string>(),
                 Types = new[] { OpenIddictConstants.ClientTypes.Confidential },
-                Permissions = new[] { 
+                Permissions = new[] {
                     OpenIddictConstants.Permissions.Endpoints.Token,
                     OpenIddictConstants.Permissions.GrantTypes.ClientCredentials
-                } 
+                },
+                Scopes = new[] { "listings.read", "contacts.read" },
             }
         };
 
@@ -118,15 +124,19 @@ public sealed class AuthDataSeeder(
                     ClientType = c.Types.Contains(OpenIddictConstants.ClientTypes.Public)
                         ? OpenIddictConstants.ClientTypes.Public
                         : OpenIddictConstants.ClientTypes.Confidential,
-                    };
-                    foreach (var uri in c.RedirectUris)
-                    {
-                        descriptor.RedirectUris.Add(new Uri(uri));
-                    }
-                    foreach (var permission in c.Permissions)
-                    {
-                        descriptor.Permissions.Add(permission);
-                    }
+                };
+                foreach (var uri in c.RedirectUris)
+                {
+                    descriptor.RedirectUris.Add(new Uri(uri));
+                }
+                foreach (var permission in c.Permissions)
+                {
+                    descriptor.Permissions.Add(permission);
+                }
+                foreach (var scope in c.Scopes)
+                {
+                    descriptor.Permissions.Add("scp:" + scope);
+                }
                 if (!c.Types.Contains(OpenIddictConstants.ClientTypes.Public) &&
                     !string.IsNullOrWhiteSpace(c.Secret))
                 {
@@ -143,17 +153,18 @@ public sealed class AuthDataSeeder(
     {
         var demoUsers = new[]
         {
-            (Email: "broker1@demo.com", Password: "Password123!", Role: Roles.Broker, Name: "Broker One", Phone: "9800000001"),
-            (Email: "broker2@demo.com", Password: "Password123!", Role: Roles.Broker, Name: "Broker Two", Phone: "9800000002"),
-            (Email: "seeker@demo.com", Password: "Password123!", Role: Roles.Seeker, Name: "Demo Seeker", Phone: "9800000003"),
+            (Id: DemoUsers.BrokerOne, Email: "broker1@demo.com", Password: "Password123!", Role: Roles.Broker, Name: "Broker One", Phone: "9800000001"),
+            (Id: DemoUsers.BrokerTwo, Email: "broker2@demo.com", Password: "Password123!", Role: Roles.Broker, Name: "Broker Two", Phone: "9800000002"),
+            (Id: DemoUsers.Seeker, Email: "seeker@demo.com", Password: "Password123!", Role: Roles.Seeker, Name: "Demo Seeker", Phone: "9800000003"),
         };
 
-        foreach (var (email, password, role, name, phone) in demoUsers)
+        foreach (var (id, email, password, role, name, phone) in demoUsers)
         {
             if (await userManager.FindByEmailAsync(email) is null)
             {
                 var user = new ApplicationUser
                 {
+                    Id = id,
                     UserName = email,
                     Email = email,
                     EmailConfirmed = true,

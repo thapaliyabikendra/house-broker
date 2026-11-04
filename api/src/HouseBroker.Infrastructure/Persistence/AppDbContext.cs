@@ -65,7 +65,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         configurationBuilder.Properties<DateTime?>().HaveConversion<UtcNullableDateTimeValueConverter>();
     }
 
-/// <inheritdoc />
+    /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -83,6 +83,25 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         ConfigureIdempotencyKey(modelBuilder);
 
         modelBuilder.Entity<Listing>().HasQueryFilter(listing => !listing.IsDeleted);
+
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            foreach (var property in entityType.GetProperties())
+            {
+                if (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
+                {
+                    property.SetColumnType("datetime2(3)");
+                    if (property.Name != nameof(Listing.DeletedAt))
+                    {
+                        property.SetDefaultValueSql("SYSUTCDATETIME()");
+                    }
+                    else
+                    {
+                        property.SetDefaultValueSql(null);
+                    }
+                }
+            }
+        }
     }
 
     private static void ConfigureListing(ModelBuilder modelBuilder)
@@ -267,13 +286,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.HasIndex(key => key.ExpiresAt);
     }
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:AvoidUninstantiatedInternalClasses", Justification = "Instantiated by EF Core convention configuration.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:AvoidUninstantiatedInternalClasses", Justification = "Instantiated by EF Core convention configuration.")]
     private sealed class UtcDateTimeValueConverter() : ValueConverter<DateTime, DateTime>(
-        value => value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime(),
-        value => DateTime.SpecifyKind(value, DateTimeKind.Utc));
+            value => value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime(),
+            value => DateTime.SpecifyKind(value, DateTimeKind.Utc));
 
-[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:AvoidUninstantiatedInternalClasses", Justification = "Instantiated by EF Core convention configuration.")]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:AvoidUninstantiatedInternalClasses", Justification = "Instantiated by EF Core convention configuration.")]
     private sealed class UtcNullableDateTimeValueConverter() : ValueConverter<DateTime?, DateTime?>(
-        value => value.HasValue ? (value.Value.Kind == DateTimeKind.Utc ? value.Value : value.Value.ToUniversalTime()) : value,
-        value => value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : value);
+            value => value.HasValue ? (value.Value.Kind == DateTimeKind.Utc ? value.Value : value.Value.ToUniversalTime()) : value,
+            value => value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : value);
 }

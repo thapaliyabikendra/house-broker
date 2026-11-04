@@ -15,6 +15,26 @@ using Microsoft.Extensions.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = builder.Configuration.GetValue("Kestrel:Limits:MaxRequestBodySize", 10 * 1024 * 1024);
+});
+builder.Services.AddCors(options =>
+{
+    var origins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+    options.AddDefaultPolicy(policy =>
+    {
+        if (origins.Length > 0)
+        {
+            policy.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod().AllowCredentials();
+        }
+        else
+        {
+            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+        }
+    });
+});
+
 builder.AddServiceDefaults();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -44,10 +64,10 @@ builder.Services.AddHouseBrokerOpenApi();
 // Swagger UI Configuration
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo 
-    { 
-        Title = "House Broker API", 
-        Version = "v1" 
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "House Broker API",
+        Version = "v1"
     });
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -139,6 +159,7 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 var pathBase = builder.Configuration["PathBase"] ?? "/api";
 app.UsePathBase(pathBase);
+app.UseCors();
 
 app.UseServiceDefaults();
 

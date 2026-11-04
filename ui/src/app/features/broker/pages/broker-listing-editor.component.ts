@@ -48,6 +48,9 @@ function numberRange(min: number, max: number) {
           <label>
             Title
             <input formControlName="title" />
+            @if (form.controls.title.invalid && form.controls.title.touched) {
+              <small>Title is required or too long.</small>
+            }
           </label>
 
           <label>
@@ -58,6 +61,9 @@ function numberRange(min: number, max: number) {
           <label>
             Price
             <input type="number" formControlName="price" />
+            @if (form.controls.price.invalid && form.controls.price.touched) {
+              <small>Price is required and must be valid.</small>
+            }
           </label>
 
           <label>
@@ -72,6 +78,9 @@ function numberRange(min: number, max: number) {
           <label>
             City
             <input formControlName="city" />
+            @if (form.controls.city.invalid && form.controls.city.touched) {
+              <small>City is required.</small>
+            }
           </label>
 
           <label>
@@ -87,6 +96,9 @@ function numberRange(min: number, max: number) {
           <label>
             Postal code
             <input formControlName="postalCode" />
+            @if (form.controls.postalCode.invalid && form.controls.postalCode.touched) {
+              <small>Postal code must be 5 digits.</small>
+            }
           </label>
 
           <label>

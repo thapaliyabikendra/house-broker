@@ -1,13 +1,15 @@
 import { Component, inject, signal } from '@angular/core';
 import { AuthService } from '../../core/auth/auth.service';
 import { LanguageService } from '../../core/i18n/language.service';
+import { TranslocoPipe } from '@jsverse/transloco';
 
 @Component({
   selector: 'hb-header',
   standalone: true,
+  imports: [TranslocoPipe],
   template: `
     <header class="shell-header">
-      <h1>House Broker</h1>
+      <h1>{{ 'title' | transloco }}</h1>
       <div class="actions">
         <label class="lang">
           Language

@@ -4,21 +4,21 @@ namespace HouseBroker.Domain.Common;
 public sealed class DomainException : Exception
 {
     /// <summary>Initializes a new instance of the <see cref="DomainException"/> class.</summary>
-    public DomainException() : base() 
+    public DomainException() : base()
     {
         Code = string.Empty;
         Arguments = Array.Empty<object?>();
     }
 
     /// <summary>Initializes a new instance of the <see cref="DomainException"/> class with a specified error message.</summary>
-    public DomainException(string message) : base(message) 
+    public DomainException(string message) : base(message)
     {
         Code = string.Empty;
         Arguments = Array.Empty<object?>();
     }
 
     /// <summary>Initializes a new instance of the <see cref="DomainException"/> class with a specified error message and a reference to the inner exception that is evident causing this exception.</summary>
-    public DomainException(string message, Exception innerException) : base(message, innerException) 
+    public DomainException(string message, Exception innerException) : base(message, innerException)
     {
         Code = string.Empty;
         Arguments = Array.Empty<object?>();

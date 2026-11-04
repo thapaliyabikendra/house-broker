@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenIddict.Abstractions;
 
@@ -5,8 +6,7 @@ namespace HouseBroker.Auth.Data;
 
 /// <summary>Periodically prunes expired OpenIddict tokens and authorizations.</summary>
 public sealed class TokenPruningService(
-    IOpenIddictTokenManager tokenManager,
-    IOpenIddictAuthorizationManager authorizationManager,
+    IServiceScopeFactory scopeFactory,
     TimeProvider clock) : BackgroundService
 {
     /// <inheritdoc />
@@ -14,6 +14,10 @@ public sealed class TokenPruningService(
     {
         while (!stoppingToken.IsCancellationRequested)
         {
+            using var scope = scopeFactory.CreateScope();
+            var tokenManager = scope.ServiceProvider.GetRequiredService<IOpenIddictTokenManager>();
+            var authorizationManager = scope.ServiceProvider.GetRequiredService<IOpenIddictAuthorizationManager>();
+
             await tokenManager.PruneAsync(clock.GetUtcNow(), stoppingToken);
             await authorizationManager.PruneAsync(clock.GetUtcNow(), stoppingToken);
 

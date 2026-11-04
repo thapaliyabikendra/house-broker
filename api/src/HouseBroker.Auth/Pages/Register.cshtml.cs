@@ -9,8 +9,8 @@ using HouseBroker.Auth.Data;
 namespace HouseBroker.Auth.Pages;
 
 public class RegisterModel(
-    UserManager<ApplicationUser> userManager, 
-    SignInManager<ApplicationUser> signInManager, 
+    UserManager<ApplicationUser> userManager,
+    SignInManager<ApplicationUser> signInManager,
     RoleManager<IdentityRole<Guid>> roleManager,
     IStringLocalizer<HouseBroker.Auth.Resources.Resources> L) : PageModel
 {
@@ -47,7 +47,7 @@ public class RegisterModel(
     {
         ReturnUrl = returnUrl ?? Url.Content("~/");
 
-        if (Input.Role != "Seeker" && Input.Role != "Broker")
+        if (!AuthClaimMapper.RegistrationRoles.Contains(Input.Role, StringComparer.Ordinal))
         {
             ModelState.AddModelError("Input.Role", L["Register_InvalidRole"]);
         }

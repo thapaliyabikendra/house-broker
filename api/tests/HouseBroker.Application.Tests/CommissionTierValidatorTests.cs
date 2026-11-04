@@ -11,7 +11,7 @@ public sealed class CommissionTierValidatorTests
     [Fact]
     public void Validate_ValidSet_NoErrors()
     {
-        var now = DateTime.UtcNow;
+        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
         var tiers = new[]
         {
             CommissionRate.Create(0m, true, 5000000m, false, 2m, true, DateTime.MinValue),
@@ -28,7 +28,7 @@ public sealed class CommissionTierValidatorTests
     [Fact]
     public void Validate_Gap_ReturnsError()
     {
-        var now = DateTime.UtcNow;
+        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
         var tiers = new[]
         {
             CommissionRate.Create(0m, true, 4999999m, false, 2m, true, DateTime.MinValue),
@@ -44,7 +44,7 @@ public sealed class CommissionTierValidatorTests
     [Fact]
     public void Validate_DoubleInclusiveBoundary_ReturnsError()
     {
-        var now = DateTime.UtcNow;
+        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
         var tiers = new[]
         {
             CommissionRate.Create(0m, true, 5000000m, true, 2m, true, DateTime.MinValue),

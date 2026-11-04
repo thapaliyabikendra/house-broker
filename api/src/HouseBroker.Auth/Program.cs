@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using HouseBroker.Auth;
 using HouseBroker.Auth.Data;
 using HouseBroker.Domain.Common;
 using HouseBroker.ServiceDefaults;
@@ -5,6 +7,11 @@ using OpenIddict.Abstractions;
 using OpenIddict.Server;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = builder.Configuration.GetValue("Kestrel:Limits:MaxRequestBodySize", 10 * 1024 * 1024);
+});
 
 builder.AddServiceDefaults();
 builder.Services.AddRazorPages();
@@ -135,15 +142,15 @@ builder.Services
 var app = builder.Build();
 
 var pathBase = builder.Configuration["PathBase"] ?? "/sso";
-        app.UsePathBase(pathBase);
+app.UsePathBase(pathBase);
 
-    app.UseHsts();
-    app.Use(async (context, next) =>
-    {
-        context.Response.Headers.Append("X-Frame-Options", "DENY");
-        await next();
-    });
-    app.UseServiceDefaults();
+app.UseHsts();
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Append("X-Frame-Options", "DENY");
+    await next();
+});
+app.UseServiceDefaults();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -153,13 +160,77 @@ app.MapControllers();
 
 if (args.Contains("migrate", StringComparer.OrdinalIgnoreCase))
 {
-    using var scope = app.Services.CreateScope();
-    var database = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
+    using var migrationScope = app.Services.CreateScope();
+    var database = migrationScope.ServiceProvider.GetRequiredService<AuthDbContext>();
     await database.Database.MigrateAsync();
-    
-    var seeder = scope.ServiceProvider.GetRequiredService<AuthDataSeeder>();
+
+    var seeder = migrationScope.ServiceProvider.GetRequiredService<AuthDataSeeder>();
     await seeder.SeedAsync();
-    
+
+    return;
+}
+
+if (args.Contains("register-client", StringComparer.OrdinalIgnoreCase))
+{
+    using var clientScope = app.Services.CreateScope();
+    var manager = clientScope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
+    var clientId = builder.Configuration["Client:Id"] ?? throw new InvalidOperationException("Client:Id is not configured.");
+    var clientSecret = builder.Configuration["Client:Secret"];
+    var clientType = string.IsNullOrWhiteSpace(clientSecret)
+        ? OpenIddictConstants.ClientTypes.Public
+        : OpenIddictConstants.ClientTypes.Confidential;
+    var redirectUris = builder.Configuration.GetSection("Client:RedirectUris").Get<string[]>() ?? Array.Empty<string>();
+    var scopes = builder.Configuration.GetSection("Client:Scopes").Get<string[]>() ?? new[] { "openid", "profile" };
+
+    var descriptor = new OpenIddictApplicationDescriptor
+    {
+        ClientId = clientId,
+        ClientType = clientType,
+        DisplayName = builder.Configuration["Client:Name"] ?? clientId,
+    };
+
+    if (!string.IsNullOrWhiteSpace(clientSecret))
+    {
+        descriptor.ClientSecret = clientSecret;
+    }
+
+    foreach (var uri in redirectUris)
+    {
+        if (Uri.TryCreate(uri, UriKind.Absolute, out var parsed))
+        {
+            descriptor.RedirectUris.Add(parsed);
+        }
+    }
+
+    descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Token);
+    if (redirectUris.Length > 0)
+    {
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Authorization);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode);
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.RefreshToken);
+    }
+    else
+    {
+        descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.ClientCredentials);
+    }
+
+    foreach (var scope in scopes)
+    {
+        descriptor.Permissions.Add("scp:" + scope);
+    }
+
+    var existing = await manager.FindByClientIdAsync(clientId);
+    if (existing is null)
+    {
+        await manager.CreateAsync(descriptor);
+        Console.WriteLine($"Registered client {clientId}.");
+    }
+    else
+    {
+        await manager.UpdateAsync(existing, descriptor);
+        Console.WriteLine($"Updated client {clientId}.");
+    }
+
     return;
 }
 

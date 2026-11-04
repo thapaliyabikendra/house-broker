@@ -2,7 +2,6 @@ import { Component, inject, signal } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminCommissionRatesDataService } from '../../../core/data/admin-commission-rates-data.service';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { EmptyStateComponent } from '../../../shared/ui/empty-state.component';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import type { CommissionRateDto, CommissionRateRequest } from '../../../api/models';
@@ -10,13 +9,7 @@ import type { CommissionRateDto, CommissionRateRequest } from '../../../api/mode
 @Component({
   selector: 'hb-commission-rates-admin-page',
   standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    LoadingStateComponent,
-    EmptyStateComponent,
-    ErrorStateComponent,
-    TranslocoPipe,
-  ],
+  imports: [ReactiveFormsModule, LoadingStateComponent, ErrorStateComponent, TranslocoPipe],
   template: `
     <section class="admin-page">
       <h1>Commission rates</h1>

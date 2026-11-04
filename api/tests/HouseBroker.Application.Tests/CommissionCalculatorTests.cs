@@ -14,7 +14,7 @@ public sealed class CommissionCalculatorTests
     [InlineData(10000000.01, 1.5)]
     public void Calculate_ReturnsExpectedTier(decimal price, decimal expectedRate)
     {
-        var now = DateTime.UtcNow;
+        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
         var tiers = new[]
         {
             CommissionRate.Create(0m, true, 5000000m, false, 2m, true, DateTime.MinValue),
@@ -32,7 +32,7 @@ public sealed class CommissionCalculatorTests
     [Fact]
     public void Calculate_IgnoresFutureTier()
     {
-        var now = DateTime.UtcNow;
+        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
         var tiers = new[]
         {
             CommissionRate.Create(0m, true, null, false, 2m, true, DateTime.MinValue),
@@ -48,7 +48,7 @@ public sealed class CommissionCalculatorTests
     [Fact]
     public void Calculate_NoTier_Throws()
     {
-        var now = DateTime.UtcNow;
+        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
         var tiers = Array.Empty<CommissionRate>();
 
         Assert.Throws<HouseBroker.Domain.Common.DomainException>(() => CommissionCalculator.Calculate(1000m, tiers, now));

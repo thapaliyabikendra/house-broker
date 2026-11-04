@@ -9,7 +9,7 @@ using HouseBroker.Auth.Data;
 namespace HouseBroker.Auth.Pages;
 
 public class LoginModel(
-    SignInManager<ApplicationUser> signInManager, 
+    SignInManager<ApplicationUser> signInManager,
     UserManager<ApplicationUser> userManager,
     IStringLocalizer<HouseBroker.Auth.Resources.Resources> L) : PageModel
 {
