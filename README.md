@@ -234,7 +234,7 @@ pm --prefix ui run lint | Pass |
 | 
 pm --prefix ui run format:check | Pass |
 | 
-pm --prefix ui run test | Pass (26 tests, 12 files) |
+pm --prefix ui run test | Pass (32 tests, 16 files) |
 | 
 pm --prefix ui run build | Pass |
 | 

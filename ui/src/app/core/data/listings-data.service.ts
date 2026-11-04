@@ -17,7 +17,7 @@ import type {
   ListingSummaryDto,
   ListingImageDto,
   OwnerListingDto,
-  PagedResultOfListingSummaryDto,
+  ListingSummaryDtoPagedResult,
   UpdateListingRequest,
 } from '../../api/models';
 
@@ -39,7 +39,7 @@ export class ListingsDataService {
   private readonly http = inject(HttpClient);
   private readonly config = inject(RuntimeConfigService);
 
-  search(criteria: ListingSearchCriteria = {}): Promise<PagedResultOfListingSummaryDto> {
+  search(criteria: ListingSearchCriteria = {}): Promise<ListingSummaryDtoPagedResult> {
     return this.api.invoke(v1ListingsGet$Json, {
       Location: criteria.location,
       MinPrice: criteria.minPrice,

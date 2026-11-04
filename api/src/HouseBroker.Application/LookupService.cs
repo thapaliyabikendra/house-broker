@@ -1,4 +1,5 @@
 using HouseBroker.Application.Contracts;
+using HouseBroker.Application.Mapping;
 using HouseBroker.Domain.Common;
 
 namespace HouseBroker.Application.Services;
@@ -12,26 +13,14 @@ public sealed class LookupService(IListingQueries queries) : ILookupService
     public async Task<Result<IReadOnlyList<PropertyTypeDto>>> GetPropertyTypesAsync(CancellationToken cancellationToken)
     {
         var items = await _queries.GetPropertyTypesAsync(cancellationToken);
-        return Result.Success<IReadOnlyList<PropertyTypeDto>>(items.Select(item => new PropertyTypeDto
-        {
-            Id = item.Id,
-            Code = item.Code,
-            Name = item.Name,
-            SortOrder = item.SortOrder,
-        }).ToList());
+        return Result.Success<IReadOnlyList<PropertyTypeDto>>(items.Select(ListingMapper.Instance.ToPropertyType).ToList());
     }
 
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<FeatureDto>>> GetFeaturesAsync(CancellationToken cancellationToken)
     {
         var items = await _queries.GetFeaturesAsync(cancellationToken);
-        return Result.Success<IReadOnlyList<FeatureDto>>(items.Select(item => new FeatureDto
-        {
-            Id = item.Id,
-            Code = item.Code,
-            Name = item.Name,
-            SortOrder = item.SortOrder,
-        }).ToList());
+        return Result.Success<IReadOnlyList<FeatureDto>>(items.Select(ListingMapper.Instance.ToFeatureLookup).ToList());
     }
 
     /// <inheritdoc />

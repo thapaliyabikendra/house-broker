@@ -1,4 +1,5 @@
 using HouseBroker.Application.Contracts;
+using HouseBroker.Application.Mapping;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Common;
 using Microsoft.Extensions.Logging;
@@ -464,86 +465,24 @@ public sealed class ListingService(
 
     private static ListingDetailDto MapDetail(Listing listing)
     {
-        var dto = new ListingDetailDto
-        {
-            Id = listing.Id,
-            Title = listing.Title,
-            Description = listing.Description,
-            PropertyTypeId = listing.PropertyTypeId,
-            Price = listing.Price,
-            Province = listing.Province,
-            City = listing.City,
-            Locality = listing.Locality,
-            PostalCode = listing.PostalCode,
-            Bedrooms = listing.Bedrooms,
-            Bathrooms = listing.Bathrooms,
-            AreaSqFt = listing.AreaSqFt,
-            Status = listing.Status.ToString(),
-            CreatedAt = listing.CreatedAt,
-            Version = Convert.ToBase64String(listing.RowVersion),
-        };
-        foreach (var image in listing.Images.Select(MapImage))
-        {
-            dto.Images.Add(image);
-        }
-        foreach (var feature in MapFeatures(listing, null))
-        {
-            dto.Features.Add(feature);
-        }
-        return dto;
+        return ListingMapper.Instance.ToDetail(listing);
     }
 
     private static OwnerListingDto MapOwner(Listing listing, IReadOnlyDictionary<Guid, Feature>? featureLookup = null)
     {
-        var dto = new OwnerListingDto
+        var dto = ListingMapper.Instance.ToOwner(listing);
+        if (featureLookup is not null)
         {
-            Id = listing.Id,
-            Title = listing.Title,
-            Description = listing.Description,
-            PropertyTypeId = listing.PropertyTypeId,
-            Price = listing.Price,
-            Province = listing.Province,
-            City = listing.City,
-            Locality = listing.Locality,
-            PostalCode = listing.PostalCode,
-            Bedrooms = listing.Bedrooms,
-            Bathrooms = listing.Bathrooms,
-            AreaSqFt = listing.AreaSqFt,
-            Status = listing.Status.ToString(),
-            CreatedAt = listing.CreatedAt,
-            Version = Convert.ToBase64String(listing.RowVersion),
-            CommissionAmount = listing.CommissionAmount,
-            CommissionRatePercent = listing.CommissionRatePercent,
-            CommissionRateId = listing.CommissionRateId,
-        };
-        foreach (var image in listing.Images.Select(MapImage))
-        {
-            dto.Images.Add(image);
-        }
-        foreach (var feature in MapFeatures(listing, featureLookup))
-        {
-            dto.Features.Add(feature);
+            foreach (var featureDto in dto.Features)
+            {
+                if (featureLookup.TryGetValue(featureDto.Id, out var feature))
+                {
+                    featureDto.Code = feature.Code;
+                    featureDto.Name = feature.Name;
+                }
+            }
         }
         return dto;
-    }
-
-    private static List<ListingFeatureDto> MapFeatures(Listing listing, IReadOnlyDictionary<Guid, Feature>? featureLookup)
-        => listing.Features.Select(feature => MapFeature(feature, featureLookup)).ToList();
-
-    private static ListingFeatureDto MapFeature(ListingFeature feature, IReadOnlyDictionary<Guid, Feature>? featureLookup)
-    {
-        var definition = feature.Feature;
-        if (definition is null && featureLookup is not null && featureLookup.TryGetValue(feature.FeatureId, out var found))
-        {
-            definition = found;
-        }
-
-        return new ListingFeatureDto
-        {
-            Id = feature.FeatureId,
-            Code = definition?.Code ?? string.Empty,
-            Name = definition?.Name ?? string.Empty,
-        };
     }
 
     private async Task<IReadOnlyDictionary<Guid, Feature>> GetFeatureLookupAsync(
@@ -558,17 +497,6 @@ public sealed class ListingService(
         var features = await _queries.GetFeaturesAsync(cancellationToken);
         return features.ToDictionary(feature => feature.Id);
     }
-
-    private static ListingImageDto MapImage(ListingImage image)
-        => new()
-        {
-            Id = image.Id,
-            FileName = image.FileName,
-            ContentType = image.ContentType,
-            ContentLength = image.ContentLength,
-            IsPrimary = image.IsPrimary,
-            SortOrder = image.SortOrder,
-        };
 
     private static void NormalizeRequest(CreateListingRequest request)
     {

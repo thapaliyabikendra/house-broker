@@ -1,4 +1,5 @@
 using HouseBroker.Application.Contracts;
+using HouseBroker.Application.Mapping;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Common;
 using System.Text.Json;
@@ -23,7 +24,7 @@ public sealed class CommissionRateAdminService(
     public async Task<Result<IReadOnlyList<CommissionRateDto>>> GetAllAsync(CancellationToken cancellationToken)
     {
         var rates = await _repository.GetAllAsync(cancellationToken);
-        return Result.Success<IReadOnlyList<CommissionRateDto>>(rates.Select(Map).ToList());
+        return Result.Success<IReadOnlyList<CommissionRateDto>>(rates.Select(ListingMapper.Instance.ToCommissionRate).ToList());
     }
 
     /// <inheritdoc />
@@ -74,7 +75,7 @@ public sealed class CommissionRateAdminService(
         await createTransaction.CommitAsync(cancellationToken);
         await _cache.InvalidateCommissionRatesAsync(cancellationToken);
 
-        return Result.Success<CommissionRateDto>(Map(candidate));
+        return Result.Success<CommissionRateDto>(ListingMapper.Instance.ToCommissionRate(candidate));
     }
 
     /// <inheritdoc />
@@ -125,7 +126,7 @@ public sealed class CommissionRateAdminService(
             return Result.Failure<CommissionRateDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation));
         }
 
-        var oldValues = JsonSerializer.Serialize(Map(rate));
+        var oldValues = JsonSerializer.Serialize(ListingMapper.Instance.ToCommissionRate(rate));
 
         rate.Update(request.MinPrice, request.MinInclusive, request.MaxPrice, request.MaxInclusive, request.RatePercent, request.IsActive, effectiveFrom);
 
@@ -139,7 +140,7 @@ public sealed class CommissionRateAdminService(
             rate.Id,
             null,
             oldValues,
-            JsonSerializer.Serialize(Map(rate))), cancellationToken);
+            JsonSerializer.Serialize(ListingMapper.Instance.ToCommissionRate(rate))), cancellationToken);
 
         var updateSave = await _unitOfWork.SaveChangesAsync(cancellationToken);
         if (!updateSave.IsSuccess)
@@ -150,22 +151,9 @@ public sealed class CommissionRateAdminService(
         await updateTransaction.CommitAsync(cancellationToken);
         await _cache.InvalidateCommissionRatesAsync(cancellationToken);
 
-        return Result.Success<CommissionRateDto>(Map(rate));
+        return Result.Success<CommissionRateDto>(ListingMapper.Instance.ToCommissionRate(rate));
     }
 
-    private static CommissionRateDto Map(CommissionRate rate)
-        => new()
-        {
-            Id = rate.Id,
-            MinPrice = rate.MinPrice,
-            MinInclusive = rate.MinInclusive,
-            MaxPrice = rate.MaxPrice,
-            MaxInclusive = rate.MaxInclusive,
-            RatePercent = rate.RatePercent,
-            IsActive = rate.IsActive,
-            EffectiveFrom = rate.EffectiveFrom,
-            Version = Convert.ToBase64String(rate.RowVersion),
-        };
 }
 
 
