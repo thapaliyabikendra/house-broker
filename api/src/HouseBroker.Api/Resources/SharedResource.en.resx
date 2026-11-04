@@ -42,6 +42,12 @@
   <data name="validation.unsupported_culture" xml:space="preserve">
     <value>A culture is not supported.</value>
   </data>
+  <data name="validation.html_not_allowed" xml:space="preserve">
+    <value>HTML markup is not allowed in this text.</value>
+  </data>
+  <data name="validation.invalid_format" xml:space="preserve">
+    <value>The value is not in the expected format.</value>
+  </data>
   <data name="idempotency.conflict" xml:space="preserve">
     <value>The idempotency key was already used with a different request.</value>
   </data>
@@ -50,5 +56,8 @@
   </data>
   <data name="idempotency.key_too_long" xml:space="preserve">
     <value>The idempotency key is too long.</value>
+  </data>
+  <data name="idempotency.key_invalid" xml:space="preserve">
+    <value>The idempotency key must be 16 to 64 characters from A-Z, a-z, 0-9, underscore or dash.</value>
   </data>
 </root>

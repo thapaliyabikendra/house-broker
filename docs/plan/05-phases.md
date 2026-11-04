@@ -1,6 +1,6 @@
 # House Broker Plan — 5. Phased Task Breakdown
 
-> **Status (verified 2026-11-04, re-verified after follow-up commits):** The backend and Angular app are implemented through Phase 15. The 2026-11-04 audit items that were open then (Serilog, security headers, forwarded headers, Asp.Versioning, filtered indexes, `datetime2(3)`/collation/SQL defaults, execution strategy, Redis provider switch, single-flight, idempotency transaction, Serializable tier writes, SSO seeding/pruning/Data Protection, Swagger UI, and the Angular features) are now in place. Remaining open items are listed under **Still open**. Checkboxes below reflect the code as it stands.
+> **Status (verified 2026-11-04, re-verified after follow-up commits):** The backend and Angular app are implemented through Phase 15. The 2026-11-04 audit items that were open then (Serilog, security headers, forwarded headers, Asp.Versioning, filtered indexes, `datetime2(3)`/collation/SQL defaults, execution strategy, Redis provider switch, single-flight, idempotency transaction, Serializable tier writes, SSO seeding/pruning/Data Protection, Swagger UI, and the Angular features) are now in place. Remaining open items are listed under **Remaining gaps**. Checkboxes below reflect the code as it stands.
 
 ### Resolved after the 2026-11-04 audit
 
@@ -87,7 +87,7 @@
 - [x] Validate issuer, audience, lifetime and signature; clock skew at most 1 minute
 - [x] Fallback authorization policy (default deny); `[HasPermission]` policy provider and handler implementing permission ∩ scope (3.6) and the partner-token rules; resource-based ownership handler
 - [x] `ICurrentUserService` (sub, roles, permissions, scopes, client id) in Application
-- [x] `BrokerProfiles` sync from token claims on broker writes; 403 `insufficient_scope` when the claims are missing
+- [x] `BrokerProfiles` sync from token claims on broker writes; 403 `forbidden` when the claims are missing
 - [x] Swagger OAuth2 security scheme and `housebroker-swagger` integration
 - [ ] Unit tests for the handlers and the sync; controller tests with mocked dependencies
 
@@ -107,10 +107,10 @@
 
 ### Phase 6: Listing Management (1.55 days)
 - [x] DTOs and service interfaces in `Application.Contracts`: `CreateListingRequest`, `UpdateListingRequest`, `ListingSummaryDto`, `ListingDetailDto`, `OwnerListingDto` (with commission)
-- [x] FluentValidation validators (title length, price range, valid property type, location, bedrooms/bathrooms ranges, feature ids exist, postal code format (5 digits); HTML tags rejected in free text); request DTOs expose only client-settable fields; `ListingService` written test-first *(partial: validators and request DTOs exist and feature ids are now checked for existence; tests cover validation/mapping but the suite is not test-first/complete)*
+- [~] FluentValidation validators (title length, price range, valid property type, location, bedrooms/bathrooms ranges, feature ids exist, postal code format (5 digits); HTML tags rejected in free text); request DTOs expose only client-settable fields; `ListingService` written test-first *(partial: validators and request DTOs exist and feature ids are now checked for existence; tests cover validation/mapping but the suite is not test-first/complete)*
 - [x] `ListingService`: create, update, soft delete, get by id, get mine; ownership enforcement; status transitions; write `ListingStatusHistories` on lifecycle changes and `ListingPriceHistories` on price/commission changes; each mutation runs in a single transaction; every method returns `Result<T>`
 - [x] Image upload/delete via `IImageStorage` (SQL-backed default) with type, size and count validation; file-signature (magic-byte) check, not just `Content-Type`; server-generated file names; metadata and `varbinary(max)` blob written in one transaction; no orphan metadata row or blob on failure; `upload` rate-limit policy; primary image handling; `ImageUploads` flag; image-serving endpoint with `ETag` and `Cache-Control` *(upload/delete, validation, magic bytes, generated names, transaction, ETag, `Cache-Control`, ascending sort order, primary-image promotion, the `ImageUploads` gate on image mutations, and the `upload` rate-limit policy are implemented and verified by `RateLimitingTests`)*
-- [x] Thin controllers (call the service, map through `ToActionResult`) with `ProducesResponseType` and proper status codes (201 + Location, 204, 400, 401, 403, 404, 409 for state conflicts, 412/428 for stale or missing `If-Match`, 429); `write` rate-limit policy; full Swagger docs per 4.1 *(partial: controllers are thin, declare `ProducesResponseType` metadata and grouped tags, the built-in OpenAPI document is served at `/api/openapi/v1.json`, and class-level 429 metadata plus the `write` policy are implemented; Swagger UI, OAuth2 flow, global header parameters, and per-endpoint `<remarks>`/`<response>` text remain open)*
+- [~] Thin controllers (call the service, map through `ToActionResult`) with `ProducesResponseType` and proper status codes (201 + Location, 204, 400, 401, 403, 404, 409 for state conflicts, 412/428 for stale or missing `If-Match`, 429); `write` rate-limit policy; full Swagger docs per 4.1 *(partial: controllers are thin, declare `ProducesResponseType` metadata and grouped tags, the built-in OpenAPI document is served at `/api/openapi/v1.json`, and class-level 429 metadata plus the `write` policy are implemented; Swagger UI, OAuth2 flow, global header parameters, and per-endpoint `<remarks>`/`<response>` text remain open)*
 - [x] Concurrency (4.8): `version` on detail and owner DTOs; `ETag` on `GET /listings/{id}` and `GET /listings/mine/{id}`; required `If-Match` on `PUT`; image and feature changes touch the listing root
 - [x] Mapping that includes commission only for the owning broker; broker contact read from `BrokerProfile`
 - [x] Localized errors (4.11): validators use `WithErrorCode`; `.resx` messages in `en` and `ne` for every code; text input normalized to NFC and trimmed; instants in DTOs are ISO 8601 UTC and offset-less input is rejected; `Accept-Language` documented in Swagger
@@ -121,7 +121,7 @@
 
 ### Phase 7: Showcase: Search, Filters, Detail (0.9 day)
 - [x] `ListingSearchQuery` (location text, min/max price, property type, bedrooms, features, sort, page/pageSize with a max cap)
-- [x] Query composed with `IQueryable`, projected to summary DTOs (no N+1, `AsNoTracking`); implemented behind `IListingQueries` with small `IQueryable` filter extension methods (no specification framework) *(implemented inline in `ListingQueries`; filter extension methods were not extracted)*
+- [~] Query composed with `IQueryable`, projected to summary DTOs (no N+1, `AsNoTracking`); implemented behind `IListingQueries` with small `IQueryable` filter extension methods (no specification framework) *(implemented inline in `ListingQueries`; filter extension methods were not extracted)*
 - [x] Paged response envelope (items, total, page, pageSize)
 - [x] Detail endpoint: description, images, features; broker name/phone/email only when the caller holds `contacts.read`
 - [x] Anonymous lookup endpoints `GET /api/v1/lookups/property-types` and `GET /api/v1/lookups/features` returning default-language names (no translation table in MVP); `GET /api/v1/meta` (currency code, supported cultures, default culture, limits); results sorted by `SortOrder` ascending
@@ -143,7 +143,7 @@
 **Exit:** repeated requests hit the cache; writes invalidate it; disabling the flag bypasses it. (With Redis, a write on one instance invalidating reads on another is added and verified in Phase 14.)
 
 ### Phase 9: Idempotency and Concurrency Hardening (0.7 day)
-- [x] `IdempotencyKey` entity (table `IdempotencyKeys`), configuration and migration; `IIdempotencyService` written test-first (4.8) *(implemented, but not test-first)*
+- [~] `IdempotencyKey` entity (table `IdempotencyKeys`), configuration and migration; `IIdempotencyService` written test-first (4.8) *(implemented, but not test-first)*
 - [x] `[Idempotent]` action filter on `POST /listings` and `POST /admin/commission-rates`: key validation, body hash, replay with `Idempotent-Replayed: true`, 409/422 rules; the key and the business change commit in one transaction *(idempotency record and business change are committed in a single database transaction)*
 - [x] Hosted service that deletes expired keys in batches (own correlation id per run) *(run id is logged for start/completion/failure)*
 - [x] Tier changes: the `Serializable` transaction and whole-set validation are built in Phase 5; here add the parallel-edit check script and surface `rowversion` on tiers as `version` with `If-Match` on tier edits
@@ -209,7 +209,7 @@
 **Exit:** a third party can integrate using only the OpenAPI document, the guide and the Postman collection; quality tooling is green; the security checklist is clean for every endpoint.
 
 ### Phase 14: Scale-Out and Production Readiness (2.0 days)
-- [x] Redis: `RedisCacheService` (`IDistributedCache` + StackExchangeRedis) selected by `Cache:Provider`; `docker-compose.yml` gains Redis; run the Phase 8 cache contract suite against it plus a two-node invalidation test *(Redis provider and contract tests are implemented; multi-node invalidation remains in the Tier 3 verification list)*
+- [~] Redis: `RedisCacheService` (`IDistributedCache` + StackExchangeRedis) selected by `Cache:Provider`; `docker-compose.yml` gains Redis; run the Phase 8 cache contract suite against it plus a two-node invalidation test *(Redis provider and contract tests are implemented; multi-node invalidation remains in the Tier 3 verification list)*
 - [x] `migrate` commands hardened for both hosts; options validation on startup (`ValidateOnStart`); `*_FILE` secret support; SSO certificates from the secret store
 - [x] `/health/live` and `/health/ready` on each service (SQL Server, Redis); status-only output outside Development
 - [x] Request timeouts, DB command timeout, graceful-shutdown settings, response compression; `Cache-Control`/`ETag`/304 for lookups, detail and images *(graceful shutdown is configured via host shutdown timeout; ETag/304 is implemented for lookups, detail, and images)*

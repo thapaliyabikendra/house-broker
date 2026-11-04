@@ -35,4 +35,3 @@ The automated end-to-end suite is deferred. Unit and contract suites remain in `
 - Tag scenarios: `@smoke`, `@mutating`, `@admin`, `@scale`.
 ```
 
-Is this too much? Fine. Then create manual Chrome MCP checklist.

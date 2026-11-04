@@ -111,7 +111,7 @@ npm --prefix ui run i18n:check
 ## Domain rules
 
 - `Listing` is the aggregate root; behavior methods protect invariants; setters are private; violations raise `DomainException`.
-- Lifecycle: `Draft → Active → Sold → Archived`; seekers only see `Active`; soft delete.
+- Lifecycle: `Draft → Active → Sold → Archived`; `Publish` (Draft→Active) and `MarkSold` (Active→Sold) are the only forward steps; `Archive` is allowed from any status except `Archived`; seekers only see `Active`. `DELETE` is a soft delete (`IsDeleted`), separate from the `Archived` status.
 - Table names are plural PascalCase; entity classes are singular PascalCase.
 - Ids are GUID v7 generated in the application for every entity primary key and foreign key; lookups keep a unique natural `Code`.
 - Every mutable entity carries audit columns: `CreatedAt`/`CreatedBy`/`UpdatedAt`/`UpdatedBy` in UTC; soft-deleted entities also carry `DeletedAt`/`DeletedBy`. Actor values are Auth `sub` GUIDs (`null` = system/seed), set by an infrastructure interceptor.

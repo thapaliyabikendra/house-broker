@@ -244,6 +244,48 @@ public sealed class ListingServiceTests
         Assert.Equal(ErrorKind.Validation, result.Error!.Kind);
     }
 
+    /// <summary>Every failing field is reported, not only the first one.</summary>
+    [Fact]
+    public async Task UpdateAsync_MultipleInvalidFields_ReportsEveryField()
+    {
+        var repository = new Mock<IListingRepository>();
+        var queries = new Mock<IListingQueries>();
+        var rates = new Mock<ICommissionRateProvider>();
+        var currentUser = new Mock<ICurrentUserService>();
+        var unitOfWork = new Mock<IUnitOfWork>();
+
+        var brokerId = Guid.NewGuid();
+        var listing = ListingBuilder.Create(brokerId);
+        currentUser.SetupGet(user => user.UserId).Returns(brokerId);
+        currentUser.SetupGet(user => user.FullName).Returns("Broker Name");
+        currentUser.SetupGet(user => user.Email).Returns("broker@example.com");
+        repository.Setup(repo => repo.GetByIdAsync(listing.Id, It.IsAny<CancellationToken>())).ReturnsAsync(listing);
+
+        var service = new ListingService(
+            repository.Object,
+            queries.Object,
+            rates.Object,
+            currentUser.Object,
+            unitOfWork.Object,
+            TimeProvider.System,
+            new CreateListingRequestValidator(),
+            new UpdateListingRequestValidator(),
+            new RecordingLogger<ListingService>());
+
+        var request = ListingRequestBuilder.CreateValidUpdateRequest();
+        request.Title = string.Empty;
+        request.City = string.Empty;
+
+        var result = await service.UpdateAsync(listing.Id, request, Convert.ToBase64String(listing.RowVersion), CancellationToken.None);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal(ErrorKind.Validation, result.Error!.Kind);
+        var fields = result.Error!.FieldErrors.Select(error => error.Field).ToList();
+        Assert.Contains("Title", fields);
+        Assert.Contains("City", fields);
+        Assert.All(result.Error.FieldErrors, error => Assert.False(string.IsNullOrWhiteSpace(error.Code)));
+    }
+
     /// <summary>Update missing If-Match.</summary>
     [Fact]
     public async Task UpdateAsync_MissingIfMatch_ReturnsPreconditionRequired()

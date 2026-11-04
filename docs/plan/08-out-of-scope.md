@@ -9,6 +9,6 @@
 - Integration tests (WebApplicationFactory / Testcontainers) and end-to-end browser tests
 - Deployment automation (registry push, deploy jobs), Kubernetes/Helm manifests, infrastructure as code, autoscaling rules, multi-region
 - SQL Server Full-Text Search or Elasticsearch; object storage (S3 / Azure Blob) for images; SQL Server FILESTREAM/FileTable or Remote Blob Store (images use plain `varbinary(max)`)
-- Distributed rate limiting (Redis or API gateway), security alerting, log aggregation (Seq)
+- Distributed (cross-instance) rate limiting beyond the gateway's per-IP limit, for example a Redis-backed limiter; security alerting, log aggregation (Seq)
 - Mutation testing (Stryker.NET) on the commission calculator
 - Domain events, specification pattern, CQRS/MediatR, generic repository, abstract factory

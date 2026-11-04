@@ -42,6 +42,12 @@
   <data name="validation.unsupported_culture" xml:space="preserve">
     <value>संस्कृति समर्थित छैन।</value>
   </data>
+  <data name="validation.html_not_allowed" xml:space="preserve">
+    <value>यो पाठमा HTML मार्कअप अनुमति छैन।</value>
+  </data>
+  <data name="validation.invalid_format" xml:space="preserve">
+    <value>मान सही ढाँचामा छैन।</value>
+  </data>
   <data name="idempotency.conflict" xml:space="preserve">
     <value>आइडेम्पोटेन्सी कुञ्जी फरक अनुरोधसँग पहिले प्रयोग भएको छ।</value>
   </data>
@@ -49,6 +55,9 @@
     <value>आइडेम्पोटेन्सी कुञ्जी हाल प्रक्रियामा छ।</value>
   </data>
   <data name="idempotency.key_too_long" xml:space="preserve">
-    <value>The idempotency key is too long.</value>
+    <value>Idempotency-Key धेरै लामो छ।</value>
+  </data>
+  <data name="idempotency.key_invalid" xml:space="preserve">
+    <value>Idempotency-Key को लम्बाइ १६ देखि ६४ अक्षरसम्म हुनुपर्छ, र A-Z, a-z, 0-9, अन्डरस्कोर वा ड्यास मात्र हुनुपर्छ।</value>
   </data>
 </root>

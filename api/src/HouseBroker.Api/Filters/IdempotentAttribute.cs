@@ -22,9 +22,9 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
         }
 
         var localizer = context.HttpContext.RequestServices.GetService<Microsoft.Extensions.Localization.IStringLocalizer<HouseBroker.Api.Localization.SharedResource>>();
-        if (key.Length > 128)
+        if (!IdempotencyKeyRules.IsValid(key))
         {
-            context.Result = validationProblem(context, localizer is null ? "The idempotency key is too long." : localizer["idempotency.key_too_long"]);
+            context.Result = validationProblem(context, localizer is null ? "The idempotency key must be 16 to 64 characters from A-Z, a-z, 0-9, underscore or dash." : localizer["idempotency.key_invalid"]);
             return;
         }
 
@@ -61,7 +61,7 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
         if (begin.Status == IdempotencyStatus.Conflict)
         {
             await transaction.RollbackAsync(context.HttpContext.RequestAborted);
-            context.Result = conflictProblem(context, ErrorCodes.IdempotencyConflict, localizer is null ? "The idempotency key was already used with a different request." : localizer[ErrorCodes.IdempotencyConflict]);
+            context.Result = unprocessableProblem(context, ErrorCodes.IdempotencyConflict, localizer is null ? "The idempotency key was already used with a different request." : localizer[ErrorCodes.IdempotencyConflict]);
             return;
         }
 
@@ -136,6 +136,20 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
             Detail = detail,
         };
         problem.Extensions["code"] = ErrorCodes.ValidationFailed;
+        problem.Extensions["correlationId"] = context.HttpContext.GetCorrelationId();
+        return new ObjectResult(problem) { StatusCode = StatusCodes.Status422UnprocessableEntity };
+    }
+
+    /// <summary>Same key with a different request body: 422 per plan 4.8 (in-flight duplicates stay 409).</summary>
+    private static IActionResult unprocessableProblem(ActionExecutingContext context, string code, string detail)
+    {
+        var problem = new ProblemDetails
+        {
+            Status = StatusCodes.Status422UnprocessableEntity,
+            Title = code,
+            Detail = detail,
+        };
+        problem.Extensions["code"] = code;
         problem.Extensions["correlationId"] = context.HttpContext.GetCorrelationId();
         return new ObjectResult(problem) { StatusCode = StatusCodes.Status422UnprocessableEntity };
     }

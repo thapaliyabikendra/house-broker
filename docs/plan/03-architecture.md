@@ -108,7 +108,10 @@ api validates access tokens with the issuer's discovery document and JWKS (cache
 | GET | `/api/v1/listings/{id}` (returns `ETag`) | Anonymous (broker contact: `contacts.read`) |
 | POST | `/api/v1/listings` (supports `Idempotency-Key`) | Broker, `listings.write` |
 | PUT | `/api/v1/listings/{id}` (requires `If-Match`) | Owning broker, `listings.write` |
-| DELETE | `/api/v1/listings/{id}` | Owning broker, `listings.write` |
+| DELETE | `/api/v1/listings/{id}` (soft delete) | Owning broker, `listings.write` |
+| POST | `/api/v1/listings/{id}/publish` (Draft → Active) | Owning broker, `listings.write` |
+| POST | `/api/v1/listings/{id}/sold` (Active → Sold) | Owning broker, `listings.write` |
+| POST | `/api/v1/listings/{id}/archive` (any status → Archived) | Owning broker, `listings.write` |
 | GET | `/api/v1/listings/mine` (includes commission) | Broker, `commission.read` |
 | GET | `/api/v1/listings/mine/{id}` (owner view with commission, `ETag`) | Owning broker, `commission.read` |
 | POST / DELETE | `/api/v1/listings/{id}/images` | Owning broker, `listings.write` (flag: `ImageUploads`) |
@@ -177,7 +180,7 @@ Effective access requires both the user's permission (for user tokens) and the c
 | Repository + unit of work | Use | One repository per aggregate; reads go through `IListingQueries` |
 | Adapter | Use | `IImageStorage` and `ICacheService` (in-memory / `IDistributedCache`-backed) implementations |
 | Object mapping | Use | Mapperly source-generated profiles in Application for entity ↔ DTO mapping; explicit owner/public mappings protect commission fields |
-| Strategy | Seam only | A single `ICommissionCalculator`; a strategy only if a marginal-slab model is ever added |
+| Strategy | Seam only | A single `CommissionCalculator` implementation; an interface only if a second strategy (for example a marginal-slab model) is added |
 | Options pattern | Use | Typed configuration with startup validation |
 | Abstract factory, generic `IRepository<T>`, specification, MediatR | Not used | Nothing in this plan needs them |
 

@@ -12,25 +12,31 @@ public sealed class CreateListingRequestValidator : AbstractValidator<CreateList
     public CreateListingRequestValidator()
     {
         RuleFor(request => request.Title)
-            .NotEmpty()
-            .MaximumLength(Limits.MaxTitleLength)
-            .Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.ValidationFailed);
+            .NotEmpty().WithErrorCode(ErrorCodes.Required)
+            .MaximumLength(Limits.MaxTitleLength).WithErrorCode(ErrorCodes.OutOfRange)
+            .Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.HtmlNotAllowed);
 
-        RuleFor(request => request.PropertyTypeId).NotEqual(Guid.Empty).WithErrorCode(ErrorCodes.ValidationFailed);
+        RuleFor(request => request.PropertyTypeId).NotEqual(Guid.Empty).WithErrorCode(ErrorCodes.Required);
 
-        RuleFor(request => request.Price).GreaterThanOrEqualTo(Limits.MinPrice).WithErrorCode(ErrorCodes.ValidationFailed);
+        RuleFor(request => request.Price).GreaterThanOrEqualTo(Limits.MinPrice).WithErrorCode(ErrorCodes.OutOfRange);
 
-        RuleFor(request => request.Province).NotEmpty().MaximumLength(100).Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.ValidationFailed);
-        RuleFor(request => request.City).NotEmpty().MaximumLength(100).Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.ValidationFailed);
-        RuleFor(request => request.Locality).NotEmpty().MaximumLength(100).Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.ValidationFailed);
-        RuleFor(request => request.PostalCode).Matches("^[0-9]{5}$").WithErrorCode(ErrorCodes.ValidationFailed);
+        RuleFor(request => request.Province).NotEmpty().WithErrorCode(ErrorCodes.Required)
+            .MaximumLength(100).WithErrorCode(ErrorCodes.OutOfRange)
+            .Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.HtmlNotAllowed);
+        RuleFor(request => request.City).NotEmpty().WithErrorCode(ErrorCodes.Required)
+            .MaximumLength(100).WithErrorCode(ErrorCodes.OutOfRange)
+            .Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.HtmlNotAllowed);
+        RuleFor(request => request.Locality).NotEmpty().WithErrorCode(ErrorCodes.Required)
+            .MaximumLength(100).WithErrorCode(ErrorCodes.OutOfRange)
+            .Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.HtmlNotAllowed);
+        RuleFor(request => request.PostalCode).Matches("^[0-9]{5}$").WithErrorCode(ErrorCodes.InvalidFormat);
 
-        RuleFor(request => request.Bedrooms).InclusiveBetween(0, 50).WithErrorCode(ErrorCodes.ValidationFailed);
-        RuleFor(request => request.Bathrooms).InclusiveBetween(0, 50).WithErrorCode(ErrorCodes.ValidationFailed);
-        RuleFor(request => request.AreaSqFt).GreaterThanOrEqualTo(0).WithErrorCode(ErrorCodes.ValidationFailed);
+        RuleFor(request => request.Bedrooms).InclusiveBetween(0, 50).WithErrorCode(ErrorCodes.OutOfRange);
+        RuleFor(request => request.Bathrooms).InclusiveBetween(0, 50).WithErrorCode(ErrorCodes.OutOfRange);
+        RuleFor(request => request.AreaSqFt).GreaterThanOrEqualTo(0).WithErrorCode(ErrorCodes.OutOfRange);
 
-        RuleFor(request => request.Description).Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.ValidationFailed);
-        RuleForEach(request => request.FeatureIds).NotEqual(Guid.Empty).WithErrorCode(ErrorCodes.ValidationFailed);
+        RuleFor(request => request.Description).Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.HtmlNotAllowed);
+        RuleForEach(request => request.FeatureIds).NotEqual(Guid.Empty).WithErrorCode(ErrorCodes.Required);
     }
 }
 
@@ -41,25 +47,31 @@ public sealed class UpdateListingRequestValidator : AbstractValidator<UpdateList
     public UpdateListingRequestValidator()
     {
         RuleFor(request => request.Title)
-            .NotEmpty()
-            .MaximumLength(Limits.MaxTitleLength)
-            .Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.ValidationFailed);
+            .NotEmpty().WithErrorCode(ErrorCodes.Required)
+            .MaximumLength(Limits.MaxTitleLength).WithErrorCode(ErrorCodes.OutOfRange)
+            .Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.HtmlNotAllowed);
 
-        RuleFor(request => request.PropertyTypeId).NotEqual(Guid.Empty).WithErrorCode(ErrorCodes.ValidationFailed);
+        RuleFor(request => request.PropertyTypeId).NotEqual(Guid.Empty).WithErrorCode(ErrorCodes.Required);
 
-        RuleFor(request => request.Price).GreaterThanOrEqualTo(Limits.MinPrice).WithErrorCode(ErrorCodes.ValidationFailed);
+        RuleFor(request => request.Price).GreaterThanOrEqualTo(Limits.MinPrice).WithErrorCode(ErrorCodes.OutOfRange);
 
-        RuleFor(request => request.Province).NotEmpty().MaximumLength(100).Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.ValidationFailed);
-        RuleFor(request => request.City).NotEmpty().MaximumLength(100).Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.ValidationFailed);
-        RuleFor(request => request.Locality).NotEmpty().MaximumLength(100).Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.ValidationFailed);
-        RuleFor(request => request.PostalCode).Matches("^[0-9]{5}$").WithErrorCode(ErrorCodes.ValidationFailed);
+        RuleFor(request => request.Province).NotEmpty().WithErrorCode(ErrorCodes.Required)
+            .MaximumLength(100).WithErrorCode(ErrorCodes.OutOfRange)
+            .Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.HtmlNotAllowed);
+        RuleFor(request => request.City).NotEmpty().WithErrorCode(ErrorCodes.Required)
+            .MaximumLength(100).WithErrorCode(ErrorCodes.OutOfRange)
+            .Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.HtmlNotAllowed);
+        RuleFor(request => request.Locality).NotEmpty().WithErrorCode(ErrorCodes.Required)
+            .MaximumLength(100).WithErrorCode(ErrorCodes.OutOfRange)
+            .Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.HtmlNotAllowed);
+        RuleFor(request => request.PostalCode).Matches("^[0-9]{5}$").WithErrorCode(ErrorCodes.InvalidFormat);
 
-        RuleFor(request => request.Bedrooms).InclusiveBetween(0, 50).WithErrorCode(ErrorCodes.ValidationFailed);
-        RuleFor(request => request.Bathrooms).InclusiveBetween(0, 50).WithErrorCode(ErrorCodes.ValidationFailed);
-        RuleFor(request => request.AreaSqFt).GreaterThanOrEqualTo(0).WithErrorCode(ErrorCodes.ValidationFailed);
+        RuleFor(request => request.Bedrooms).InclusiveBetween(0, 50).WithErrorCode(ErrorCodes.OutOfRange);
+        RuleFor(request => request.Bathrooms).InclusiveBetween(0, 50).WithErrorCode(ErrorCodes.OutOfRange);
+        RuleFor(request => request.AreaSqFt).GreaterThanOrEqualTo(0).WithErrorCode(ErrorCodes.OutOfRange);
 
-        RuleFor(request => request.Description).Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.ValidationFailed);
-        RuleForEach(request => request.FeatureIds).NotEqual(Guid.Empty).WithErrorCode(ErrorCodes.ValidationFailed);
+        RuleFor(request => request.Description).Must(ListingValidationChecks.NotContainHtml).WithErrorCode(ErrorCodes.HtmlNotAllowed);
+        RuleForEach(request => request.FeatureIds).NotEqual(Guid.Empty).WithErrorCode(ErrorCodes.Required);
     }
 }
 

@@ -17,7 +17,7 @@ An MVP for a **property marketplace** where house seekers discover listings and 
 
 ## Value and business rules
 
-- **Listing lifecycle** — brokers move a property through Draft → Active → Sold → Archived; seekers only ever see Active listings.
+- **Listing lifecycle** — brokers move a property through Draft → Active → Sold, and can archive it at any point before that; seekers only ever see Active listings.
 - **Commission engine** — each listing carries an estimated broker commission based on a flat rate chosen by price tier (2% below 50 lakh, 1.75% up to 1 crore, 1.5% above). The snapshot is stored with the listing, recalculated when price changes, and never applied retroactively.
 - **Confidentiality** — commission is visible only to the broker who owns the listing; it is absent from all public and partner responses.
 - **Configurable pricing** — commission tiers are data, not code; admins change them without a release.

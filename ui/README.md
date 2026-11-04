@@ -16,7 +16,7 @@ The dev server runs at `http://localhost:4200/` and proxies `/api` and `/sso` to
 
 - `npm run lint` - ESLint with Angular and TypeScript rules
 - `npm run format:check` - Prettier formatting check
-- `npm run test` - Vitest unit tests
+- `npm run test` - Vitest unit tests (unit test runner)
 - `npm run build` - Production build
 - `npm run api:generate` - Regenerate `src/app/api` from `../docs/swagger.json`
 - `npm run api:check` - Verify generated API client freshness

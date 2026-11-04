@@ -50,4 +50,10 @@ public static class ErrorCodes
 
     /// <summary>A culture is not supported.</summary>
     public const string UnsupportedCulture = "validation.unsupported_culture";
+
+    /// <summary>A free-text field contains HTML markup.</summary>
+    public const string HtmlNotAllowed = "validation.html_not_allowed";
+
+    /// <summary>A value does not match the expected format (for example the postal code).</summary>
+    public const string InvalidFormat = "validation.invalid_format";
 }

@@ -242,13 +242,7 @@ export class BrokerListingsPageComponent {
     this.loading.set(true);
     this.error.set(null);
     try {
-      const summaries = await this.listingsData.getMine();
-      const details = await Promise.all(
-        summaries
-          .filter((item) => !!item.id)
-          .map((item) => this.listingsData.getMineById(item.id as string)),
-      );
-      this.listings.set(details);
+      this.listings.set(await this.listingsData.getMine());
     } catch (error) {
       this.error.set(
         error instanceof Error ? error.message : this.transloco.translate('errors.loadFailed'),
@@ -351,8 +345,9 @@ export class BrokerListingsPageComponent {
       error: (error: unknown) => {
         if (error instanceof ApiError && error.fieldErrors) {
           for (const messages of Object.values(error.fieldErrors)) {
-            if (messages?.length) {
-              this.error.set(messages[0] ?? this.transloco.translate('errors.uploadFailed'));
+            const first = messages?.[0];
+            if (first) {
+              this.error.set(first.message || this.transloco.translate('errors.uploadFailed'));
             }
           }
         }

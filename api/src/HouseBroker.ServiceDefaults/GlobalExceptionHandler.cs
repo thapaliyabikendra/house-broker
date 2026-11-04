@@ -29,7 +29,6 @@ public sealed partial class GlobalExceptionHandler(ILogger<GlobalExceptionHandle
             };
             problemDetails.Extensions["code"] = domainException.Code;
             problemDetails.Extensions["correlationId"] = httpContext.GetCorrelationId();
-            problemDetails.Extensions["errors"] = domainException.Arguments;
 
             await httpContext.Response.WriteAsJsonAsync(problemDetails, cancellationToken).ConfigureAwait(false);
             return true;

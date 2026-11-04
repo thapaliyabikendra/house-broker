@@ -47,9 +47,9 @@
 | Roles | `Broker`, `Seeker`, `Admin` (Admin manages commission rates only) |
 | Permissions | Permission claims from Identity's `AspNetRoleClaims`, emitted in the access token. Effective access = the user's permission ∩ the client's granted scope (matrix in 3.6). Ownership is resource-based in the service layer |
 | Scopes | `listings.read`, `contacts.read`, `listings.write`, `commission.read`, `admin.commission`, plus `openid profile email phone offline_access` |
-| Clients | `housebroker-web` (Angular, first party, implicit consent); `housebroker-swagger` (Development/Staging); partner clients registered with a CLI verb `register-client`; a demo partner in Development. No admin UI for clients (roadmap) |
+| Clients | `housebroker-web` (Angular, first party, no consent screen); `housebroker-swagger` (Development/Staging); partner clients registered with a CLI verb `register-client`; a demo partner in Development. No admin UI for clients (roadmap) |
 | Partner (machine) tokens | `client_credentials` clients may only hold `listings.read` and `contacts.read`. Writing on behalf of a broker needs the authorization code flow with that broker's consent |
-| Broker profile | The API keeps a `BrokerProfiles` table (name, email, phone), created and updated from the token's `name`, `email` and `phone_number` claims when a broker writes. Listing contact details are read from it. A broker write without those claims gets 403 `insufficient_scope` |
+| Broker profile | The API keeps a `BrokerProfiles` table (name, email, phone), created and updated from the token's `name`, `email` and `phone_number` claims when a broker writes. Listing contact details are read from it. A broker write without those claims gets 403 `forbidden` |
 | Access rules | Search and listing detail are anonymous. Broker contact details need a token with `contacts.read` and (for users) the `listings:contact:view` permission |
 | Registration | On the SSO register page: Seeker or Broker only (never Admin); a broker needs name and phone; the `BrokerSelfRegistration` flag can disable broker sign-up |
 | Out of scope (documented) | Email confirmation, password reset, MFA and social login |
@@ -64,7 +64,7 @@
 | What is translated | Angular UI text; SSO pages (including Identity errors and consent scope descriptions); API error messages. Not translated: lookup names (property types and features), broker-written titles and descriptions, and locations (documented limitation) |
 | Error contract | Application returns stable error codes with arguments; the API boundary turns them into messages with `IStringLocalizer`. Every `ProblemDetails` carries `code` and per-field codes. The Angular client prefers its own translation of the code and falls back to the server message |
 | Resources | `.resx` for the API and SSO (English default plus `ne`), never `en.json`; Angular uses Transloco JSON (`ui/src/assets/i18n/en.json`/`ne.json` plus feature-scoped `features/<name>/i18n/en.json`/`ne.json`); lookup names are stored once on `PropertyTypes.Name` and `Features.Name` (default language); translating lookup names is out of MVP scope |
-| Angular i18n library | Transloco (`@jsverse/transloco`): runtime translation (one build for all languages, live switching), lazy-loaded per feature, typed keys. `@jsverse/transloco-locale` supplies the generic date/number/percent/currency pipes; three thin `hb*` wrappers remain for NPR lakh/crore prices and relative time |
+| Angular i18n library | Transloco (`@jsverse/transloco`): runtime translation (one build for all languages, live switching), lazy-loaded per feature, typed keys. `@jsverse/transloco-locale` supplies the generic date/number/percent/currency pipes; six `hb*` wrappers (`hbDate`, `hbDateTime`, `hbNumber`, `hbPrice`, `hbPriceShort`, `hbRelativeTime`) sit on top of it for NPR lakh/crore prices, relative time and Intl-based formats |
 | Localization packages (API) | Built-in `Microsoft.Extensions.Localization` (`IStringLocalizer` + `.resx`) with `RequestLocalization` middleware; no third-party localization engine and no JSON resource files server-side |
 | Formats | Dates, numbers, relative times and prices go through `hb*` pipes built on `Intl` with the active locale; the built-in `date`, `currency`, `number` and `percent` pipes are not used in templates |
 | Currency | One currency per deployment, set by `Pricing:CurrencyCode` (default `NPR`) and exposed by `GET /api/v1/meta`; no conversion. Lakh/crore grouping suits Nepali rupees; English shows the `NPR` code, Nepali shows the localized symbol |
@@ -129,7 +129,7 @@
 | Configuration | Runtime `assets/config.json` (relative `/api` and `/sso`, client id) and `baseHref=/`, so one build runs in every environment |
 | Localization | Transloco runtime translations in `en` and `ne`; `@jsverse/transloco-locale` for generic date/number/percent/currency formatting plus `hbPrice`, `hbPriceShort` and `hbRelativeTime` wrappers (lakh/crore, NPR from `/api/v1/meta`, relative time); time zone from the browser (see 4.11 and 4.12) |
 | Serving | By the gateway at `/` with SPA fallback; hashed assets cached long, `/index.html` never cached |
-| Tests | Unit tests with the CLI's default runner; end-to-end tests are roadmap |
+| Tests | Unit tests with Vitest (`npm run test`); end-to-end tests are roadmap |
 | Accessibility | WCAG 2.1 AA target; automated lint checks plus a manual keyboard/screen-reader pass (4.10) |
 | Standards | Section 4.10 |
 

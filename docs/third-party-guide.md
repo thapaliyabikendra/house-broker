@@ -10,7 +10,7 @@ generated `docs/swagger.json` snapshot).
 - API: `https://<host>/api/v1`
 - SSO: `https://<host>/sso`
 
-All public API URLs are content-negotiated with `Accept-Language: en|ne`.
+Localized responses (error messages and other localized text) honor `Accept-Language: en|ne`. Data values such as broker-written text are not translated.
 
 ## Authentication
 
@@ -80,15 +80,35 @@ Errors use RFC 7807 `ProblemDetails` with additional fields:
 
 ```json
 {
-  "type": "https://housebroker.example/errors/listing-not-found",
-  "title": "Listing not found",
+  "title": "The requested resource does not exist.",
   "status": 404,
   "detail": "Listing 11111111-2222-... was not found.",
-  "code": "Listing.NotFound",
-  "correlationId": "abc123",
-  "errors": { "field": ["message"] }
+  "code": "resource.not_found",
+  "correlationId": "abc123"
 }
 ```
+
+`code` is always one of the stable codes in the catalog below.
+
+Validation failures on input fields add `errors`, keyed by camelCase field name. Each field lists every failing rule for that field, with a stable `code` and a `message` localized for `Accept-Language`:
+
+```json
+{
+  "title": "Validation failed.",
+  "status": 400,
+  "code": "validation.failed",
+  "correlationId": "abc123",
+  "field": "title",
+  "errors": {
+    "title": [ { "code": "validation.failed", "message": "Validation failed." } ],
+    "featureIds[0]": [ { "code": "validation.failed", "message": "Validation failed." } ]
+  }
+}
+```
+
+
+For commission tier writes, a stored tier set that already breaks the tier rules is a 409 with code `conflict`. The response lists the ids of the existing tiers that must be fixed in `relatedIds`, because the request itself cannot repair them.
+`field` repeats the first failing field for single-field callers. Errors that are not tied to input fields have no `errors` member. Use `code` for logic, and treat `message` as display text only.
 
 Common statuses:
 - `400` validation error
@@ -125,9 +145,9 @@ Configuration keys:
 
 ## CORS and pagination
 
-- CORS is driven by `Cors:AllowedOrigins`; with no configured origins the
-  service falls back to permissive development behavior, so production must set
-  the allowlist explicitly.
+- CORS is driven by `Cors:AllowedOrigins`. With no configured origins, no
+  cross-origin caller is allowed. Configure the allowlist explicitly for each
+  browser-based third-party client.
 - Paginated read responses use `{ items, total, page, pageSize }`. `page` is
   1-based and `pageSize` is capped server-side. Sort defaults to `CreatedAt` desc
   with `Id` as tie-breaker (machine ordering; human display may differ).
@@ -138,7 +158,7 @@ All error responses use the same RFC 7807 `ProblemDetails` shape
 (`code`, `title`, `status`, `detail`, `correlationId`, and, when applicable,
 `field`/`errors`). `ProblemDetails.code` contains the stable code below; the
 human-readable `detail` is localized via `Accept-Language` (English fallback).
-`ErrorKind` always maps to the HTTP status through `ResultExtensions`. Codes
+`ErrorKind` always maps to the HTTP status through `ToActionResult` (in `ResultExtensions`). Codes
 that originate outside `Result<T>` (idempotency, feature flags, CORS/policy)
 still use the same ProblemDetails envelope.
 
@@ -149,6 +169,8 @@ still use the same ProblemDetails envelope.
 | `validation.out_of_range` | Validation | 400 | A value is outside the allowed range (including price ranges and page bounds). |
 | `validation.offset_required` | Validation | 400 | An instant was supplied without an offset (`Z`/offset is required). |
 | `validation.unsupported_culture` | Validation | 400 | The requested culture is not supported. |
+| `validation.html_not_allowed` | Validation | 400 | A free-text field (title, description, location) contains HTML markup. |
+| `validation.invalid_format` | Validation | 400 | A value does not match its expected format (for example, a postal code must be 5 digits). |
 | `not_found` | NotFound | 404 | A lookup value does not exist. |
 | `resource.not_found` | NotFound | 404 | The requested resource does not exist (or is not visible to the caller). |
 | `forbidden` | Forbidden | 403 | The caller lacks permission, or a partner/user token lacks the required scope (`insufficient_scope`). |
@@ -158,16 +180,16 @@ still use the same ProblemDetails envelope.
 | `precondition.failed` | PreconditionFailed | 412 | The `If-Match` ETag/row version is stale. |
 | `rate_limited` | RateLimited | 429 | A rate-limit policy was exceeded; see `Retry-After`. |
 | `feature.disabled` | (n/a) | 503 | A required feature flag is disabled. |
-| `idempotency.conflict` | Conflict | 409 | An idempotency key was reused with a different request. |
+| `idempotency.conflict` | (n/a) | 422 | An idempotency key was reused with a different request body. |
 | `idempotency.in_progress` | Conflict | 409 | An idempotency key is already being processed. |
 
 Additional endpoint-specific statuses:
 
-- `400` validation error (ProblemDetails with `field`/`errors`)
+- `400` validation error (ProblemDetails with `errors` per field, as above)
 - `401` missing/invalid token
 - `403` insufficient scope or permission
 - `404` resource not found
-- `422` invalid or too-long `Idempotency-Key` header
+- `422` invalid `Idempotency-Key` header (16 to 64 characters from A-Z, a-z, 0-9, `_` or `-`)
 - `429` rate limited (`Retry-After` provided)
 
 All codes are returned in `ProblemDetails.code`; localized text depends on

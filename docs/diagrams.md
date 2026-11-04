@@ -89,13 +89,12 @@ erDiagram
     PropertyTypes ||--o{ Listings : "classifies"
 
     CommissionRates ||--o{ Listings : "snapshot source"
-    BrokerProfiles ||--o{ Listings : "owns"
     Listings ||--o{ ListingStatusHistories : "status timeline"
     Listings ||--o{ ListingPriceHistories : "price timeline"
 
     Listings {
         guid Id PK "GUID v7"
-        guid BrokerId FK "token sub"
+        guid BrokerId "token sub; no FK, read model"
         string Title
         string Description
         guid PropertyTypeId FK
@@ -357,9 +356,11 @@ stateDiagram-v2
 
     note right of Active
         Seekers only ever see Active listings.
+        Archive is allowed from any status other than Archived.
     end note
     note left of Draft
-        Soft delete (IsDeleted) hides a listing from all queries.
+        DELETE is a soft delete (IsDeleted), separate from the Archived status.
+        A soft-deleted listing is hidden from all queries.
         RowVersion guards concurrent updates.
     end note
 ```
@@ -386,12 +387,13 @@ flowchart TD
 ```mermaid
 flowchart TD
     P["POST /listings or POST /admin/commission-rates"] --> K{"Idempotency-Key present?"}
-    K -->|"no"| V["400 validation error"]
+    K -->|"no"| V["Process normally (key is optional)"]
     K -->|"yes"| L["Look up (UserId, Key)"]
     L --> N{"Existing record?"}
     N -->|"no"| C["Create record + business change<br/>in one transaction"]
     C --> S["Persist status code + response body"]
     S --> R["201 Created"]
+    V --> R
     N -->|"yes, same request hash"| RP["Replay stored response<br/>Idempotent-Replayed: true"]
     N -->|"yes, different request hash"| CF["422 Unprocessable Entity"]
     N -->|"in-flight duplicate"| CI["409 Conflict"]

@@ -21,7 +21,7 @@ The production topology is defined in `docker-compose.prod.yml`.
 - SSO data-protection key storage configured
 - `Auth:Issuer` set to the public issuer URL, for example
   `https://<host>/sso`
-- A built SPA in `ui/dist` (mounter by the gateway as `/usr/share/nginx/html`)
+- A built SPA in `ui/dist` (mounted by the gateway as `/usr/share/nginx/html`)
 
 ## Configuration
 
@@ -103,3 +103,37 @@ before starting API/Auth instances. A failed migration blocks the services from 
 - Gateway adds CSP and security headers.
 - Gateway applies per-IP rate limits; app rate limits still apply per instance.
 - API and auth are not exposed directly in production except through the gateway.
+## Certificate rotation
+
+The SSO host loads one signing certificate from `OpenIddict:SigningCertificate:Path` (and `:Password`). Today a rotation therefore means a restart with the new file, and tokens signed with the old key stop validating once the API refreshes its JWKS (the API caches it).
+
+The plan (4.9) requires an overlap so that tokens stay valid during rotation: publish the new key beside the old one, wait for the API JWKS cache to refresh, then retire the old key. The current configuration does not support two signing keys at once, so that overlap is not yet available. Until it is implemented, schedule a rotation for a low-traffic window and expect partners and users to re-authenticate. Do not describe a rotation as zero-downtime until the overlap is implemented.
+
+## Partner onboarding
+
+Partners get read-only clients (`listings.read`, `contacts.read`) registered on the SSO host:
+
+```powershell
+dotnet HouseBroker.Auth.dll register-client
+```
+
+Set `Client:Id`, `Client:Name`, `Client:RedirectUris` (empty for `client_credentials`) and `Client:Scopes` (read scopes only) first, from the environment or the secret store. The command prints the client id and secret once. Give them to the partner over a secure channel and never store the printed secret in source control or logs.
+
+## Scaling
+
+- API: `docker compose -f docker-compose.prod.yml up --scale api=3`. Set `Cache:Provider=Redis` when running more than one instance, otherwise cache invalidation does not cross instances.
+- SSO: the production compose runs one `auth` instance. Scaling SSO requires the shared Data Protection keys already stored in the database; verify session behavior across instances before scaling it.
+- Rate limits are per instance; the gateway enforces the per-IP limit in front of all instances.
+
+## Backup and restore
+
+- The single `HouseBroker` database holds business data, image blobs, identity data and the Data Protection keys. Back it up as a whole with SQL Server full backups (`BACKUP DATABASE HouseBroker TO DISK = ...`).
+- Restore to the same release (or a release whose migrations are a superset). Run the `api-migrate` and `auth-migrate` jobs after a restore so the schema and seed match the running images.
+- Restoring the Data Protection keys with the database keeps existing SSO sessions valid.
+
+## Troubleshooting by correlation id
+
+- Every response carries `X-Correlation-Id`, and every `ProblemDetails` carries `correlationId`. Ask the caller for that value.
+- Logs are compact JSON on stdout in containers. Search them for the id, for example `docker compose logs api auth | grep <correlation-id>`.
+- Business and security events for the same request are in the `AuditEvents` table (`CorrelationId` column).
+- Partner and user errors show the stable `code` in the response; use it to find the rule that failed (see the error catalog in the partner guide).

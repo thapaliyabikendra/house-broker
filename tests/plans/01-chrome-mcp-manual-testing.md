@@ -50,4 +50,3 @@ Use this track before implementing Playwright automation.
 - unexpected data visible in public/partner responses
 ```
 
-Now user asked "create test plan md files" and we have created. Good. Final response list files.

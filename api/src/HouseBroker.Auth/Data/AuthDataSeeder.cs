@@ -75,11 +75,16 @@ public sealed class AuthDataSeeder(
             new {
                 Id = "housebroker-web",
                 Name = "House Broker Web SPA",
-                Secret = "web_secret_123",
+                // Public client: no secret. Enabled in every environment.
+                Enabled = true,
+                Secret = (string?)null,
                 RedirectUris = new[] { "http://localhost:4200/callback", "http://localhost/callback", "http://localhost:80/callback", "http://localhost:8088/callback" },
+                // The SPA signs out to its own origin (post_logout_redirect_uri = window.location.origin).
+                PostLogoutRedirectUris = new[] { "http://localhost:4200", "http://localhost", "http://localhost:80", "http://localhost:8088" },
                 Types = new[] { OpenIddictConstants.ClientTypes.Public },
                 Permissions = new[] {
                     OpenIddictConstants.Permissions.Endpoints.Authorization,
+                    OpenIddictConstants.Permissions.Endpoints.EndSession,
                     OpenIddictConstants.Permissions.Endpoints.Token,
                     OpenIddictConstants.Permissions.ResponseTypes.Code,
                     OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
@@ -90,9 +95,12 @@ public sealed class AuthDataSeeder(
             new {
                 Id = "housebroker-swagger",
                 Name = "House Broker Swagger",
-                Secret = "swagger_secret_123",
+                // Development/Staging only (plan 02). The secret comes from configuration; without it the client is not seeded.
+                Enabled = !environment.IsProduction() && !string.IsNullOrWhiteSpace(configuration["Auth:SwaggerClientSecret"]),
+                Secret = configuration["Auth:SwaggerClientSecret"],
                 // Swagger UI is served under the /api path base (see Program.cs UseSwaggerUI).
                 RedirectUris = new[] { "http://localhost:4200/api/swagger/oauth2-redirect.html", "http://localhost:5049/api/swagger/oauth2-redirect.html" },
+                PostLogoutRedirectUris = new[] { "http://localhost:4200", "http://localhost:5049" },
                 Types = new[] { OpenIddictConstants.ClientTypes.Confidential },
                 Permissions = new[] {
                     OpenIddictConstants.Permissions.Endpoints.Authorization,
@@ -106,8 +114,11 @@ public sealed class AuthDataSeeder(
             new {
                 Id = "demo-partner",
                 Name = "Demo Partner",
-                Secret = "partner_secret_123",
+                // Development only (plan 02). The secret comes from configuration; without it the client is not seeded.
+                Enabled = environment.IsDevelopment() && !string.IsNullOrWhiteSpace(configuration["Auth:DemoPartnerSecret"]),
+                Secret = configuration["Auth:DemoPartnerSecret"],
                 RedirectUris = Array.Empty<string>(),
+                PostLogoutRedirectUris = Array.Empty<string>(),
                 Types = new[] { OpenIddictConstants.ClientTypes.Confidential },
                 Permissions = new[] {
                     OpenIddictConstants.Permissions.Endpoints.Token,
@@ -117,7 +128,7 @@ public sealed class AuthDataSeeder(
             }
         };
 
-        foreach (var c in clients)
+        foreach (var c in clients.Where(client => client.Enabled))
         {
             var descriptor = new OpenIddictApplicationDescriptor
             {
@@ -130,6 +141,10 @@ public sealed class AuthDataSeeder(
             foreach (var uri in c.RedirectUris)
             {
                 descriptor.RedirectUris.Add(new Uri(uri));
+            }
+            foreach (var uri in c.PostLogoutRedirectUris)
+            {
+                descriptor.PostLogoutRedirectUris.Add(new Uri(uri));
             }
             foreach (var permission in c.Permissions)
             {
@@ -161,11 +176,19 @@ public sealed class AuthDataSeeder(
 
     private async Task SeedDemoUsersAsync(CancellationToken ct)
     {
+        // The demo password is a local secret (user-secrets), never a value in source.
+        var demoPassword = configuration["Auth:DemoUserPassword"];
+        if (string.IsNullOrWhiteSpace(demoPassword))
+        {
+            logger.LogWarning("Auth:DemoUserPassword is not set; demo users were not seeded.");
+            return;
+        }
+
         var demoUsers = new[]
         {
-            (Id: DemoUsers.BrokerOne, Email: "broker1@demo.com", Password: "Password123!", Role: Roles.Broker, Name: "Broker One", Phone: "9800000001"),
-            (Id: DemoUsers.BrokerTwo, Email: "broker2@demo.com", Password: "Password123!", Role: Roles.Broker, Name: "Broker Two", Phone: "9800000002"),
-            (Id: DemoUsers.Seeker, Email: "seeker@demo.com", Password: "Password123!", Role: Roles.Seeker, Name: "Demo Seeker", Phone: "9800000003"),
+            (Id: DemoUsers.BrokerOne, Email: "broker1@demo.com", Password: demoPassword, Role: Roles.Broker, Name: "Broker One", Phone: "9800000001"),
+            (Id: DemoUsers.BrokerTwo, Email: "broker2@demo.com", Password: demoPassword, Role: Roles.Broker, Name: "Broker Two", Phone: "9800000002"),
+            (Id: DemoUsers.Seeker, Email: "seeker@demo.com", Password: demoPassword, Role: Roles.Seeker, Name: "Demo Seeker", Phone: "9800000003"),
         };
 
         foreach (var (id, email, password, role, name, phone) in demoUsers)

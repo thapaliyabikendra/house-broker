@@ -1,6 +1,6 @@
 # House Broker Application: Delivery Plan
 
-> Status: **All decisions made.** The plan is ready for execution.
+> Status: **Implemented through Phase 15.** Open items are listed in [05-phases.md](docs/plan/05-phases.md) under "Remaining gaps"; the plan remains the source of truth for scope.
 > Scope: **Tier 1** (API + SSO) is the assignment submission scope and covers raw requirements R1–R16 plus the cheap foundation items marked Tier 1 in the traceability table. **Tier 2** (Angular) and **Tier 3** (hardening) are optional and add plan-only requirements.
 > Effort: **about 20.6 working days** for one developer, delivered in three tiers (Part 7):
 > **Tier 1** ≈ 11.7 days · **Tier 2** ≈ 17.9 days · **Tier 3** ≈ 20.6 days.

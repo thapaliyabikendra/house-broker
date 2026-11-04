@@ -66,6 +66,6 @@ Standards and the security checklist: [standards](plan/04-standards.md). Test co
 
 ## Delivery and operations
 
-Packaging is container-first: multi-stage images for `api`, `auth` and `gateway`, a development compose for infrastructure and a production compose with replicas, migrate jobs and shared storage. Deployment is environment-driven (twelve-factor config, secrets from a store) and migration never runs at service startup outside Development.
+Packaging is container-first: multi-stage images for `api`, `auth` and `gateway`, a development compose for infrastructure and a production compose with replicas and migrate jobs. There is no shared volume: images live in SQL Server, so any API instance can serve any image. Deployment is environment-driven (twelve-factor config, secrets from a store) and migration never runs at service startup outside Development.
 
 Topology, scale-out design and the runbook outline: [standards](plan/04-standards.md) (4.9) and [delivery and risks](plan/07-delivery-and-risks.md).

@@ -4,7 +4,7 @@
     { "key": "apiBaseUrl", "value": "http://localhost:5049/api" },
     { "key": "authBaseUrl", "value": "https://localhost:7074" },
     { "key": "partnerClientId", "value": "demo-partner" },
-    { "key": "partnerClientSecret", "value": "partner_secret_123" },
+    { "key": "partnerClientSecret", "value": "" },
     { "key": "accessToken", "value": "" }
   ],
   "item": [

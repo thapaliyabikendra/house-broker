@@ -305,8 +305,9 @@ export class CommissionRatesAdminPageComponent {
       if (error instanceof ApiError && error.fieldErrors) {
         for (const [field, messages] of Object.entries(error.fieldErrors)) {
           const control = this.form.get(field);
-          if (control && messages?.length) {
-            control.setErrors({ server: messages[0] });
+          const first = messages?.[0];
+          if (control && first) {
+            control.setErrors({ server: first.message });
             control.markAsTouched();
           }
         }

@@ -51,8 +51,7 @@ public sealed class ListingService(
         var createValidation = await _createValidator.ValidateAsync(request, cancellationToken);
         if (!createValidation.IsValid)
         {
-            var failure = createValidation.Errors[0];
-            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation, failure.PropertyName));
+            return Result.Failure<OwnerListingDto>(ValidationErrors.FromValidation(createValidation));
         }
 
 
@@ -132,8 +131,7 @@ public sealed class ListingService(
         var updateValidation = await _updateValidator.ValidateAsync(request, cancellationToken);
         if (!updateValidation.IsValid)
         {
-            var failure = updateValidation.Errors[0];
-            return Result.Failure<OwnerListingDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation, failure.PropertyName));
+            return Result.Failure<OwnerListingDto>(ValidationErrors.FromValidation(updateValidation));
         }
 
         var featureIds = request.FeatureIds

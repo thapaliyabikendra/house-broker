@@ -52,23 +52,23 @@ Dependency rules, layer responsibilities and the full project layout are in [doc
 - Docker Desktop (or any Docker + Compose v2)
 - Git
 
-Exact pinned versions land with `global.json`, the UI `package.json` and the CI workflow in Phases 0–1 and 10.
+Pinned versions live in `global.json`, `ui/package.json` and the CI workflow.
 
-## Quick start (planned)
+## Quick start
 
 ```powershell
-# 1. Local infrastructure: SQL Server 2022 (+ Redis from Phase 14)      [Phase 1]
+# 1. Local infrastructure: SQL Server 2022 (+ Redis in the production compose)
 docker compose up -d
 
-# 2. Apply migrations and the idempotent seed                           [Phases 2, 3]
+# 2. Apply migrations and the idempotent seed
 dotnet HouseBroker.Api.dll migrate
 dotnet HouseBroker.Auth.dll migrate
 
-# 3. Run the services (ports come from launchSettings/appsettings)      [Phases 1, 3]
+# 3. Run the services (ports come from launchSettings/appsettings)
 dotnet run --project api/src/HouseBroker.Api
 dotnet run --project api/src/HouseBroker.Auth
 
-# 4. Run the SPA with a dev proxy for /api and /sso                     [Phase 10]
+# 4. Run the SPA with a dev proxy for /api and /sso
 npm --prefix ui ci
 npm --prefix ui start
 
@@ -77,7 +77,20 @@ dotnet test api/HouseBroker.sln
 npm --prefix ui run lint; npm --prefix ui run test; npm --prefix ui run build
 ```
 
-Production-style topology (gateway, 2 API replicas, SSO, migrate jobs, SQL Server, Redis): [Phase 14]
+### Development secrets
+
+The Auth host reads its local secrets from user-secrets, never from source control. Set them once for the `HouseBroker.Auth` project:
+
+```powershell
+dotnet user-secrets set "Auth:AdminPassword" "<admin password>" --project api/src/HouseBroker.Auth
+dotnet user-secrets set "Auth:DemoUserPassword" "<demo password>" --project api/src/HouseBroker.Auth
+dotnet user-secrets set "Auth:DemoPartnerSecret" "<partner secret>" --project api/src/HouseBroker.Auth
+dotnet user-secrets set "Auth:SwaggerClientSecret" "<swagger secret>" --project api/src/HouseBroker.Auth
+```
+
+`Auth:AdminPassword` is required, so the Auth host does not start without it. Without `Auth:DemoUserPassword` the demo users are not seeded (a warning is logged). Without `Auth:DemoPartnerSecret` or `Auth:SwaggerClientSecret` those clients are not seeded.
+
+Production-style topology (gateway, 2 API replicas, SSO, migrate jobs, SQL Server, Redis):
 
 ```powershell
 docker compose -f docker-compose.prod.yml up --build
@@ -104,6 +117,7 @@ Configuration follows twelve-factor rules: environment variables (for example `S
 | Setting | Default | Notes |
 |---------|---------|-------|
 | `PathBase` | `/api` (Api), `/sso` (Auth) | Applied with `UsePathBase`; also used for redirects, cookies and Swagger |
+| `Auth:AdminPassword`, `Auth:DemoUserPassword`, `Auth:DemoPartnerSecret`, `Auth:SwaggerClientSecret` | — | Local secrets (user-secrets in Development, secret store elsewhere); never in source |
 | `ConnectionStrings` | — | One connection string for `HouseBroker` (business + identity schemas); from user-secrets or the secret store |
 | `Database:AutoMigrate` | `true` in Development, `false` elsewhere | Production migrations run only through `migrate` jobs |
 | `Cache:Provider` | `Memory` (development), `Redis` (multi-instance) | Cache failures log a warning and fall through to the database |
@@ -121,14 +135,14 @@ Feature flags (`Microsoft.FeatureManagement`, config-backed):
 | `ImageUploads` | API | Upload endpoints return 503; existing images still served |
 | `BrokerSelfRegistration` | SSO | Broker sign-up rejected; Seeker sign-up still works |
 
-The full variable table, secret handling and certificate rollover are documented in `docs/deployment.md` [Phase 14].
+The full variable table, secret handling and certificate rollover are documented in `docs/deployment.md`.
 
 ## Seeded data and demo access
 
 Seeding is idempotent (upsert by natural key), so reruns are safe.
 
 - **Every environment:** roles and permission claims, property types, features, the 3 commission tiers, and the first-party `housebroker-web` client.
-- **Development only:** demo brokers, a seeker, demo listings, the `housebroker-swagger` client and a demo partner client. No credentials are hard-coded in the repo; demo credentials come from user-secrets.
+- **Development only:** demo brokers, a seeker, demo listings and a demo partner client. Demo passwords and the partner secret come from user-secrets (see [Development secrets](#development-secrets)); a missing value means that demo data is not seeded. The `housebroker-swagger` client is seeded in Development and Staging when `Auth:SwaggerClientSecret` is set.
 - **Production admin:** created from configuration/secrets, never seeded with a known password.
 
 ## Commission
@@ -242,4 +256,4 @@ The full local gate list from this README was run on 2026-11-04. Results:
 
 Notes:
 - Docker-based smoke uses the development environment override for ephemeral SSO signing keys; production requires a mounted signing certificate via OpenIddict:SigningCertificate:Path.
-- Seed data for local smoke: demo brokers broker1@demo.com / broker2@demo.com, seeker seeker@demo.com, admin admin@housebroker.com, all with password Password123! except admin AdminPassword123!; partner client demo-partner / partner_secret_123.
+- Seed data for local smoke (Development only): demo brokers broker1@demo.com / broker2@demo.com, seeker seeker@demo.com, admin admin@housebroker.com (passwords from `Auth:DemoUserPassword` and `Auth:AdminPassword`), partner client demo-partner (secret from `Auth:DemoPartnerSecret`).

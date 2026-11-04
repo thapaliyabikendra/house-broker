@@ -23,4 +23,10 @@ public sealed record ApplicationError
 
     /// <summary>Gets the code arguments.</summary>
     public IReadOnlyList<object?> Arguments { get; init; }
+
+    /// <summary>Gets every failing field. Empty when the error is not tied to input fields.</summary>
+    public IReadOnlyList<FieldError> FieldErrors { get; init; } = Array.Empty<FieldError>();
+
+    /// <summary>Gets the ids of existing records that cause the failure and that the caller must fix (for example, commission tiers that already break the tier rules).</summary>
+    public IReadOnlyList<Guid> RelatedIds { get; init; } = Array.Empty<Guid>();
 }

@@ -1,14 +1,22 @@
+using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
+using HouseBroker.Domain.Common;
 
 namespace HouseBroker.Application.Services;
+
+/// <summary>One broken rule in a commission tier set, with the tier and request field it concerns.</summary>
+/// <param name="Code">The stable error code (for example <c>validation.out_of_range</c>).</param>
+/// <param name="Tier">The tier the rule was checked on. Null when the rule is about the set as a whole.</param>
+/// <param name="Field">The tier property at fault (for example <c>MaxPrice</c>), or null when no single property is at fault.</param>
+public sealed record CommissionTierViolation(string Code, CommissionRate? Tier, string? Field);
 
 /// <summary>Commission tier validation.</summary>
 public static class CommissionTierValidator
 {
     /// <summary>Validates a set of commission tiers at the supplied instant.</summary>
-    public static IReadOnlyList<string> Validate(IEnumerable<CommissionRate> tiers, DateTime effectiveAtUtc)
+    public static IReadOnlyList<CommissionTierViolation> Validate(IEnumerable<CommissionRate> tiers, DateTime effectiveAtUtc)
     {
-        var errors = new List<string>();
+        var violations = new List<CommissionTierViolation>();
         var active = tiers
             .Where(tier => tier.IsActive && tier.EffectiveFrom <= effectiveAtUtc)
             .OrderBy(tier => tier.MinPrice)
@@ -17,35 +25,39 @@ public static class CommissionTierValidator
 
         if (active.Count == 0)
         {
-            errors.Add("At least one active tier is required.");
-            return errors;
+            violations.Add(new CommissionTierViolation(ErrorCodes.Required, null, null));
+            return violations;
         }
 
-        if (active.Count(tier => tier.MaxPrice is null) != 1)
+        var openEnded = active.Where(tier => tier.MaxPrice is null).ToList();
+        if (openEnded.Count != 1)
         {
-            errors.Add("Exactly one open-ended top tier is required.");
+            // Point at the open-ended candidate when there is one; otherwise at the top tier.
+            var subject = openEnded.Count > 1 ? openEnded[0] : active[^1];
+            violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, subject, "MaxPrice"));
         }
 
         var first = active[0];
-        if (first.MinPrice != 0m || !first.MinInclusive)
+        if (first.MinPrice != 0m)
         {
-            errors.Add("The first tier must start at zero and be inclusive.");
+            violations.Add(new CommissionTierViolation(ErrorCodes.OutOfRange, first, "MinPrice"));
+        }
+        else if (!first.MinInclusive)
+        {
+            violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, first, "MinInclusive"));
         }
 
         foreach (var tier in active)
         {
-            if (tier.MaxPrice is decimal max)
+            if (tier.MaxPrice is decimal max && max <= tier.MinPrice)
             {
-                if (max <= tier.MinPrice)
-                {
-                    errors.Add("A tier maximum must be greater than its minimum.");
-                }
+                violations.Add(new CommissionTierViolation(ErrorCodes.OutOfRange, tier, "MaxPrice"));
             }
         }
 
-        if (active.Any(tier => tier.MaxPrice is null) && active[^1].MaxPrice is not null)
+        if (openEnded.Count > 0 && active[^1].MaxPrice is not null)
         {
-            errors.Add("The open-ended tier must be the final tier.");
+            violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, openEnded[0], "MaxPrice"));
         }
 
         for (var index = 1; index < active.Count; index++)
@@ -55,22 +67,60 @@ public static class CommissionTierValidator
 
             if (previous.MaxPrice is null)
             {
-                errors.Add("Only the final tier may be open-ended.");
+                violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, previous, "MaxPrice"));
                 continue;
             }
 
             if (previous.MaxPrice.Value != current.MinPrice)
             {
-                errors.Add("Adjacent tiers must share exactly one boundary value.");
+                violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, previous, "MaxPrice"));
+                violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, current, "MinPrice"));
                 continue;
             }
 
             if (previous.MaxInclusive == current.MinInclusive)
             {
-                errors.Add("Exactly one side of a shared boundary may be inclusive.");
+                violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, previous, "MaxInclusive"));
+                violations.Add(new CommissionTierViolation(ErrorCodes.ValidationFailed, current, "MinInclusive"));
             }
         }
 
-        return errors;
+        return violations;
+    }
+
+    /// <summary>
+    /// Builds the validation error for an admin write. Violations on the proposed tier become per-field entries;
+    /// violations that only involve existing tiers cannot be fixed by fields of this request, so they produce a
+    /// field-less validation error.
+    /// </summary>
+    /// <param name="violations">The violations found by <see cref="Validate"/>.</param>
+    /// <param name="proposed">The tier being written.</param>
+    public static ApplicationError ToApplicationError(IEnumerable<CommissionTierViolation> violations, CommissionRate proposed)
+    {
+        var all = violations.ToList();
+        var fieldErrors = all
+            .Where(violation => ReferenceEquals(violation.Tier, proposed) && violation.Field is not null)
+            .Select(violation => new FieldError(violation.Field!, violation.Code))
+            .Distinct()
+            .ToList();
+
+        // Existing tiers (not the proposed one) that break the rules. This request cannot repair them.
+        var existingIds = all
+            .Where(violation => violation.Tier is not null && !ReferenceEquals(violation.Tier, proposed))
+            .Select(violation => violation.Tier!.Id)
+            .Distinct()
+            .ToList();
+
+        if (fieldErrors.Count == 0 && existingIds.Count > 0 && all.All(violation => violation.Tier is not null))
+        {
+            // The stored set is already invalid and the proposed tier is not at fault: a state conflict, not a bad request.
+            return new ApplicationError(ErrorCodes.Conflict, ErrorKind.Conflict) { RelatedIds = existingIds };
+        }
+
+        return new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation, fieldErrors.FirstOrDefault()?.Field)
+        {
+            FieldErrors = fieldErrors,
+            RelatedIds = existingIds,
+        };
     }
 }

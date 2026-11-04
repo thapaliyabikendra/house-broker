@@ -7,9 +7,11 @@
     <AnalysisMode>All</AnalysisMode>
     <NoWarn>CA2007;CA1848;CA1873;CA1707;CA2234</NoWarn>
     <!--
-      NU1902, NU1903, NU1904 are silenced as errors because they currently
-      refer to transitive framework vulnerabilities in .NET 10 baseline
-      that are not yet resolvable via top-level version bumps.
+      NU1902, NU1903, NU1904 are deliberately NOT treated as errors because they
+      currently refer to transitive framework vulnerabilities in the .NET 10
+      baseline that are not yet resolvable via top-level version bumps. They are
+      still reported by the vulnerable-package CI gate.
+      NU1901 remains an error.
     -->
     <WarningsNotAsErrors>NU1902;NU1903;NU1904</WarningsNotAsErrors>
     <WarningsAsErrors>$(WarningsAsErrors);CA1304;CA1305;CA1307;CA1309;CA1310;CA1311</WarningsAsErrors>

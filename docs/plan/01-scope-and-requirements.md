@@ -39,7 +39,7 @@
 ### Interpretation notes for raw requirements
 
 - **R2 (seeker/broker differentiation):** the raw brief allows only two authentication roles. The plan keeps `Broker` and `Seeker`, but adds an `Admin` role plus Admin endpoints so `R10` is operable without direct database edits; this is an intentional extension on top of raw R2/R10, not a replacement for it.
-- **R3 (CRUD):** deleting a listing is implemented as soft delete (archive), matching the lifecycle and audit rules in Section 2 above; there is no physical hard delete in the MVP.
+- **R3 (CRUD):** deleting a listing is a soft delete (`IsDeleted`, `DeletedAt`/`DeletedBy`), which hides it from all queries; it is separate from the `Archived` status set by `POST /listings/{id}/archive`. There is no physical hard delete in the MVP. The lifecycle rules are in [AGENTS.md](../../AGENTS.md) and the decisions in [02-decisions.md](02-decisions.md).
 - **R8–R10 ("estimated" commission, configurable via DB):** the commission is stored as a snapshot on the listing when the price is set or changed. Editing a tier in the DB changes calculations for new and re-priced listings only; existing snapshots are not recalculated (non-retroactive). This is the plan's reading of "estimated"; the README states it as an interpretation.
 - **R10 (configurable commission rates):** tiers live in the `CommissionRates` table and are seeded plus administered through the API; edits are non-retroactive to existing listing snapshots.
 - **R11/R13 (location):** location is structured as Province, City, Locality and PostalCode (5-digit Nepal postal code), matching the NPR / Nepali default. The deployment country is Nepal (confirmed); a different country would need only validator and label changes.

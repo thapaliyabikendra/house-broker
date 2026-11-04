@@ -40,15 +40,15 @@ public sealed class CommissionRateAdminService(
         var candidate = CommissionRate.Create(request.MinPrice, request.MinInclusive, request.MaxPrice, request.MaxInclusive, request.RatePercent, request.IsActive, effectiveFrom);
         rates.Add(candidate);
 
-        var errors = CommissionTierValidator.Validate(rates, now).ToList();
+        var violations = CommissionTierValidator.Validate(rates, now).ToList();
         if (effectiveFrom > now)
         {
-            errors.AddRange(CommissionTierValidator.Validate(rates, effectiveFrom));
+            violations.AddRange(CommissionTierValidator.Validate(rates, effectiveFrom));
         }
 
-        if (errors.Count > 0)
+        if (violations.Count > 0)
         {
-            return Result.Failure<CommissionRateDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation));
+            return Result.Failure<CommissionRateDto>(CommissionTierValidator.ToApplicationError(violations, candidate));
         }
 
         await _repository.AddAsync(candidate, cancellationToken);
@@ -115,15 +115,15 @@ public sealed class CommissionRateAdminService(
             rates.Add(proposed);
         }
 
-        var errors = CommissionTierValidator.Validate(rates, now).ToList();
+        var violations = CommissionTierValidator.Validate(rates, now).ToList();
         if (effectiveFrom > now)
         {
-            errors.AddRange(CommissionTierValidator.Validate(rates, effectiveFrom));
+            violations.AddRange(CommissionTierValidator.Validate(rates, effectiveFrom));
         }
 
-        if (errors.Count > 0)
+        if (violations.Count > 0)
         {
-            return Result.Failure<CommissionRateDto>(new ApplicationError(ErrorCodes.ValidationFailed, ErrorKind.Validation));
+            return Result.Failure<CommissionRateDto>(CommissionTierValidator.ToApplicationError(violations, proposed));
         }
 
         var oldValues = JsonSerializer.Serialize(ListingMapper.Instance.ToCommissionRate(rate));

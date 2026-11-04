@@ -7,7 +7,7 @@ This directory contains test strategy documentation and future end-to-end test a
 - Unit/contract tests already live under `api/tests` and `ui`.
 - The automated E2E suite is intentionally **deferred**.
 - Immediate validation is done through **Chrome DevTools MCP manual smoke testing** against the local stack.
-- Plan: `docs` is not used for temporary E2E planning; the detailed reference plan is stored locally in `tests/plans/`.
+- The detailed E2E reference plan is stored in `tests/plans/`; `docs/` is not used for temporary E2E planning.
 
 ## Proposed layout (for later implementation)
 

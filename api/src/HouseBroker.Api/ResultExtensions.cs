@@ -1,3 +1,4 @@
+using System.Text.Json;
 using HouseBroker.Api.Localization;
 using HouseBroker.Application.Contracts;
 using HouseBroker.ServiceDefaults;
@@ -46,21 +47,47 @@ public static class ResultExtensions
         var problem = new ProblemDetails
         {
             Status = statusCode,
-            Title = error.Code,
+            // Title is localized like Detail; the stable code stays in the "code" extension.
+            Title = message,
             Detail = message,
         };
         problem.Extensions["code"] = error.Code;
         problem.Extensions["correlationId"] = controller.HttpContext.GetCorrelationId();
-        if (!string.IsNullOrWhiteSpace(error.Field))
+        if (error.RelatedIds.Count > 0)
         {
-            problem.Extensions["field"] = error.Field;
+            problem.Extensions["relatedIds"] = error.RelatedIds.ToList();
         }
 
-        if (error.Arguments is not null && error.Arguments.Count > 0)
+        var fieldErrors = FieldErrorsOf(error);
+        if (fieldErrors.Count > 0)
         {
-            problem.Extensions["errors"] = error.Arguments;
+            // The first failing field is also exposed as "field" for single-field callers.
+            problem.Extensions["field"] = fieldErrors[0].Field;
+            problem.Extensions["errors"] = fieldErrors
+                .GroupBy(entry => entry.Field, StringComparer.Ordinal)
+                .ToDictionary(
+                    group => group.Key,
+                    group => group.Select(entry => new FieldErrorDetail(entry.Code, Localize(localizer, entry.Code))).ToList(),
+                    StringComparer.Ordinal);
         }
 
         return new ObjectResult(problem) { StatusCode = statusCode };
     }
+
+    /// <summary>Returns the per-field entries (camelCase field names), synthesizing one from <see cref="ApplicationError.Field"/> when needed.</summary>
+    private static List<(string Field, string Code)> FieldErrorsOf(ApplicationError error)
+    {
+        var source = error.FieldErrors.Count > 0
+            ? error.FieldErrors
+            : string.IsNullOrWhiteSpace(error.Field)
+                ? Array.Empty<FieldError>()
+                : new[] { new FieldError(error.Field, error.Code) };
+
+        return source
+            .Select(entry => (Field: JsonNamingPolicy.CamelCase.ConvertName(entry.Field), entry.Code))
+            .ToList();
+    }
+
+    private static string Localize(IStringLocalizer<SharedResource>? localizer, string code)
+        => localizer is null ? code : localizer[code];
 }

@@ -1,3 +1,9 @@
+/** One field-level error from the API: the stable code and the message localized for the request culture. */
+export interface FieldErrorDetail {
+  code: string;
+  message: string;
+}
+
 export interface ProblemDetails {
   type?: string | null;
   title?: string | null;
@@ -6,7 +12,9 @@ export interface ProblemDetails {
   instance?: string | null;
   code?: string;
   correlationId?: string;
-  errors?: Record<string, string[]>;
+  field?: string;
+  /** Per-field errors, keyed by camelCase input field name. */
+  errors?: Record<string, FieldErrorDetail[]>;
 }
 
 export class ApiError extends Error {
@@ -14,7 +22,7 @@ export class ApiError extends Error {
     public readonly status: number,
     public readonly code: string | undefined,
     public readonly correlationId: string | undefined,
-    public readonly fieldErrors: Record<string, string[]> | undefined,
+    public readonly fieldErrors: Record<string, FieldErrorDetail[]> | undefined,
     message?: string,
   ) {
     super(message ?? code ?? 'Unexpected error');
