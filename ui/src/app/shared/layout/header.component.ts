@@ -1,6 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { AuthService } from '../../core/auth/auth.service';
-import { TranslocoService } from '@jsverse/transloco';
+import { LanguageService } from '../../core/i18n/language.service';
 
 @Component({
   selector: 'hb-header',
@@ -45,14 +45,15 @@ import { TranslocoService } from '@jsverse/transloco';
   `,
 })
 export class HeaderComponent {
-  private readonly transloco = inject(TranslocoService);
+  private readonly languageService = inject(LanguageService);
   readonly auth = inject(AuthService);
-  readonly lang = signal(this.transloco.getActiveLang());
+  readonly lang = signal(this.languageService.currentLang());
 
   setLanguage(event: Event): void {
     const value = (event.target as HTMLSelectElement).value;
-    this.transloco.setActiveLang(value);
-    this.lang.set(value);
-    document.documentElement.lang = value;
+    if (value === 'en' || value === 'ne') {
+      this.languageService.setLanguage(value);
+    }
+    this.lang.set(this.languageService.currentLang());
   }
 }

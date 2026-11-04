@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import { RuntimeConfigService } from '../config/runtime-config.service';
+import { LanguageService } from '../i18n/language.service';
 import { TokenStorageService } from './token-storage.service';
 import type { AuthUser } from './auth-user.model';
 
@@ -19,6 +20,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly config = inject(RuntimeConfigService);
   private readonly storage = inject(TokenStorageService);
+  private readonly language = inject(LanguageService);
 
   private readonly userSignal = signal<AuthUser | null>(null);
   readonly user = this.userSignal.asReadonly();
@@ -72,9 +74,8 @@ export class AuthService {
       code_challenge: challenge,
       code_challenge_method: 'S256',
     });
-    if (uiLocales) {
-      params.set('ui_locales', uiLocales);
-    }
+    const requestedLocale = uiLocales ?? this.language.currentLang();
+    params.set('ui_locales', requestedLocale);
 
     window.location.assign(
       `${this.absolute(cfg.ssoIssuer)}/connect/authorize?${params.toString()}`,
