@@ -14,12 +14,14 @@
                 <div asp-validation-summary="All" class="text-danger mb-3" aria-live="assertive" role="alert"></div>
                 <div class="mb-3">
                     <label asp-for="Input.Email" class="form-label">@Model.EmailLabel</label>
-                    <input asp-for="Input.Email" class="form-control" type="email" autocomplete="username" inputmode="email" required aria-describedby="email-help" />
+                    <input asp-for="Input.Email" class="form-control" type="email" autocomplete="username" inputmode="email" required aria-describedby="email-error" />
+                    <span asp-validation-for="Input.Email" class="text-danger" id="email-error"></span>
                 </div>
                 <div class="mb-3">
                     <label asp-for="Input.Password" class="form-label">@Model.PasswordLabel</label>
-                    <input asp-for="Input.Password" class="form-control" type="password" autocomplete="current-password" required aria-describedby="password-help" />
+                    <input asp-for="Input.Password" class="form-control" type="password" autocomplete="current-password" required aria-describedby="password-help password-error" />
                     <div id="password-help" class="form-text">@Model.PasswordHint</div>
+                    <span asp-validation-for="Input.Password" class="text-danger" id="password-error"></span>
                 </div>
                 <div class="mb-3 form-check">
                     <input asp-for="Input.RememberMe" class="form-check-input" />

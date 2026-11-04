@@ -21,6 +21,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
           switchMap((refreshed) => {
             if (!refreshed) {
               auth.signOut(false);
+              void auth.signIn(undefined, `${window.location.pathname}${window.location.search}`);
               return throwError(() => toApiError(error));
             }
             const retryReq = req.clone({

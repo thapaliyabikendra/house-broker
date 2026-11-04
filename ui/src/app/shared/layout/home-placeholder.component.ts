@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { AuthService } from '../../core/auth/auth.service';
 import { MatCardModule } from '@angular/material/card';
@@ -21,7 +21,7 @@ import { MatButtonModule } from '@angular/material/button';
             <p>{{ 'home.signedInAs' | transloco: { name: user.name ?? user.sub } }}</p>
           } @else {
             <p>
-              <button mat-raised-button color="primary" type="button" (click)="auth.signIn()">
+              <button mat-raised-button color="primary" type="button" (click)="signIn()">
                 {{ 'header.signIn' | transloco }}
               </button>
             </p>
@@ -46,5 +46,10 @@ import { MatButtonModule } from '@angular/material/button';
   `,
 })
 export class HomePlaceholderComponent {
+  private readonly router = inject(Router);
   readonly auth = inject(AuthService);
+
+  signIn(): void {
+    void this.auth.signIn(undefined, this.router.url);
+  }
 }
