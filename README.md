@@ -198,6 +198,7 @@ Strict TDD applies to commission calculation, domain invariants, validators, `Li
 | [docs/plan/06-testing.md](docs/plan/06-testing.md) | Testing strategy |
 | [docs/plan/07-delivery-and-risks.md](docs/plan/07-delivery-and-risks.md) | Tiers, risks, cut order |
 | [docs/plan/08-out-of-scope.md](docs/plan/08-out-of-scope.md) | Out of scope and roadmap |
+| [docs/plan/09-e2e-testing.md](docs/plan/09-e2e-testing.md) | End-to-end testing strategy (Chrome MCP first, Playwright deferred) |
 | [docs/diagrams.md](docs/diagrams.md) | Mermaid diagrams |
 | [AGENTS.md](AGENTS.md) | Working agreement for AI coding agents |
 

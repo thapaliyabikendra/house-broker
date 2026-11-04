@@ -76,11 +76,12 @@ public sealed class AuthDataSeeder(
                 Id = "housebroker-web",
                 Name = "House Broker Web SPA",
                 Secret = "web_secret_123",
-                RedirectUris = new[] { "http://localhost:4200/callback" },
+                RedirectUris = new[] { "http://localhost:4200/callback", "http://localhost/callback", "http://localhost:80/callback", "http://localhost:8088/callback" },
                 Types = new[] { OpenIddictConstants.ClientTypes.Public },
                 Permissions = new[] {
                     OpenIddictConstants.Permissions.Endpoints.Authorization,
                     OpenIddictConstants.Permissions.Endpoints.Token,
+                    OpenIddictConstants.Permissions.ResponseTypes.Code,
                     OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
                     OpenIddictConstants.Permissions.GrantTypes.RefreshToken
                 },
@@ -94,6 +95,7 @@ public sealed class AuthDataSeeder(
                 Types = new[] { OpenIddictConstants.ClientTypes.Confidential },
                 Permissions = new[] {
                     OpenIddictConstants.Permissions.Endpoints.Token,
+                    OpenIddictConstants.Permissions.ResponseTypes.Code,
                     OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode,
                     OpenIddictConstants.Permissions.GrantTypes.RefreshToken
                 },
@@ -115,36 +117,42 @@ public sealed class AuthDataSeeder(
 
         foreach (var c in clients)
         {
-            if (await applicationManager.FindByClientIdAsync(c.Id, ct) is null)
+            var descriptor = new OpenIddictApplicationDescriptor
             {
-                var descriptor = new OpenIddictApplicationDescriptor
-                {
-                    ClientId = c.Id,
-                    DisplayName = c.Name,
-                    ClientType = c.Types.Contains(OpenIddictConstants.ClientTypes.Public)
-                        ? OpenIddictConstants.ClientTypes.Public
-                        : OpenIddictConstants.ClientTypes.Confidential,
-                };
-                foreach (var uri in c.RedirectUris)
-                {
-                    descriptor.RedirectUris.Add(new Uri(uri));
-                }
-                foreach (var permission in c.Permissions)
-                {
-                    descriptor.Permissions.Add(permission);
-                }
-                foreach (var scope in c.Scopes)
-                {
-                    descriptor.Permissions.Add("scp:" + scope);
-                }
-                if (!c.Types.Contains(OpenIddictConstants.ClientTypes.Public) &&
-                    !string.IsNullOrWhiteSpace(c.Secret))
-                {
-                    descriptor.ClientSecret = c.Secret;
-                }
+                ClientId = c.Id,
+                DisplayName = c.Name,
+                ClientType = c.Types.Contains(OpenIddictConstants.ClientTypes.Public)
+                    ? OpenIddictConstants.ClientTypes.Public
+                    : OpenIddictConstants.ClientTypes.Confidential,
+            };
+            foreach (var uri in c.RedirectUris)
+            {
+                descriptor.RedirectUris.Add(new Uri(uri));
+            }
+            foreach (var permission in c.Permissions)
+            {
+                descriptor.Permissions.Add(permission);
+            }
+            foreach (var scope in c.Scopes)
+            {
+                descriptor.Permissions.Add("scp:" + scope);
+            }
+            if (!c.Types.Contains(OpenIddictConstants.ClientTypes.Public) &&
+                !string.IsNullOrWhiteSpace(c.Secret))
+            {
+                descriptor.ClientSecret = c.Secret;
+            }
 
+            var existing = await applicationManager.FindByClientIdAsync(c.Id, ct);
+            if (existing is null)
+            {
                 await applicationManager.CreateAsync(descriptor, ct);
                 logger.LogInformation("Created client: {ClientId}", c.Id);
+            }
+            else
+            {
+                await applicationManager.UpdateAsync(existing, descriptor, ct);
+                logger.LogInformation("Updated client: {ClientId}", c.Id);
             }
         }
     }
