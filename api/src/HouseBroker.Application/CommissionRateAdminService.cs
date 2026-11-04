@@ -36,7 +36,12 @@ public sealed class CommissionRateAdminService(
         var candidate = CommissionRate.Create(request.MinPrice, request.MinInclusive, request.MaxPrice, request.MaxInclusive, request.RatePercent, request.IsActive, effectiveFrom);
         rates.Add(candidate);
 
-        var errors = CommissionTierValidator.Validate(rates, now);
+        var errors = CommissionTierValidator.Validate(rates, now).ToList();
+        if (effectiveFrom > now)
+        {
+            errors.AddRange(CommissionTierValidator.Validate(rates, effectiveFrom));
+        }
+
         if (errors.Count > 0)
         {
             return Result<CommissionRateDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation));
@@ -97,7 +102,12 @@ public sealed class CommissionRateAdminService(
             rates.Add(proposed);
         }
 
-        var errors = CommissionTierValidator.Validate(rates, now);
+        var errors = CommissionTierValidator.Validate(rates, now).ToList();
+        if (effectiveFrom > now)
+        {
+            errors.AddRange(CommissionTierValidator.Validate(rates, effectiveFrom));
+        }
+
         if (errors.Count > 0)
         {
             return Result<CommissionRateDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation));

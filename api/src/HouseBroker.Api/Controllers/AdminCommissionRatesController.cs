@@ -6,10 +6,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HouseBroker.Api.Controllers;
 
-/// <summary>Commission rate controller.</summary>
+/// <summary>Administrator commission rate management endpoints.</summary>
 [ApiController]
 [Route("v1/admin/commission-rates")]
-public sealed class CommissionRatesController(ICommissionRateAdminService service) : ControllerBase
+public sealed class AdminCommissionRatesController(ICommissionRateAdminService service) : ControllerBase
 {
     /// <summary>Gets all commission rates.</summary>
     [HttpGet]

@@ -27,4 +27,10 @@ public interface IListingService
 
     /// <summary>Publishes a listing.</summary>
     Task<Result<OwnerListingDto>> PublishAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>Marks a listing as sold.</summary>
+    Task<Result<OwnerListingDto>> MarkSoldAsync(Guid id, CancellationToken cancellationToken);
+
+    /// <summary>Archives a listing.</summary>
+    Task<Result<OwnerListingDto>> ArchiveAsync(Guid id, CancellationToken cancellationToken);
 }

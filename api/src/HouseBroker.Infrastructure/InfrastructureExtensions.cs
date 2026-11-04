@@ -16,7 +16,6 @@ public static class InfrastructureExtensions
         var connectionString = configuration.GetConnectionString("HouseBroker")
             ?? throw new InvalidOperationException("Connection string 'HouseBroker' is not configured.");
 
-        services.AddScoped<ICurrentUserService, NullCurrentUserService>();
         services.AddMemoryCache();
         services.AddScoped<AuditSaveChangesInterceptor>();
         services.AddDbContext<AppDbContext>((provider, options) =>

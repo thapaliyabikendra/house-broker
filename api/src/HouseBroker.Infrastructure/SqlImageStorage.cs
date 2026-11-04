@@ -8,11 +8,12 @@ using System.Security.Cryptography;
 namespace HouseBroker.Infrastructure;
 
 /// <summary>SQL-backed image storage.</summary>
-public sealed class SqlImageStorage(AppDbContext dbContext, ICurrentUserService currentUser, TimeProvider clock) : IImageStorage
+public sealed class SqlImageStorage(AppDbContext dbContext, ICurrentUserService currentUser, TimeProvider clock, ICacheService cache) : IImageStorage
 {
     private readonly AppDbContext _dbContext = dbContext;
     private readonly ICurrentUserService _currentUser = currentUser;
     private readonly TimeProvider _clock = clock;
+    private readonly ICacheService _cache = cache;
 
     /// <inheritdoc />
     public async Task<Result<ListingImageDto>> UploadAsync(Guid listingId, Stream content, string fileName, string contentType, long contentLength, CancellationToken cancellationToken)
@@ -77,11 +78,13 @@ public sealed class SqlImageStorage(AppDbContext dbContext, ICurrentUserService 
         var imageData = ListingImageData.Create(image.Id, bytes);
 
         listing.AddImage(image);
+        listing.Touch(_clock.GetUtcNow().UtcDateTime, _currentUser.UserId);
         await _dbContext.ListingImages.AddAsync(image, cancellationToken);
         await _dbContext.ListingImageData.AddAsync(imageData, cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+        await _cache.InvalidateListingsAsync(cancellationToken);
 
         return Result<ListingImageDto>.Success(new ListingImageDto
         {
@@ -157,9 +160,11 @@ public sealed class SqlImageStorage(AppDbContext dbContext, ICurrentUserService 
 
         _dbContext.ListingImages.Remove(image);
         listing.RemoveImage(imageId);
+        listing.Touch(_clock.GetUtcNow().UtcDateTime, _currentUser.UserId);
 
         await _dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+        await _cache.InvalidateListingsAsync(cancellationToken);
 
         return Result.Success();
     }

@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 #pragma warning disable CS1591
 #pragma warning disable IDE0005
@@ -73,6 +74,21 @@ public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManag
         }
 
         await userManager.AddToRoleAsync(user, Input.Role);
+
+        if (!string.IsNullOrWhiteSpace(user.FullName))
+        {
+            await userManager.AddClaimAsync(user, new Claim("name", user.FullName));
+        }
+
+        if (!string.IsNullOrWhiteSpace(user.Email))
+        {
+            await userManager.AddClaimAsync(user, new Claim("email", user.Email));
+        }
+
+        if (!string.IsNullOrWhiteSpace(user.PhoneNumber))
+        {
+            await userManager.AddClaimAsync(user, new Claim("phone_number", user.PhoneNumber));
+        }
 
         await signInManager.SignInAsync(user, isPersistent: false);
         if (Url.IsLocalUrl(ReturnUrl))

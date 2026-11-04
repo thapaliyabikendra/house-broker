@@ -14,7 +14,11 @@ public sealed class ListingRepository(AppDbContext dbContext) : IListingReposito
 
     /// <inheritdoc />
     public Task<Listing?> GetByIdAsync(Guid id, CancellationToken cancellationToken)
-        => _dbContext.Listings.FirstOrDefaultAsync(listing => listing.Id == id, cancellationToken);
+        => _dbContext.Listings
+            .Include(listing => listing.Images)
+            .Include(listing => listing.Features)
+                .ThenInclude(feature => feature.Feature)
+            .FirstOrDefaultAsync(listing => listing.Id == id, cancellationToken);
 
     /// <inheritdoc />
     public async Task AddAsync(Listing listing, CancellationToken cancellationToken)
@@ -46,6 +50,7 @@ public sealed class ListingQueries(AppDbContext dbContext) : IListingQueries
         => _dbContext.Listings
             .Include(listing => listing.Images)
             .Include(listing => listing.Features)
+                .ThenInclude(feature => feature.Feature)
             .FirstOrDefaultAsync(listing => listing.Id == id, cancellationToken);
 
     /// <inheritdoc />
@@ -55,6 +60,7 @@ public sealed class ListingQueries(AppDbContext dbContext) : IListingQueries
             .Where(listing => listing.BrokerId == brokerId && !listing.IsDeleted)
             .Include(listing => listing.Images)
             .Include(listing => listing.Features)
+                .ThenInclude(feature => feature.Feature)
             .OrderByDescending(listing => listing.CreatedAt)
             .ToListAsync(cancellationToken);
 

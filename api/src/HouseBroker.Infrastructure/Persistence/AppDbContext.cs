@@ -102,7 +102,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.Property(image => image.ContentHash).IsRequired().HasMaxLength(128);
         entity.Property(image => image.CreatedAt).IsRequired();
         entity.Property(image => image.UpdatedAt).IsRequired();
-        entity.HasOne<Listing>().WithMany().HasForeignKey(image => image.ListingId).OnDelete(DeleteBehavior.Cascade);
+        entity.HasIndex(image => image.ListingId);
+        entity.HasOne<Listing>()
+            .WithMany(listing => listing.Images)
+            .HasForeignKey(image => image.ListingId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     private static void ConfigureListingImageData(ModelBuilder modelBuilder)
@@ -122,8 +126,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.Property(feature => feature.Id).ValueGeneratedNever();
         entity.Property(feature => feature.CreatedAt).IsRequired();
         entity.HasIndex(feature => new { feature.ListingId, feature.FeatureId }).IsUnique();
-        entity.HasOne<Listing>().WithMany().HasForeignKey(feature => feature.ListingId).OnDelete(DeleteBehavior.Cascade);
-        entity.HasOne<Feature>().WithMany().HasForeignKey(feature => feature.FeatureId).OnDelete(DeleteBehavior.Restrict);
+        entity.HasOne<Listing>()
+            .WithMany(listing => listing.Features)
+            .HasForeignKey(feature => feature.ListingId)
+            .OnDelete(DeleteBehavior.Cascade);
+        entity.HasOne(feature => feature.Feature)
+            .WithMany()
+            .HasForeignKey(feature => feature.FeatureId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
     private static void ConfigureLookups(ModelBuilder modelBuilder)

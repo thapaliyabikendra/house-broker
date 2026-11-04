@@ -382,14 +382,9 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("ListingId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("ListingId1")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
                     b.HasIndex("FeatureId");
-
-                    b.HasIndex("ListingId1");
 
                     b.HasIndex("ListingId", "FeatureId")
                         .IsUnique();
@@ -432,9 +427,6 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("ListingId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid?>("ListingId1")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<int>("SortOrder")
                         .HasColumnType("int");
 
@@ -447,8 +439,6 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ListingId");
-
-                    b.HasIndex("ListingId1");
 
                     b.ToTable("ListingImages", (string)null);
                 });
@@ -588,34 +578,28 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("HouseBroker.Domain.ListingFeature", b =>
                 {
-                    b.HasOne("HouseBroker.Domain.Feature", null)
+                    b.HasOne("HouseBroker.Domain.Feature", "Feature")
                         .WithMany()
                         .HasForeignKey("FeatureId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("HouseBroker.Domain.Listing", null)
-                        .WithMany()
+                        .WithMany("Features")
                         .HasForeignKey("ListingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("HouseBroker.Domain.Listing", null)
-                        .WithMany("Features")
-                        .HasForeignKey("ListingId1");
+                    b.Navigation("Feature");
                 });
 
             modelBuilder.Entity("HouseBroker.Domain.ListingImage", b =>
                 {
                     b.HasOne("HouseBroker.Domain.Listing", null)
-                        .WithMany()
+                        .WithMany("Images")
                         .HasForeignKey("ListingId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("HouseBroker.Domain.Listing", null)
-                        .WithMany("Images")
-                        .HasForeignKey("ListingId1");
                 });
 
             modelBuilder.Entity("HouseBroker.Domain.ListingImageData", b =>

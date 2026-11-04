@@ -108,12 +108,12 @@ public sealed class Listing
     private readonly List<ListingImage> _images = new();
 
     /// <summary>Gets the images.</summary>
-    public IReadOnlyCollection<ListingImage> Images => _images.AsReadOnly();
+    public IReadOnlyCollection<ListingImage> Images => _images;
 
     private readonly List<ListingFeature> _features = new();
 
     /// <summary>Gets the features.</summary>
-    public IReadOnlyCollection<ListingFeature> Features => _features.AsReadOnly();
+    public IReadOnlyCollection<ListingFeature> Features => _features;
 
     /// <summary>Gets the created timestamp.</summary>
     public DateTime CreatedAt { get; private set; }
@@ -164,11 +164,21 @@ public sealed class Listing
         }
     }
 
-    /// <summary>Replaces features.</summary>
-    public void ReplaceFeatures(IEnumerable<Guid> featureIds)
+    /// <summary>Replaces features, updating only the rows that actually changed.</summary>
+    public void ReplaceFeatures(IEnumerable<Guid>? featureIds)
     {
-        _features.Clear();
-        foreach (var featureId in featureIds.Distinct())
+        var desired = (featureIds ?? Enumerable.Empty<Guid>())
+            .Where(featureId => featureId != Guid.Empty)
+            .Distinct()
+            .ToList();
+        var desiredSet = desired.ToHashSet();
+
+        foreach (var existing in _features.Where(feature => !desiredSet.Contains(feature.FeatureId)).ToList())
+        {
+            _features.Remove(existing);
+        }
+
+        foreach (var featureId in desired.Where(featureId => _features.All(feature => feature.FeatureId != featureId)))
         {
             _features.Add(ListingFeature.Create(Id, featureId));
         }
@@ -242,6 +252,13 @@ public sealed class Listing
     public void SoftDelete()
     {
         IsDeleted = true;
+    }
+
+    /// <summary>Marks the aggregate as changed so its row version advances.</summary>
+    public void Touch(DateTime utcNow, Guid? actorId)
+    {
+        UpdatedAt = utcNow;
+        UpdatedBy = actorId;
     }
 
     /// <summary>Applies a commission snapshot.</summary>

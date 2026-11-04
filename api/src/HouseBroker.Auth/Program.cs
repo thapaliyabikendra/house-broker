@@ -1,6 +1,9 @@
+using System.Security.Claims;
 using HouseBroker.Auth.Data;
+using HouseBroker.Domain.Shared;
 using HouseBroker.ServiceDefaults;
-
+using OpenIddict.Abstractions;
+using OpenIddict.Server;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
@@ -45,6 +48,84 @@ builder.Services
         options.AddDevelopmentSigningCertificate();
 
         options.UseAspNetCore();
+
+        options.AddEventHandler<OpenIddictServerEvents.ProcessSignInContext>(builder =>
+        {
+            builder.UseInlineHandler(context =>
+            {
+                var principal = context.Principal;
+                if (principal?.Identity is ClaimsIdentity identity)
+                {
+                    var roles = principal.FindAll(ClaimTypes.Role).Select(claim => claim.Value)
+                        .Concat(principal.FindAll("role").Select(claim => claim.Value))
+                        .Distinct(StringComparer.Ordinal)
+                        .ToList();
+
+                    foreach (var role in roles)
+                    {
+                        if (!identity.HasClaim("role", role))
+                        {
+                            identity.AddClaim(new Claim("role", role));
+                        }
+                    }
+
+                    var permissions = new HashSet<string>(StringComparer.Ordinal);
+                    foreach (var role in roles)
+                    {
+                        if (role == Roles.Broker)
+                        {
+                            permissions.Add(Permissions.ListingsView);
+                            permissions.Add(Permissions.ListingsContactView);
+                            permissions.Add(Permissions.ListingsCreate);
+                            permissions.Add(Permissions.ListingsUpdate);
+                            permissions.Add(Permissions.ListingsDelete);
+                            permissions.Add(Permissions.ListingsImagesManage);
+                            permissions.Add(Permissions.CommissionView);
+                        }
+                        else if (role == Roles.Seeker)
+                        {
+                            permissions.Add(Permissions.ListingsView);
+                            permissions.Add(Permissions.ListingsContactView);
+                        }
+                        else if (role == Roles.Admin)
+                        {
+                            permissions.Add(Permissions.CommissionRatesManage);
+                        }
+                    }
+
+                    foreach (var permission in permissions)
+                    {
+                        if (!identity.HasClaim("permission", permission))
+                        {
+                            identity.AddClaim(new Claim("permission", permission));
+                        }
+                    }
+                }
+
+                if (principal is not null)
+                {
+                    foreach (var claim in principal.Claims)
+                    {
+                        switch (claim.Type)
+                        {
+                            case ClaimTypes.Name:
+                            case "name":
+                            case ClaimTypes.Email:
+                            case "email":
+                            case ClaimTypes.MobilePhone:
+                            case "phone_number":
+                                claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken);
+                                break;
+                            default:
+                                claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken);
+                                break;
+                        }
+                    }
+                }
+
+                return ValueTask.CompletedTask;
+            });
+        });
     })
     .AddValidation(options =>
     {

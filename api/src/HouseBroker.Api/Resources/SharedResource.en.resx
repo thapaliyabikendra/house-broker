@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="validation.failed" xml:space="preserve">
+    <value>Validation failed.</value>
+  </data>
+  <data name="validation.required" xml:space="preserve">
+    <value>A required field is missing.</value>
+  </data>
+  <data name="validation.out_of_range" xml:space="preserve">
+    <value>A value is outside the allowed range.</value>
+  </data>
+  <data name="not_found" xml:space="preserve">
+    <value>A lookup value does not exist.</value>
+  </data>
+  <data name="resource.not_found" xml:space="preserve">
+    <value>The requested resource does not exist.</value>
+  </data>
+  <data name="forbidden" xml:space="preserve">
+    <value>The caller lacks permission.</value>
+  </data>
+  <data name="not_owner" xml:space="preserve">
+    <value>The caller does not own the resource.</value>
+  </data>
+  <data name="conflict" xml:space="preserve">
+    <value>The operation conflicts with current state.</value>
+  </data>
+  <data name="precondition.required" xml:space="preserve">
+    <value>A required precondition header is missing.</value>
+  </data>
+  <data name="precondition.failed" xml:space="preserve">
+    <value>A precondition failed.</value>
+  </data>
+  <data name="rate_limited" xml:space="preserve">
+    <value>A rate limit was exceeded.</value>
+  </data>
+  <data name="validation.offset_required" xml:space="preserve">
+    <value>An instant without an offset was supplied.</value>
+  </data>
+  <data name="validation.unsupported_culture" xml:space="preserve">
+    <value>A culture is not supported.</value>
+  </data>
+  <data name="idempotency.conflict" xml:space="preserve">
+    <value>The idempotency key was already used with a different request.</value>
+  </data>
+  <data name="idempotency.in_progress" xml:space="preserve">
+    <value>The idempotency key is already being processed.</value>
+  </data>
+</root>

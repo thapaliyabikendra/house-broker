@@ -1,6 +1,29 @@
 # House Broker Plan — 5. Phased Task Breakdown
 
-> **Status (updated):** Phases 0–2 largely implemented, plus initial SSO/Auth, API authorization, and listing management foundations; caching, FluentValidation, views/Swagger, and tests remain.
+> **Status (verified 2026-11-04):** The backend skeleton is implemented across Phases 1–9 (solution and layers, domain/persistence, listing CRUD/status/search/lookups, image storage, commission engine, caching, idempotency, SSO skeleton, and API authorization), but many checklist items are only partial and the Angular app is still a shell. Checkboxes below reflect what the code actually does, not what was planned. See **Resolved after the audit** and **Verified gaps**.
+
+### Resolved after the 2026-11-04 audit
+
+- **`ListingFeature` / `ListingImage` relationships:** the duplicate foreign keys and shadow `ListingId1` columns were removed. The navigations are now bound explicitly (`Listing.Images` and `Listing.Features`), and migration `FixListingRelationships` drops the shadow columns, indexes, and FKs.
+- **Feature loading and mapping:** `GetByIdAsync` and the read queries load `Features` with their `Feature` lookup, so owner detail responses and `ReplaceFeatures` work against the real rows.
+- **Feature replacement:** `ReplaceFeatures` now reconciles the desired set with the existing rows (keeping unchanged rows, removing dropped rows, adding new rows) instead of clearing and re-adding.
+- **Feature validation:** create/update reject feature ids that do not exist in the lookup and map `Code`/`Name` from the lookup.
+- **Concurrency:** feature and image mutations now touch the listing root so `RowVersion` advances, and image upload/delete invalidates the listing cache.
+- **Controller grouping:** controllers are now page-area oriented — `PublicListingsController`, `BrokerListingsController`, `ReferenceDataController`, and `AdminCommissionRatesController` — while preserving the existing `v1/...` URLs.
+- **Tests added:** feature validation, feature mapping, `ReplaceFeatures` reconciliation, and an EF model invariant proving no shadow `ListingId1` foreign keys.
+- **Still open:** listing `GET`s do not emit `ETag` response headers, and the controllers still lack `ProducesResponseType`/Swagger documentation.
+
+### Verified gaps (2026-11-04 audit)
+
+- **Concurrency (remaining):** image and feature mutations now touch the listing root, but listing `GET`s still do not set `ETag` response headers.
+- **API grouping (remaining):** the controllers are now page-area oriented and keep the existing URLs; shared lookups/meta remain on `ReferenceDataController` by design. Endpoints still lack `ProducesResponseType` and full Swagger documentation.
+- **Phase 1 claims not met:** Serilog is packaged but not wired; security headers are manual rather than `NetEscapades`; no forwarded headers, rate limiting, feature management, or `Asp.Versioning` (routes hard-code `v1`); UTC JSON converters are never registered; `BannedApiAnalyzers`/culture analyzers are not enabled.
+- **Phase 2 claims not met:** indexes are not filtered on `IsDeleted = 0`; no UTC value converter, `datetime2(3)`/`SYSUTCDATETIME()` defaults, or database collation; no SQL Server execution strategy; `HouseBroker.TestSupport` is empty.
+- **Auth/SSO:** no role/client/demo-user seeding, no `register-client`, no consent page, no token pruning, no persisted Data Protection provider, no `auth` rate-limit policy, no Auth tests.
+- **API/quality:** no Swagger/OpenAPI UI or `ProducesResponseType`, no rate-limit policies, no information/debug logging, no `.resx` parity/NFC normalization, no cache contract tests or single-flight, no idempotency transaction, no concurrency-check docs, and very few tests (6 test source files).
+- **UI:** Angular shell only (routing, Transloco stub, header, runtime config, proxy). No Material, auth, generated API client, interceptors, guards, pipes, features, lint/Husky, or feature tests.
+- **Docs:** `README.md` and `AGENTS.md` still describe a planning-only repository; `docs/swagger.json`, `third-party-guide.md`, `deployment.md`, `concurrency-checks.md`, `db-roles.sql`, CI, and production compose/nginx files are absent.
+- **Not fixed here:** the relationship, feature, concurrency-on-mutation, and controller-grouping defects from the original audit are resolved; the remaining gaps above stay open.
 
 ## 5. Phased Task Breakdown
 
@@ -9,7 +32,7 @@
 - [x] Write `AGENTS.md` (outline in 4.4) with glossary and an Angular section
 - [ ] Add analyzers (warnings as errors, SonarAnalyzer), Central Package Management (`Directory.Packages.props`) with lock files, NuGet audit warnings as errors; pin the planned packages (`NetEscapades.AspNetCore.SecurityHeaders`, `Asp.Versioning.Mvc`, `ZiggyCreatures.FusionCache` + `.Serialization.SystemTextJson`; `.Backplane.StackExchangeRedis` and the Redis cache package are pinned in Phase 14)
 - [ ] Add npm packages: `@jsverse/transloco`, `@jsverse/transloco-locale`, `@jsverse/transloco-keys-manager`
-- [ ] Architecture-test project skeleton
+- [x] Architecture-test project skeleton
 
 **Exit:** repo initialized; `AGENTS.md` and tooling in place.
 
@@ -19,11 +42,11 @@
 - [x] `Domain.Shared`: roles, permissions, scopes, limits (max images, image size, page size), `ListingStatus`, error codes
 - [x] `Application.Contracts`: `Result<T>` and `Error`; folder layout for DTOs and service interfaces
 - [ ] Add Mapperly (`Riok.Mapperly`) and mapping conventions; mapping profiles live in `Application`; public and owner DTO mappings are explicit
-- [x] `ServiceDefaults`: Serilog setup and enrichers; correlation-id middleware with header sanitization, response header, CORS exposure and a `correlationId` field on `ProblemDetails` (4.8); `AddProblemDetails()` + `IExceptionHandler` with a `DomainException` mapping; security headers via `NetEscapades.AspNetCore.SecurityHeaders`; `ForwardedHeaders` with trusted proxies; `UsePathBase` from configuration; health checks; rate-limit helpers; feature-management wiring (4.3)
-- [x] Api composition root with per-layer `DependencyInjection.cs` extension methods; PathBase `/api`; API versioning with `Asp.Versioning.Mvc` and `v{version}/...` routes; a single `ToActionResult` mapping to status codes and localized `ProblemDetails`; `TimeProvider` registered
+- [ ] `ServiceDefaults`: Serilog setup and enrichers; correlation-id middleware with header sanitization, response header, CORS exposure and a `correlationId` field on `ProblemDetails` (4.8); `AddProblemDetails()` + `IExceptionHandler` with a `DomainException` mapping; security headers via `NetEscapades.AspNetCore.SecurityHeaders`; `ForwardedHeaders` with trusted proxies; `UsePathBase` from configuration; health checks; rate-limit helpers; feature-management wiring (4.3) *(partial: correlation id, problem details, exception handler, path base, health checks, and manual security headers exist; Serilog is not wired; no `NetEscapades`, forwarded headers, rate limiting, or feature management)*
+- [ ] Api composition root with per-layer `DependencyInjection.cs` extension methods; PathBase `/api`; API versioning with `Asp.Versioning.Mvc` and `v{version}/...` routes; a single `ToActionResult` mapping to status codes and localized `ProblemDetails`; `TimeProvider` registered *(partial: path base, `ToActionResult`, and `TimeProvider` exist; no `Asp.Versioning` package, routes hard-code `v1`, and only Infrastructure has a DI extension)*
 - [ ] **Spike:** `NetEscapades.AspNetCore.SecurityHeaders` CSP on both services and `Asp.Versioning.Mvc` under PathBase; record the pinned versions and the CSP directives
 - [x] Localization foundation (4.11): `Domain.Shared` (`SupportedCultures`, default culture, `ErrorCodes`); `Error` carries code + arguments, no message text; `RequestLocalization` with `Accept-Language` in `ServiceDefaults`; `Content-Language` and `Vary` handling; `IStringLocalizer`-based message mapping in `ToActionResult` with English fallback
-- [x] Time foundation (4.12): `TimeProvider` registered in each host; UTC JSON settings (ISO 8601 `Z`, offset-less input rejected); `BannedApiAnalyzers` and culture analyzers (CA1304, CA1305, CA1307, CA1309, CA1310, CA1311) set as errors
+- [ ] Time foundation (4.12): `TimeProvider` registered in each host; UTC JSON settings (ISO 8601 `Z`, offset-less input rejected); `BannedApiAnalyzers` and culture analyzers (CA1304, CA1305, CA1307, CA1309, CA1310, CA1311) set as errors *(partial: `TimeProvider` exists and converters are written, but `AddJsonOptions` never registers them; no banned-API or culture analyzers)*
 - [x] Auth host skeleton: PathBase `/sso`, health endpoints, shared defaults
 - [ ] **Spike:** Swashbuckle on .NET 10 with PathBase (relative swagger endpoint, `/api` server entry); fall back to built-in OpenAPI if incompatible
 - [ ] Options classes and validation; user-secrets; Kestrel request-size limits; CORS allowlist from configuration
@@ -35,11 +58,11 @@
 ### Phase 2: Domain and Persistence (1.25 days)
 - [x] Domain entities, enums and DDD-lite behavior methods with invariants (3.7), written test-first where in TDD scope
 - [x] `AppDbContext` (plain EF context) + Fluent API configurations (`decimal(18,2)`, string lengths, FKs, `ListingImageData.Content` as `varbinary(max)`); entity classes `BrokerProfile`, `ListingStatusHistory`, `ListingPriceHistory` and `AuditEvent` mapped to plural PascalCase tables (`BrokerProfiles`, `ListingStatusHistories`, `ListingPriceHistories`, `AuditEvents`)
-- [x] Indexes: `(City, Locality)`, `Price`, `PropertyTypeId`, `Status`, filtered on `IsDeleted = 0`; history indexes on `(ListingId, ChangedAt)` and `AuditEvent.OccurredAt`
-- [x] Global soft-delete query filter; `RowVersion` on `Listing` and `CommissionRate`; GUID v7 primary keys on every table; audit columns (`CreatedAt`/`CreatedBy`/`UpdatedAt`/`UpdatedBy`, plus `DeletedAt`/`DeletedBy` for soft delete) populated by a `SaveChanges` interceptor; EF SQL Server execution strategy
-- [x] UTC persistence (4.12): all instants `datetime2(3)` with a UTC-enforcing value converter and `SYSUTCDATETIME()` defaults; all text columns `nvarchar`; database collation `Latin1_General_100_CI_AI`
+- [ ] Indexes: `(City, Locality)`, `Price`, `PropertyTypeId`, `Status`, filtered on `IsDeleted = 0`; history indexes on `(ListingId, ChangedAt)` and `AuditEvent.OccurredAt` *(partial: indexes exist but none are filtered)*
+- [ ] Global soft-delete query filter; `RowVersion` on `Listing` and `CommissionRate`; GUID v7 primary keys on every table; audit columns (`CreatedAt`/`CreatedBy`/`UpdatedAt`/`UpdatedBy`, plus `DeletedAt`/`DeletedBy` for soft delete) populated by a `SaveChanges` interceptor; EF SQL Server execution strategy *(partial: filter, row versions, GUID v7, and audit interceptor exist; `UseSqlServer` does not enable a retrying execution strategy)*
+- [ ] UTC persistence (4.12): all instants `datetime2(3)` with a UTC-enforcing value converter and `SYSUTCDATETIME()` defaults; all text columns `nvarchar`; database collation `Latin1_General_100_CI_AI` *(not implemented: migration uses plain `datetime2`, no value converter, no SQL defaults, no collation)*
 - [x] Lookups: `Code`, `Name` and `SortOrder` on `PropertyTypes` and `Features`; no translation tables; seed names in the default language
-- [x] Repository per aggregate (`IListingRepository`, writes) and a separate read interface `IListingQueries` (Application), implemented in Infrastructure; `IUnitOfWork` translating `DbUpdateConcurrencyException` into a `PreconditionFailed` result; `Listing.Create` factory; `HouseBroker.TestSupport` with `ListingBuilder` and request builders
+- [ ] Repository per aggregate (`IListingRepository`, writes) and a separate read interface `IListingQueries` (Application), implemented in Infrastructure; `IUnitOfWork` translating `DbUpdateConcurrencyException` into a `PreconditionFailed` result; `Listing.Create` factory; `HouseBroker.TestSupport` with `ListingBuilder` and request builders *(partial: repository/query split, `IUnitOfWork`, and `Listing.Create` exist; `TestSupport` and the builders are missing; conflict translation is not implemented)*
 - [x] Initial migration; `migrate` command on the Api host
 - [x] `DatabaseSeeder` in Infrastructure (idempotent, upsert by natural key, updating only changed values): master data in every environment — property types, features and the 3 commission tiers; demo broker profiles and listings in Development only (fixed demo user ids from `Domain.Shared`, matching the Auth demo users)
 - [ ] Seeder tests: running twice creates no duplicates; master data is present after a clean `migrate`; demo data is skipped outside Development
@@ -48,15 +71,15 @@
 
 ### Phase 3: SSO Authorization Server (2.2 days)
 - [x] `AuthDbContext`: Identity (Guid keys), OpenIddict stores, Data Protection keys; initial migration; `migrate` command
-- [x] Identity: password policy (min length 10), unique email, lockout (5 failures / 15 minutes); roles Broker, Seeker, Admin with permission claims from `Domain.Shared`; Admin created from configuration/secrets (no hard-coded password)
-- [x] OpenIddict server: authorization, token, userinfo and logout endpoints under `/sso`; discovery and JWKS; authorization code + PKCE (required), `client_credentials`, refresh tokens (rolling); implicit and password flows disabled; scopes and the `housebroker-api` resource registered; explicit public issuer setting
-- [x] Tokens: asymmetric signing certificates (development certificates locally, mounted certificates in production); access tokens signed, not encrypted; lifetimes 15 min access, 7 days refresh; claim destinations (`sub`, `role`, `permission`, `scp`; `name`, `email`, `phone_number` only when the matching scopes are granted)
+- [ ] Identity: password policy (min length 10), unique email, lockout (5 failures / 15 minutes); roles Broker, Seeker, Admin with permission claims from `Domain.Shared`; Admin created from configuration/secrets (no hard-coded password) *(partial: Identity options are configured and permission claims are derived at token issuance; roles/users are never seeded and no Admin is created from configuration)*
+- [ ] OpenIddict server: authorization, token, userinfo and logout endpoints under `/sso`; discovery and JWKS; authorization code + PKCE (required), `client_credentials`, refresh tokens (rolling); implicit and password flows disabled; scopes and the `housebroker-api` resource registered; explicit public issuer setting *(partial: endpoints, PKCE, client credentials, refresh, and scopes are configured; no explicit public issuer/resource registration)*
+- [ ] Tokens: asymmetric signing certificates (development certificates locally, mounted certificates in production); access tokens signed, not encrypted; lifetimes 15 min access, 7 days refresh; claim destinations (`sub`, `role`, `permission`, `scp`; `name`, `email`, `phone_number` only when the matching scopes are granted) *(partial: development signing certificate and broad claim destinations exist; no production certificate, no explicit lifetimes, and identity claims are not scope-gated)*
 - [ ] Razor Pages: login, register (role choice Seeker or Broker, broker needs name and phone, `BrokerSelfRegistration` flag), logout, consent (third-party clients only), access denied; anti-forgery; local-only `returnUrl`; cookies `HttpOnly`, `Secure`, `SameSite=Lax`; framing denied
 - [ ] SSO page accessibility basics (R26): labelled inputs, associated error messages with `aria-live`, visible focus, logical heading order, `lang` attribute, sufficient contrast; the full WCAG pass stays in Phase 12
 - [ ] Localization: culture from `ui_locales` (then the culture cookie, then `Accept-Language`); `.resx` resources in `en` and `ne` for all pages; a localized `IdentityErrorDescriber`; localized scope descriptions on the consent page; a language selector on the login and register pages; correct `lang` attribute
 - [ ] Clients: seed `housebroker-web` (first party, implicit consent), `housebroker-swagger` (Development/Staging), a demo partner (Development); `register-client` command; exact-match redirect URIs from configuration
 - [ ] OpenIddict token and authorization pruning through a small interval-based `BackgroundService` calling `IOpenIddictTokenManager.PruneAsync` / `IOpenIddictAuthorizationManager.PruneAsync` (no Quartz dependency); Data Protection keys persisted to the database
-- [x] `auth` rate-limit policy; Information/Warning logs for registration, login, lockout, token issuance, refresh-token reuse (no credentials logged)
+- [ ] `auth` rate-limit policy; Information/Warning logs for registration, login, lockout, token issuance, refresh-token reuse (no credentials logged) *(not implemented)*
 - [ ] Demo users (Development): two brokers, one seeker, with fixed ids shared through `Domain.Shared`
 - [ ] Auth data seeder (idempotent): roles and permission claims in every environment; demo users and clients in Development only; the production Admin comes from configuration/secrets
 - [ ] **Unit tests (Auth.Tests):** claim destinations and scope-to-claim mapping, registration role allowlist, `returnUrl` validation, `register-client` command, `ui_locales` negotiation, `.resx` parity between `en` and `ne`
@@ -75,10 +98,10 @@
 **Exit:** a Seeker token cannot call broker endpoints (403); a read-scope partner token cannot write; a broker cannot touch another broker's listing.
 
 ### Phase 5: Commission Engine (0.7 day, **test-first**)
-- [ ] `ICommissionRateProvider` reading active tiers from the DB through the cache abstraction
-- [ ] `CommissionCalculator` (pure, deterministic): tier lookup, inclusive boundaries, rounding; tiers selected by `IsActive` and `EffectiveFrom` against the injected clock
-- [ ] `CommissionRates` bound model: `MinPrice`/`MinInclusive`/`MaxPrice?`/`MaxInclusive` (see 01-scope); the calculator matches with the inclusivity flags, never with plain inclusive bounds
-- [ ] Tier-configuration validation (first tier starts at 0; adjacent tiers share one boundary value with exactly one side inclusive, so no gaps or overlaps; exactly one open-ended top tier). Scope of the check: the active tier set effective now (`IsActive` and `EffectiveFrom <= now`) is validated on every admin write; a row with a future `EffectiveFrom` is validated together with the set that will be effective at that instant, so a future-dated change can never produce a gap or overlap when it takes effect
+- [x] `ICommissionRateProvider` reading active tiers from the DB through the cache abstraction
+- [x] `CommissionCalculator` (pure, deterministic): tier lookup, inclusive boundaries, rounding; tiers selected by `IsActive` and `EffectiveFrom` against the injected clock
+- [x] `CommissionRates` bound model: `MinPrice`/`MinInclusive`/`MaxPrice?`/`MaxInclusive` (see 01-scope); the calculator matches with the inclusivity flags, never with plain inclusive bounds
+- [x] Tier-configuration validation (first tier starts at 0; adjacent tiers share one boundary value with exactly one side inclusive, so no gaps or overlaps; exactly one open-ended top tier). Scope of the check: the active tier set effective now (`IsActive` and `EffectiveFrom <= now`) is validated on every admin write; a row with a future `EffectiveFrom` is validated together with the set that will be effective at that instant, so a future-dated change can never produce a gap or overlap when it takes effect
 - [ ] Tier writes (create/edit) run in a `Serializable` transaction with whole-set re-validation inside it, so two parallel admin edits cannot jointly break the set (the parallel-request check scripts stay in Phase 9)
 - [x] Integration into listing create/update: store `CommissionAmount`, `CommissionRatePercent`, `CommissionRateId`
 - [ ] Admin endpoints for rate management with cache invalidation; Swagger docs per 4.1; Information log and append-only `AuditEvents` row (redacted old/new values) on rate change; `write` rate-limit policy
@@ -88,12 +111,12 @@
 
 ### Phase 6: Listing Management (1.55 days)
 - [x] DTOs and service interfaces in `Application.Contracts`: `CreateListingRequest`, `UpdateListingRequest`, `ListingSummaryDto`, `ListingDetailDto`, `OwnerListingDto` (with commission)
-- [ ] FluentValidation validators (title length, price range, valid property type, location, bedrooms/bathrooms ranges, feature ids exist, postal code format (5 digits); HTML tags rejected in free text); request DTOs expose only client-settable fields; `ListingService` written test-first
+- [ ] FluentValidation validators (title length, price range, valid property type, location, bedrooms/bathrooms ranges, feature ids exist, postal code format (5 digits); HTML tags rejected in free text); request DTOs expose only client-settable fields; `ListingService` written test-first *(partial: validators and request DTOs exist and feature ids are now checked for existence; tests cover validation/mapping but the suite is not test-first/complete)*
 - [x] `ListingService`: create, update, soft delete, get by id, get mine; ownership enforcement; status transitions; write `ListingStatusHistories` on lifecycle changes and `ListingPriceHistories` on price/commission changes; each mutation runs in a single transaction; every method returns `Result<T>`
-- [ ] Image upload/delete via `IImageStorage` (SQL-backed default) with type, size and count validation; file-signature (magic-byte) check, not just `Content-Type`; server-generated file names; metadata and `varbinary(max)` blob written in one transaction; no orphan metadata row or blob on failure; `upload` rate-limit policy; primary image handling; `ImageUploads` flag; image-serving endpoint with `ETag` and `Cache-Control`
+- [ ] Image upload/delete via `IImageStorage` (SQL-backed default) with type, size and count validation; file-signature (magic-byte) check, not just `Content-Type`; server-generated file names; metadata and `varbinary(max)` blob written in one transaction; no orphan metadata row or blob on failure; `upload` rate-limit policy; primary image handling; `ImageUploads` flag; image-serving endpoint with `ETag` and `Cache-Control` *(partial: upload/delete, validation, magic bytes, generated names, transaction, ETag, and `Cache-Control` exist; image mutations now bump the listing row version and invalidate its cache, but there is no rate limit, `ImageUploads` flag, or full primary-image handling)*
 - [ ] Thin controllers (call the service, map through `ToActionResult`) with `ProducesResponseType` and proper status codes (201 + Location, 204, 400, 401, 403, 404, 409 for state conflicts, 412/428 for stale or missing `If-Match`, 429); `write` rate-limit policy; full Swagger docs per 4.1
-- [ ] Concurrency (4.8): `version` on detail and owner DTOs; `ETag` on `GET /listings/{id}` and `GET /listings/mine/{id}`; required `If-Match` on `PUT`; image and feature changes touch the listing root
-- [ ] Mapping that includes commission only for the owning broker; broker contact read from `BrokerProfile`
+- [ ] Concurrency (4.8): `version` on detail and owner DTOs; `ETag` on `GET /listings/{id}` and `GET /listings/mine/{id}`; required `If-Match` on `PUT`; image and feature changes touch the listing root *(partial: `version`, required `If-Match`, and root touching on image/feature changes exist; `ETag` response headers are still not set on listing GETs)*
+- [x] Mapping that includes commission only for the owning broker; broker contact read from `BrokerProfile`
 - [ ] Localized errors (4.11): validators use `WithErrorCode`; `.resx` messages in `en` and `ne` for every code; text input normalized to NFC and trimmed; instants in DTOs are ISO 8601 UTC and offset-less input is rejected; `Accept-Language` documented in Swagger
 - [ ] Information logs for create/update/delete; Warning for forbidden and conflict
 - [ ] **Unit tests:** `ListingService` (create computes commission, update recalculates, non-owner forbidden, not-found, validation failures); controller tests with mocked services; `If-Match` missing/stale mapping; localized `ProblemDetails` (en, ne, unsupported falls back); every error code has an English and a Nepali message; Mapperly profiles map owner and public DTOs correctly
@@ -101,22 +124,22 @@
 **Exit:** a broker can fully manage their listings through Swagger (authorized via `/sso`); the public response never contains commission; a stale `PUT` returns 412.
 
 ### Phase 7: Showcase: Search, Filters, Detail (0.9 day)
-- [ ] `ListingSearchQuery` (location text, min/max price, property type, bedrooms, features, sort, page/pageSize with a max cap)
-- [ ] Query composed with `IQueryable`, projected to summary DTOs (no N+1, `AsNoTracking`); implemented behind `IListingQueries` with small `IQueryable` filter extension methods (no specification framework)
-- [ ] Paged response envelope (items, total, page, pageSize)
-- [ ] Detail endpoint: description, images, features; broker name/phone/email only when the caller holds `contacts.read`
-- [ ] Anonymous lookup endpoints `GET /api/v1/lookups/property-types` and `GET /api/v1/lookups/features` returning default-language names (no translation table in MVP); `GET /api/v1/meta` (currency code, supported cultures, default culture, limits); results sorted by `CreatedAt` descending with `Id` as tie-breaker
+- [x] `ListingSearchQuery` (location text, min/max price, property type, bedrooms, features, sort, page/pageSize with a max cap)
+- [x] Query composed with `IQueryable`, projected to summary DTOs (no N+1, `AsNoTracking`); implemented behind `IListingQueries` with small `IQueryable` filter extension methods (no specification framework) *(implemented inline in `ListingQueries`; filter extension methods were not extracted)*
+- [x] Paged response envelope (items, total, page, pageSize)
+- [x] Detail endpoint: description, images, features; broker name/phone/email only when the caller holds `contacts.read`
+- [x] Anonymous lookup endpoints `GET /api/v1/lookups/property-types` and `GET /api/v1/lookups/features` returning default-language names (no translation table in MVP); `GET /api/v1/meta` (currency code, supported cultures, default culture, limits); results sorted by `CreatedAt` descending with `Id` as tie-breaker *(implemented, but lookups are ordered by `SortOrder`)*
 - [ ] Query validation (min ≤ max, page bounds, text length cap, LIKE wildcards escaped); `search` rate-limit policy; Debug logging of normalized filters
 - [ ] Unit tests for search criteria composition; verify seekers see only `Active` listings; contact hidden without the scope
 
 **Exit:** search by location + price range + type works with paging and sorting; detail returns images, and broker contact only for permitted callers.
 
 ### Phase 8: Caching (0.65 day; Tier 1 = in-memory provider)
-- [ ] `ICacheService` with `MemoryCacheService` (Tier 1); the `RedisCacheService` L2 and backplane are added in Phase 14 behind the same abstraction and `Cache:Provider` switch; `ListingCache` flag honored; cache errors logged at Warning and fall through to the DB; single-flight loading to prevent stampedes
-- [ ] Caching as decorators: `CachedListingQueries` (wraps `IListingQueries`) and `CachedCommissionRateProvider`, registered in DI; `ListingService` contains no cache code
+- [ ] `ICacheService` with `MemoryCacheService` (Tier 1); the `RedisCacheService` L2 and backplane are added in Phase 14 behind the same abstraction and `Cache:Provider` switch; `ListingCache` flag honored; cache errors logged at Warning and fall through to the DB; single-flight loading to prevent stampedes *(partial: memory provider, flag, error fallback, and invalidation tokens exist; no single-flight and no `Cache:Provider` switch)*
+- [x] Caching as decorators: `CachedListingQueries` (wraps `IListingQueries`) and `CachedCommissionRateProvider`, registered in DI; `ListingService` contains no cache code
 - [ ] Shared contract-test suite written against `ICacheService` (Liskov); run against the Memory provider now and against Redis in Phase 14
-- [ ] Cache commission tiers (long TTL), lookups, listing detail (5 min), search results (60 s, keyed by normalized query)
-- [ ] Invalidation on listing create/update/delete and rate changes using namespace tokens (a write stores a fresh token that read keys embed; works on both providers)
+- [ ] Cache commission tiers (long TTL), lookups, listing detail (5 min), search results (60 s, keyed by normalized query) *(partial: commission tiers, detail, search, and owner listings are cached; lookups are not, and the search key is not normalized)*
+- [x] Invalidation on listing create/update/delete, image upload/delete, and rate changes using namespace tokens (a write stores a fresh token that read keys embed; works on both providers)
 - [ ] Public and owner DTOs cached under separate keys, contact-bearing responses per scope and localized values per culture, so owner-only or contact fields never reach public cache entries
 - [ ] Debug logs for hit/miss
 - [ ] Unit tests: hit/miss, invalidation on update, flag-disabled bypass, provider failure falls through to the DB
@@ -124,9 +147,9 @@
 **Exit:** repeated requests hit the cache; writes invalidate it; disabling the flag bypasses it. (With Redis, a write on one instance invalidating reads on another is added and verified in Phase 14.)
 
 ### Phase 9: Idempotency and Concurrency Hardening (0.7 day)
-- [ ] `IdempotencyKey` entity (table `IdempotencyKeys`), configuration and migration; `IIdempotencyService` written test-first (4.8)
-- [ ] `[Idempotent]` action filter on `POST /listings` and `POST /admin/commission-rates`: key validation, body hash, replay with `Idempotent-Replayed: true`, 409/422 rules; the key and the business change commit in one transaction
-- [ ] Hosted service that deletes expired keys in batches (own correlation id per run)
+- [x] `IdempotencyKey` entity (table `IdempotencyKeys`), configuration and migration; `IIdempotencyService` written test-first (4.8) *(implemented, but not test-first)*
+- [ ] `[Idempotent]` action filter on `POST /listings` and `POST /admin/commission-rates`: key validation, body hash, replay with `Idempotent-Replayed: true`, 409/422 rules; the key and the business change commit in one transaction *(partial: filter is applied and handles replay/conflict; the idempotency record and business change are not committed in one transaction)*
+- [ ] Hosted service that deletes expired keys in batches (own correlation id per run) *(partial: `IdempotencyCleanupService` deletes expired keys hourly; no per-run correlation id)*
 - [ ] Tier changes: the `Serializable` transaction and whole-set validation are built in Phase 5; here add the parallel-edit check script and surface `rowversion` on tiers as `version` with `If-Match` on tier edits
 - [ ] Swagger: document `Idempotency-Key`, `If-Match`, `ETag`, and the 412, 422, 428 responses on the relevant endpoints
 - [ ] `docs/concurrency-checks.md` with scripted parallel-request checks: two parallel `PUT`s (one gets 412), two parallel uploads at the 10-image limit, two parallel tier edits, a duplicate `POST` with the same key
@@ -137,7 +160,7 @@
 ### Phase 10: Angular Foundation and Sign-In (1.9 days)
 - [ ] Create the workspace under `ui/` (strict, routing, SCSS, standalone) with pinned versions and Node; `baseHref=/`; Angular Material theme
 - [ ] Tooling per 4.10: strict compiler options, `angular-eslint` + `typescript-eslint`, Prettier, `.editorconfig`, Husky + lint-staged, import-boundary lint rule, banned unsafe-HTML lint rules, build budgets; npm scripts (`lint`, `format:check`, `test`, `build`, `api:generate`, `api:check`)
-- [ ] Dev proxy (`proxy.conf.json`) mapping `/api` and `/sso` to the local services; the dev server serves the SPA at `/`
+- [x] Dev proxy (`proxy.conf.json`) mapping `/api` and `/sso` to the local services; the dev server serves the SPA at `/`
 - [ ] Generate the API client from `docs/swagger.json` with `ng-openapi-gen` into `ui/src/app/api/`
 - [ ] Core: runtime config loader (`assets/config.json`); OIDC authentication (authorization code + PKCE, refresh-token rotation); interceptors (bearer for `/api` only, correlation id, `ProblemDetails` error mapping, 429 retry-after); global `ErrorHandler`; functional guards (authenticated, role/permission)
 - [ ] Layout shell (header, navigation, sign in/out, user menu showing name and role, footer, skip link); loading, empty and error state components; `en-IN` formatting, NPR and lakh/crore pipe

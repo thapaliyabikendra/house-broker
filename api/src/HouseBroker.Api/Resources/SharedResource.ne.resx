@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="validation.failed" xml:space="preserve">
+    <value>प्रमाणीकरण असफल।</value>
+  </data>
+  <data name="validation.required" xml:space="preserve">
+    <value>आवश्यक फिल्ड छुटेको छ।</value>
+  </data>
+  <data name="validation.out_of_range" xml:space="preserve">
+    <value>मान अनुमति दायराभन्दा बाहिर छ।</value>
+  </data>
+  <data name="not_found" xml:space="preserve">
+    <value>लुकअप मान फेला परेन।</value>
+  </data>
+  <data name="resource.not_found" xml:space="preserve">
+    <value>अनुरोध गरिएको स्रोत फेला परेन।</value>
+  </data>
+  <data name="forbidden" xml:space="preserve">
+    <value>कलरसँग अनुमति छैन।</value>
+  </data>
+  <data name="not_owner" xml:space="preserve">
+    <value>कलर स्रोतको मालिक होइन।</value>
+  </data>
+  <data name="conflict" xml:space="preserve">
+    <value>परिचालन वर्तमान अवस्थासँग द्वन्द्वमा छ।</value>
+  </data>
+  <data name="precondition.required" xml:space="preserve">
+    <value>आवश्यक पूर्वशर्त हेडर छुटेको छ।</value>
+  </data>
+  <data name="precondition.failed" xml:space="preserve">
+    <value>पूर्वशर्त असफल भयो।</value>
+  </data>
+  <data name="rate_limited" xml:space="preserve">
+    <value>दर सीमा पार भयो।</value>
+  </data>
+  <data name="validation.offset_required" xml:space="preserve">
+    <value>अफसेट बिनाको तिथि-समय पेश गरिएको छ।</value>
+  </data>
+  <data name="validation.unsupported_culture" xml:space="preserve">
+    <value>संस्कृति समर्थित छैन।</value>
+  </data>
+  <data name="idempotency.conflict" xml:space="preserve">
+    <value>आइडेम्पोटेन्सी कुञ्जी फरक अनुरोधसँग पहिले प्रयोग भएको छ।</value>
+  </data>
+  <data name="idempotency.in_progress" xml:space="preserve">
+    <value>आइडेम्पोटेन्सी कुञ्जी हाल प्रक्रियामा छ।</value>
+  </data>
+</root>

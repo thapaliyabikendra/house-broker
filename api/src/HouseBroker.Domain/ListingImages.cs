@@ -105,6 +105,9 @@ public sealed class ListingFeature
     /// <summary>Gets the feature identifier.</summary>
     public Guid FeatureId { get; private set; }
 
+    /// <summary>Gets the feature lookup when loaded.</summary>
+    public Feature? Feature { get; private set; }
+
     /// <summary>Gets the created timestamp.</summary>
     public DateTime CreatedAt { get; private set; }
 

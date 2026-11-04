@@ -40,6 +40,16 @@ public sealed class ListingService(
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, failure.PropertyName));
         }
 
+        var featureIds = (request.FeatureIds ?? new List<Guid>())
+            .Where(featureId => featureId != Guid.Empty)
+            .Distinct()
+            .ToList();
+        var featureLookup = await GetFeatureLookupAsync(featureIds, cancellationToken);
+        if (featureIds.Any(featureId => !featureLookup.ContainsKey(featureId)))
+        {
+            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, nameof(CreateListingRequest.FeatureIds)));
+        }
+
         var listing = Listing.Create(
             brokerId.Value,
             request.Title,
@@ -54,7 +64,7 @@ public sealed class ListingService(
             request.Bathrooms,
             request.AreaSqFt);
 
-        listing.ReplaceFeatures(request.FeatureIds);
+        listing.ReplaceFeatures(featureIds);
 
         var tiers = await _commissionRates.GetActiveAsync(_clock.GetUtcNow().UtcDateTime, cancellationToken);
         var commission = CommissionCalculator.Calculate(request.Price, tiers, _clock.GetUtcNow().UtcDateTime);
@@ -63,7 +73,7 @@ public sealed class ListingService(
         await _repository.AddAsync(listing, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return Result<OwnerListingDto>.Success(MapOwner(listing));
+        return Result<OwnerListingDto>.Success(MapOwner(listing, featureLookup));
     }
 
     /// <inheritdoc />
@@ -91,6 +101,16 @@ public sealed class ListingService(
         {
             var failure = updateValidation.Errors[0];
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, failure.PropertyName));
+        }
+
+        var featureIds = (request.FeatureIds ?? new List<Guid>())
+            .Where(featureId => featureId != Guid.Empty)
+            .Distinct()
+            .ToList();
+        var featureLookup = await GetFeatureLookupAsync(featureIds, cancellationToken);
+        if (featureIds.Any(featureId => !featureLookup.ContainsKey(featureId)))
+        {
+            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ValidationFailed, ErrorKind.Validation, nameof(UpdateListingRequest.FeatureIds)));
         }
 
         if (string.IsNullOrWhiteSpace(ifMatch))
@@ -121,7 +141,8 @@ public sealed class ListingService(
             request.Bathrooms,
             request.AreaSqFt);
 
-        listing.ReplaceFeatures(request.FeatureIds);
+        listing.ReplaceFeatures(featureIds);
+        listing.Touch(_clock.GetUtcNow().UtcDateTime, brokerId.Value);
 
         var tiers = await _commissionRates.GetActiveAsync(_clock.GetUtcNow().UtcDateTime, cancellationToken);
         var commission = CommissionCalculator.Calculate(request.Price, tiers, _clock.GetUtcNow().UtcDateTime);
@@ -147,7 +168,7 @@ public sealed class ListingService(
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return Result<OwnerListingDto>.Success(MapOwner(listing));
+        return Result<OwnerListingDto>.Success(MapOwner(listing, featureLookup));
     }
 
     /// <inheritdoc />
@@ -264,7 +285,7 @@ public sealed class ListingService(
         }
 
         var listings = await _queries.GetMineAsync(brokerId.Value, cancellationToken);
-        return Result<IReadOnlyList<OwnerListingDto>>.Success(listings.Select(MapOwner).ToList());
+        return Result<IReadOnlyList<OwnerListingDto>>.Success(listings.Select(listing => MapOwner(listing)).ToList());
     }
 
     /// <inheritdoc />
@@ -294,29 +315,86 @@ public sealed class ListingService(
         return Result<OwnerListingDto>.Success(MapOwner(listing));
     }
 
-    private static ListingDetailDto MapDetail(Listing listing)
-        => new()
+    /// <inheritdoc />
+    public async Task<Result<OwnerListingDto>> MarkSoldAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var brokerId = _currentUser.UserId;
+        if (brokerId is null)
         {
-            Id = listing.Id,
-            Title = listing.Title,
-            Description = listing.Description,
-            PropertyTypeId = listing.PropertyTypeId,
-            Price = listing.Price,
-            Province = listing.Province,
-            City = listing.City,
-            Locality = listing.Locality,
-            PostalCode = listing.PostalCode,
-            Bedrooms = listing.Bedrooms,
-            Bathrooms = listing.Bathrooms,
-            AreaSqFt = listing.AreaSqFt,
-            Status = listing.Status.ToString(),
-            Images = listing.Images.Select(MapImage).ToList(),
-            Features = listing.Features.Select(feature => new ListingFeatureDto { Id = feature.FeatureId }).ToList(),
-            CreatedAt = listing.CreatedAt,
-            Version = Convert.ToBase64String(listing.RowVersion),
-        };
+            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
+        }
 
-    private static OwnerListingDto MapOwner(Listing listing)
+        var listing = await _repository.GetByIdAsync(id, cancellationToken);
+        if (listing is null)
+        {
+            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+        }
+
+        if (listing.BrokerId != brokerId.Value)
+        {
+            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
+        }
+
+        var fromStatus = listing.Status;
+        listing.MarkSold();
+        await _repository.AddStatusHistoryAsync(ListingStatusHistory.Create(listing.Id, fromStatus, listing.Status, brokerId.Value, _clock.GetUtcNow().UtcDateTime, null), cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return Result<OwnerListingDto>.Success(MapOwner(listing));
+    }
+
+    /// <inheritdoc />
+    public async Task<Result<OwnerListingDto>> ArchiveAsync(Guid id, CancellationToken cancellationToken)
+    {
+        var brokerId = _currentUser.UserId;
+        if (brokerId is null)
+        {
+            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
+        }
+
+        var listing = await _repository.GetByIdAsync(id, cancellationToken);
+        if (listing is null)
+        {
+            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
+        }
+
+        if (listing.BrokerId != brokerId.Value)
+        {
+            return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
+        }
+
+        var fromStatus = listing.Status;
+        listing.Archive();
+        if (fromStatus != listing.Status)
+        {
+            await _repository.AddStatusHistoryAsync(ListingStatusHistory.Create(listing.Id, fromStatus, listing.Status, brokerId.Value, _clock.GetUtcNow().UtcDateTime, null), cancellationToken);
+        }
+
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        return Result<OwnerListingDto>.Success(MapOwner(listing));
+    }
+
+    private static ListingDetailDto MapDetail(Listing listing) => new()
+    {
+        Id = listing.Id,
+        Title = listing.Title,
+        Description = listing.Description,
+        PropertyTypeId = listing.PropertyTypeId,
+        Price = listing.Price,
+        Province = listing.Province,
+        City = listing.City,
+        Locality = listing.Locality,
+        PostalCode = listing.PostalCode,
+        Bedrooms = listing.Bedrooms,
+        Bathrooms = listing.Bathrooms,
+        AreaSqFt = listing.AreaSqFt,
+        Status = listing.Status.ToString(),
+        Images = listing.Images.Select(MapImage).ToList(),
+        Features = MapFeatures(listing, null),
+        CreatedAt = listing.CreatedAt,
+        Version = Convert.ToBase64String(listing.RowVersion),
+    };
+
+    private static OwnerListingDto MapOwner(Listing listing, IReadOnlyDictionary<Guid, Feature>? featureLookup = null)
         => new()
         {
             Id = listing.Id,
@@ -333,13 +411,45 @@ public sealed class ListingService(
             AreaSqFt = listing.AreaSqFt,
             Status = listing.Status.ToString(),
             Images = listing.Images.Select(MapImage).ToList(),
-            Features = listing.Features.Select(feature => new ListingFeatureDto { Id = feature.FeatureId }).ToList(),
+            Features = MapFeatures(listing, featureLookup),
             CreatedAt = listing.CreatedAt,
             Version = Convert.ToBase64String(listing.RowVersion),
             CommissionAmount = listing.CommissionAmount,
             CommissionRatePercent = listing.CommissionRatePercent,
             CommissionRateId = listing.CommissionRateId,
         };
+
+    private static List<ListingFeatureDto> MapFeatures(Listing listing, IReadOnlyDictionary<Guid, Feature>? featureLookup)
+        => listing.Features.Select(feature => MapFeature(feature, featureLookup)).ToList();
+
+    private static ListingFeatureDto MapFeature(ListingFeature feature, IReadOnlyDictionary<Guid, Feature>? featureLookup)
+    {
+        var definition = feature.Feature;
+        if (definition is null && featureLookup is not null && featureLookup.TryGetValue(feature.FeatureId, out var found))
+        {
+            definition = found;
+        }
+
+        return new ListingFeatureDto
+        {
+            Id = feature.FeatureId,
+            Code = definition?.Code ?? string.Empty,
+            Name = definition?.Name ?? string.Empty,
+        };
+    }
+
+    private async Task<IReadOnlyDictionary<Guid, Feature>> GetFeatureLookupAsync(
+        IReadOnlyCollection<Guid> featureIds,
+        CancellationToken cancellationToken)
+    {
+        if (featureIds.Count == 0)
+        {
+            return new Dictionary<Guid, Feature>();
+        }
+
+        var features = await _queries.GetFeaturesAsync(cancellationToken);
+        return features.ToDictionary(feature => feature.Id);
+    }
 
     private static ListingImageDto MapImage(ListingImage image)
         => new()
