@@ -20,7 +20,7 @@ public static class InfrastructureExtensions
         services.AddScoped<AuditSaveChangesInterceptor>();
         services.AddDbContext<AppDbContext>((provider, options) =>
         {
-            options.UseSqlServer(connectionString);
+            options.UseSqlServer(connectionString, sql => sql.EnableRetryOnFailure());
             options.AddInterceptors(provider.GetRequiredService<AuditSaveChangesInterceptor>());
         });
 

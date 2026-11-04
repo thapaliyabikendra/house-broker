@@ -32,6 +32,30 @@ internal static class OpenApiExtensions
                     Description = "JWT access token issued by the House Broker identity provider.",
                 };
 
+                document.Components.SecuritySchemes["oauth2"] = new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.OAuth2,
+                    Flows = new OpenApiOAuthFlows
+                    {
+                        AuthorizationCode = new OpenApiOAuthFlow
+                        {
+                            AuthorizationUrl = new Uri("http://localhost:5000/sso/connect/authorize"),
+                            TokenUrl = new Uri("http://localhost:5000/sso/connect/token"),
+                            Scopes = new Dictionary<string, string>
+                            {
+                                ["openid"] = "OpenID Connect",
+                                ["profile"] = "User profile",
+                                ["listings.read"] = "Read listings",
+                                ["contacts.read"] = "Read broker contact",
+                                ["listings.write"] = "Manage listings",
+                                ["commission.read"] = "Read commission",
+                                ["admin.commission"] = "Manage commission rates",
+                            },
+                        },
+                    },
+                    Description = "OAuth 2.0 authorization code flow with PKCE via the House Broker identity provider.",
+                };
+
                 document.Security ??= [];
                 if (document.Security.Count == 0)
                 {

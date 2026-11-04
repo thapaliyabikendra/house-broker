@@ -1,4 +1,3 @@
-using System.Security.Claims;
 using HouseBroker.Auth.Data;
 using HouseBroker.Domain.Common;
 using HouseBroker.ServiceDefaults;
@@ -95,29 +94,7 @@ builder.Services
                         }
                     }
 
-                    var permissions = new HashSet<string>(StringComparer.Ordinal);
-                    foreach (var role in roles)
-                    {
-                        if (role == Roles.Broker)
-                        {
-                            permissions.Add(AppPermissions.ListingsView);
-                            permissions.Add(AppPermissions.ListingsContactView);
-                            permissions.Add(AppPermissions.ListingsCreate);
-                            permissions.Add(AppPermissions.ListingsUpdate);
-                            permissions.Add(AppPermissions.ListingsDelete);
-                            permissions.Add(AppPermissions.ListingsImagesManage);
-                            permissions.Add(AppPermissions.CommissionView);
-                        }
-                        else if (role == Roles.Seeker)
-                        {
-                            permissions.Add(AppPermissions.ListingsView);
-                            permissions.Add(AppPermissions.ListingsContactView);
-                        }
-                        else if (role == Roles.Admin)
-                        {
-                            permissions.Add(AppPermissions.CommissionRatesManage);
-                        }
-                    }
+                    var permissions = AuthClaimMapper.GetPermissions(roles);
 
                     foreach (var permission in permissions)
                     {
@@ -132,19 +109,13 @@ builder.Services
                 {
                     foreach (var claim in principal.Claims)
                     {
-                        switch (claim.Type)
+                        if (AuthClaimMapper.IsIdentityClaim(claim.Type))
                         {
-                            case ClaimTypes.Name:
-                            case "name":
-                            case ClaimTypes.Email:
-                            case "email":
-                            case ClaimTypes.MobilePhone:
-                            case "phone_number":
-                                claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken);
-                                break;
-                            default:
-                                claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken);
-                                break;
+                            claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken);
+                        }
+                        else
+                        {
+                            claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken);
                         }
                     }
                 }

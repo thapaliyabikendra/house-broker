@@ -1,7 +1,8 @@
-using HouseBroker.Domain;
 using HouseBroker.Application.Contracts;
+using HouseBroker.Domain;
 using HouseBroker.Domain.Common;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace HouseBroker.Infrastructure.Persistence;
 
@@ -57,9 +58,18 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<IdempotencyKey> IdempotencyKeys => Set<IdempotencyKey>();
 
     /// <inheritdoc />
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        base.ConfigureConventions(configurationBuilder);
+        configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeValueConverter>();
+        configurationBuilder.Properties<DateTime?>().HaveConversion<UtcNullableDateTimeValueConverter>();
+    }
+
+/// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.UseCollation("Latin1_General_100_CI_AI");
 
         ConfigureListing(modelBuilder);
         ConfigureListingImage(modelBuilder);
@@ -97,10 +107,10 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.Property(listing => listing.UpdatedAt).IsRequired();
         entity.Property(listing => listing.IsDeleted).IsRequired();
         entity.Property(listing => listing.RowVersion).IsRowVersion();
-        entity.HasIndex(listing => new { listing.City, listing.Locality });
-        entity.HasIndex(listing => listing.Price);
-        entity.HasIndex(listing => listing.PropertyTypeId);
-        entity.HasIndex(listing => listing.Status);
+        entity.HasIndex(listing => new { listing.City, listing.Locality }).HasFilter("[IsDeleted] = 0");
+        entity.HasIndex(listing => listing.Price).HasFilter("[IsDeleted] = 0");
+        entity.HasIndex(listing => listing.PropertyTypeId).HasFilter("[IsDeleted] = 0");
+        entity.HasIndex(listing => listing.Status).HasFilter("[IsDeleted] = 0");
         entity.HasIndex(listing => listing.IsDeleted);
     }
 
@@ -256,4 +266,14 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.HasIndex(key => new { key.Key, key.Scope }).IsUnique();
         entity.HasIndex(key => key.ExpiresAt);
     }
+
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:AvoidUninstantiatedInternalClasses", Justification = "Instantiated by EF Core convention configuration.")]
+    private sealed class UtcDateTimeValueConverter() : ValueConverter<DateTime, DateTime>(
+        value => value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime(),
+        value => DateTime.SpecifyKind(value, DateTimeKind.Utc));
+
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1812:AvoidUninstantiatedInternalClasses", Justification = "Instantiated by EF Core convention configuration.")]
+    private sealed class UtcNullableDateTimeValueConverter() : ValueConverter<DateTime?, DateTime?>(
+        value => value.HasValue ? (value.Value.Kind == DateTimeKind.Utc ? value.Value : value.Value.ToUniversalTime()) : value,
+        value => value.HasValue ? DateTime.SpecifyKind(value.Value, DateTimeKind.Utc) : value);
 }

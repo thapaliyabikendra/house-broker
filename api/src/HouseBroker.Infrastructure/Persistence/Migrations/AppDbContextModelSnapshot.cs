@@ -17,6 +17,7 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .UseCollation("Latin1_General_100_CI_AI")
                 .HasAnnotation("ProductVersion", "10.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
@@ -354,13 +355,17 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("IsDeleted");
 
-                    b.HasIndex("Price");
+                    b.HasIndex("Price")
+                        .HasFilter("[IsDeleted] = 0");
 
-                    b.HasIndex("PropertyTypeId");
+                    b.HasIndex("PropertyTypeId")
+                        .HasFilter("[IsDeleted] = 0");
 
-                    b.HasIndex("Status");
+                    b.HasIndex("Status")
+                        .HasFilter("[IsDeleted] = 0");
 
-                    b.HasIndex("City", "Locality");
+                    b.HasIndex("City", "Locality")
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("Listings", (string)null);
                 });
