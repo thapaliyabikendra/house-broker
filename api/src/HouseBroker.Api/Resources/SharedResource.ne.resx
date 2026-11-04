@@ -33,6 +33,9 @@
   <data name="rate_limited" xml:space="preserve">
     <value>दर सीमा पार भयो।</value>
   </data>
+  <data name="feature.disabled" xml:space="preserve">
+    <value>यो सुविधा हाल अक्षम गरिएको छ।</value>
+  </data>
   <data name="validation.offset_required" xml:space="preserve">
     <value>अफसेट बिनाको तिथि-समय पेश गरिएको छ।</value>
   </data>

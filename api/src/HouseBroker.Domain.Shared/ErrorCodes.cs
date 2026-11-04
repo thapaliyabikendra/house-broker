@@ -36,8 +36,17 @@ public static class ErrorCodes
     /// <summary>A rate limit was exceeded.</summary>
     public const string RateLimited = "rate_limited";
 
+    /// <summary>A required feature is disabled.</summary>
+    public const string FeatureDisabled = "feature.disabled";
+
     /// <summary>An instant without an offset was supplied.</summary>
     public const string OffsetRequired = "validation.offset_required";
+
+    /// <summary>An idempotency key was reused with a different request.</summary>
+    public const string IdempotencyConflict = "idempotency.conflict";
+
+    /// <summary>An idempotency key is already being processed.</summary>
+    public const string IdempotencyInProgress = "idempotency.in_progress";
 
     /// <summary>A culture is not supported.</summary>
     public const string UnsupportedCulture = "validation.unsupported_culture";

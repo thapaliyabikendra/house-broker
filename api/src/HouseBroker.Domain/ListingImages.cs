@@ -45,6 +45,16 @@ public sealed class ListingImage
     /// <summary>Gets whether this is the primary image.</summary>
     public bool IsPrimary { get; private set; }
 
+    /// <summary>Marks the image as the primary image.</summary>
+    public void MarkPrimary() => IsPrimary = true;
+
+    /// <summary>Clears the primary marker.</summary>
+    public void ClearPrimary() => IsPrimary = false;
+
+    /// <summary>Sets the display sort order.</summary>
+    /// <param name="sortOrder">The new sort order.</param>
+    public void SetSortOrder(int sortOrder) => SortOrder = sortOrder;
+
     /// <summary>Gets the created timestamp.</summary>
     public DateTime CreatedAt { get; private set; }
 

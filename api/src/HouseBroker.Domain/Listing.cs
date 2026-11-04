@@ -148,19 +148,46 @@ public sealed class Listing
         }
     }
 
-    /// <summary>Adds an image.</summary>
+    /// <summary>Adds an image, maintaining the primary-image and ordering invariants.</summary>
     public void AddImage(ListingImage image)
     {
+        ArgumentNullException.ThrowIfNull(image);
+
+        if (image.IsPrimary)
+        {
+            foreach (var existing in _images)
+            {
+                existing.ClearPrimary();
+            }
+        }
+        else if (_images.Count == 0)
+        {
+            image.MarkPrimary();
+        }
+
+        image.SetSortOrder(_images.Count == 0 ? 0 : _images.Max(item => item.SortOrder) + 1);
         _images.Add(image);
     }
 
-    /// <summary>Removes an image.</summary>
+    /// <summary>Removes an image and promotes the next image when the primary is removed.</summary>
     public void RemoveImage(Guid imageId)
     {
         var image = _images.FirstOrDefault(item => item.Id == imageId);
-        if (image is not null)
+        if (image is null)
         {
-            _images.Remove(image);
+            return;
+        }
+
+        _images.Remove(image);
+
+        if (image.IsPrimary)
+        {
+            _images
+                .OrderBy(item => item.SortOrder)
+                .ThenBy(item => item.CreatedAt)
+                .ThenBy(item => item.Id)
+                .FirstOrDefault()
+                ?.MarkPrimary();
         }
     }
 

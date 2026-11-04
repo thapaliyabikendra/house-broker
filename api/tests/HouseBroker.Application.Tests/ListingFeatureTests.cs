@@ -2,6 +2,7 @@ using HouseBroker.Application.Contracts;
 using HouseBroker.Application.Services;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Shared;
+using HouseBroker.TestSupport;
 using Moq;
 using Xunit;
 
@@ -104,7 +105,8 @@ public sealed class ListingFeatureTests
             unitOfWork.Object,
             TimeProvider.System,
             new CreateListingRequestValidator(),
-            new UpdateListingRequestValidator());
+            new UpdateListingRequestValidator(),
+            new RecordingLogger<ListingService>());
 
         return (service, repository, queries, unitOfWork);
     }

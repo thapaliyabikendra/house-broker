@@ -9,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.Services.AddRazorPages();
 builder.Services.AddControllers();
+builder.Services.AddHouseBrokerJsonOptions();
 
 var connectionString = builder.Configuration.GetConnectionString("HouseBroker")
     ?? throw new InvalidOperationException("Connection string 'HouseBroker' is not configured.");

@@ -1,4 +1,6 @@
+using HouseBroker.Api;
 using HouseBroker.Api.Authorization;
+using HouseBroker.Api.RateLimiting;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Infrastructure;
 using HouseBroker.ServiceDefaults;
@@ -20,6 +22,9 @@ builder.Services.AddScoped<ICommissionRateAdminService, HouseBroker.Application.
 builder.Services.AddHostedService<HouseBroker.Infrastructure.IdempotencyCleanupService>();
 builder.Services.AddScoped<ILookupService, HouseBroker.Application.Services.LookupService>();
 builder.Services.AddControllers();
+builder.Services.AddHouseBrokerJsonOptions();
+builder.Services.AddHouseBrokerRateLimiting(builder.Configuration);
+builder.Services.AddHouseBrokerOpenApi();
 
 var connectionString = builder.Configuration.GetConnectionString("HouseBroker");
 if (string.IsNullOrWhiteSpace(connectionString))
@@ -69,9 +74,12 @@ app.UsePathBase(pathBase);
 
 app.UseServiceDefaults();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapOpenApi().AllowAnonymous();
 
 if (args.Contains("migrate", StringComparer.OrdinalIgnoreCase))
 {

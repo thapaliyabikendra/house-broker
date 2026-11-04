@@ -1,6 +1,7 @@
 using HouseBroker.Application.Contracts;
 using HouseBroker.Application.Services;
 using HouseBroker.Domain;
+using HouseBroker.TestSupport;
 using Moq;
 using Xunit;
 
@@ -31,7 +32,8 @@ public sealed class ListingServiceTests
             unitOfWork.Object,
             TimeProvider.System,
             createValidator,
-            updateValidator);
+            updateValidator,
+            new RecordingLogger<ListingService>());
 
         var result = await service.CreateAsync(new CreateListingRequest
         {
@@ -74,7 +76,8 @@ public sealed class ListingServiceTests
             unitOfWork.Object,
             TimeProvider.System,
             createValidator,
-            updateValidator);
+            updateValidator,
+            new RecordingLogger<ListingService>());
 
         var result = await service.CreateAsync(new CreateListingRequest
         {

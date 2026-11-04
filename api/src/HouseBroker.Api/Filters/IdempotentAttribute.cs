@@ -1,4 +1,5 @@
 using HouseBroker.Application.Contracts;
+using HouseBroker.Domain.Shared;
 using HouseBroker.ServiceDefaults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -52,13 +53,13 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
 
         if (begin.Status == IdempotencyStatus.Conflict)
         {
-            context.Result = conflictProblem(context, "idempotency.conflict", "The idempotency key was already used with a different request.");
+            context.Result = conflictProblem(context, ErrorCodes.IdempotencyConflict, "The idempotency key was already used with a different request.");
             return;
         }
 
         if (begin.Status == IdempotencyStatus.InProgress)
         {
-            context.Result = conflictProblem(context, "idempotency.in_progress", "The idempotency key is already being processed.");
+            context.Result = conflictProblem(context, ErrorCodes.IdempotencyInProgress, "The idempotency key is already being processed.");
             return;
         }
 
@@ -118,10 +119,10 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
         var problem = new ProblemDetails
         {
             Status = StatusCodes.Status422UnprocessableEntity,
-            Title = "validation.failed",
+            Title = ErrorCodes.ValidationFailed,
             Detail = detail,
         };
-        problem.Extensions["code"] = "validation.failed";
+        problem.Extensions["code"] = ErrorCodes.ValidationFailed;
         problem.Extensions["correlationId"] = context.HttpContext.GetCorrelationId();
         return new ObjectResult(problem) { StatusCode = StatusCodes.Status422UnprocessableEntity };
     }

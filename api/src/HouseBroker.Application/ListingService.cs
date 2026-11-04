@@ -1,6 +1,8 @@
 using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Shared;
+using Microsoft.Extensions.Logging;
+using System.Text;
 
 namespace HouseBroker.Application.Services;
 
@@ -13,7 +15,8 @@ public sealed class ListingService(
     IUnitOfWork unitOfWork,
     TimeProvider clock,
     FluentValidation.IValidator<HouseBroker.Application.Contracts.CreateListingRequest> createValidator,
-    FluentValidation.IValidator<HouseBroker.Application.Contracts.UpdateListingRequest> updateValidator) : IListingService
+    FluentValidation.IValidator<HouseBroker.Application.Contracts.UpdateListingRequest> updateValidator,
+    ILogger<ListingService> logger) : IListingService
 {
     private readonly IListingRepository _repository = repository;
     private readonly IListingQueries _queries = queries;
@@ -23,6 +26,7 @@ public sealed class ListingService(
     private readonly TimeProvider _clock = clock;
     private readonly FluentValidation.IValidator<HouseBroker.Application.Contracts.CreateListingRequest> _createValidator = createValidator;
     private readonly FluentValidation.IValidator<HouseBroker.Application.Contracts.UpdateListingRequest> _updateValidator = updateValidator;
+    private readonly ILogger<ListingService> _logger = logger;
 
     /// <inheritdoc />
     public async Task<Result<OwnerListingDto>> CreateAsync(CreateListingRequest request, CancellationToken cancellationToken)
@@ -30,8 +34,11 @@ public sealed class ListingService(
         var brokerId = _currentUser.UserId;
         if (brokerId is null)
         {
+            _logger.LogWarning("Listing creation was rejected because the caller is not an authenticated broker.");
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
+
+        NormalizeRequest(request);
 
         var createValidation = await _createValidator.ValidateAsync(request, cancellationToken);
         if (!createValidation.IsValid)
@@ -73,6 +80,8 @@ public sealed class ListingService(
         await _repository.AddAsync(listing, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
+        _logger.LogInformation("Listing {ListingId} created by broker {BrokerId}.", listing.Id, brokerId.Value);
+
         return Result<OwnerListingDto>.Success(MapOwner(listing, featureLookup));
     }
 
@@ -82,6 +91,7 @@ public sealed class ListingService(
         var brokerId = _currentUser.UserId;
         if (brokerId is null)
         {
+            _logger.LogWarning("Access to listing {ListingId} was rejected because the caller is not an authenticated broker.", id);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
@@ -93,8 +103,11 @@ public sealed class ListingService(
 
         if (listing.BrokerId != brokerId.Value)
         {
+            _logger.LogWarning("Access to listing {ListingId} by broker {BrokerId} was rejected because the caller is not the owner.", id, brokerId.Value);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
+
+        NormalizeRequest(request);
 
         var updateValidation = await _updateValidator.ValidateAsync(request, cancellationToken);
         if (!updateValidation.IsValid)
@@ -115,11 +128,13 @@ public sealed class ListingService(
 
         if (string.IsNullOrWhiteSpace(ifMatch))
         {
+            _logger.LogWarning("Update of listing {ListingId} by broker {BrokerId} was rejected because If-Match was missing.", id, brokerId.Value);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.PreconditionRequired, ErrorKind.PreconditionRequired));
         }
 
         if (!MatchesRowVersion(listing.RowVersion, ifMatch))
         {
+            _logger.LogWarning("Update of listing {ListingId} by broker {BrokerId} was rejected because If-Match was stale.", id, brokerId.Value);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.PreconditionFailed, ErrorKind.PreconditionFailed));
         }
 
@@ -168,6 +183,7 @@ public sealed class ListingService(
         }
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Listing {ListingId} updated by broker {BrokerId}.", listing.Id, brokerId.Value);
         return Result<OwnerListingDto>.Success(MapOwner(listing, featureLookup));
     }
 
@@ -177,6 +193,7 @@ public sealed class ListingService(
         var brokerId = _currentUser.UserId;
         if (brokerId is null)
         {
+            _logger.LogWarning("Listing deletion was rejected because the caller is not an authenticated broker.");
             return Result.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
@@ -188,11 +205,13 @@ public sealed class ListingService(
 
         if (listing.BrokerId != brokerId.Value)
         {
+            _logger.LogWarning("Deletion of listing {ListingId} by broker {BrokerId} was rejected because the caller is not the owner.", id, brokerId.Value);
             return Result.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
         listing.SoftDelete();
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        _logger.LogInformation("Listing {ListingId} deleted by broker {BrokerId}.", id, brokerId.Value);
         return Result.Success();
     }
 
@@ -229,6 +248,7 @@ public sealed class ListingService(
         var brokerId = _currentUser.UserId;
         if (brokerId is null)
         {
+            _logger.LogWarning("Access to listing {ListingId} was rejected because the caller is not an authenticated broker.", id);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
@@ -240,6 +260,7 @@ public sealed class ListingService(
 
         if (listing.BrokerId != brokerId.Value)
         {
+            _logger.LogWarning("Access to listing {ListingId} by broker {BrokerId} was rejected because the caller is not the owner.", id, brokerId.Value);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
@@ -257,6 +278,11 @@ public sealed class ListingService(
         if (query.MinPrice.HasValue && query.MaxPrice.HasValue && query.MinPrice.Value > query.MaxPrice.Value)
         {
             return Result<PagedResult<ListingSummaryDto>>.Failure(new Error(ErrorCodes.OutOfRange, ErrorKind.Validation, nameof(query.MinPrice)));
+        }
+
+        if (query.Location is not null)
+        {
+            query.Location = NormalizeText(query.Location);
         }
 
         if (!string.IsNullOrWhiteSpace(query.Location) && query.Location.Trim().Length > HouseBroker.Domain.Shared.Limits.MaxSearchTextLength)
@@ -281,6 +307,7 @@ public sealed class ListingService(
         var brokerId = _currentUser.UserId;
         if (brokerId is null)
         {
+            _logger.LogWarning("Listing retrieval was rejected because the caller is not an authenticated broker.");
             return Result<IReadOnlyList<OwnerListingDto>>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
@@ -294,6 +321,7 @@ public sealed class ListingService(
         var brokerId = _currentUser.UserId;
         if (brokerId is null)
         {
+            _logger.LogWarning("Access to listing {ListingId} was rejected because the caller is not an authenticated broker.", id);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
@@ -305,6 +333,7 @@ public sealed class ListingService(
 
         if (listing.BrokerId != brokerId.Value)
         {
+            _logger.LogWarning("Access to listing {ListingId} by broker {BrokerId} was rejected because the caller is not the owner.", id, brokerId.Value);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
@@ -321,6 +350,7 @@ public sealed class ListingService(
         var brokerId = _currentUser.UserId;
         if (brokerId is null)
         {
+            _logger.LogWarning("Access to listing {ListingId} was rejected because the caller is not an authenticated broker.", id);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
@@ -332,6 +362,7 @@ public sealed class ListingService(
 
         if (listing.BrokerId != brokerId.Value)
         {
+            _logger.LogWarning("Access to listing {ListingId} by broker {BrokerId} was rejected because the caller is not the owner.", id, brokerId.Value);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
@@ -348,6 +379,7 @@ public sealed class ListingService(
         var brokerId = _currentUser.UserId;
         if (brokerId is null)
         {
+            _logger.LogWarning("Access to listing {ListingId} was rejected because the caller is not an authenticated broker.", id);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.Forbidden, ErrorKind.Forbidden));
         }
 
@@ -359,6 +391,7 @@ public sealed class ListingService(
 
         if (listing.BrokerId != brokerId.Value)
         {
+            _logger.LogWarning("Access to listing {ListingId} by broker {BrokerId} was rejected because the caller is not the owner.", id, brokerId.Value);
             return Result<OwnerListingDto>.Failure(new Error(ErrorCodes.NotOwner, ErrorKind.Forbidden));
         }
 
@@ -461,6 +494,29 @@ public sealed class ListingService(
             IsPrimary = image.IsPrimary,
             SortOrder = image.SortOrder,
         };
+
+    private static void NormalizeRequest(CreateListingRequest request)
+    {
+        request.Title = NormalizeText(request.Title);
+        request.Description = NormalizeText(request.Description);
+        request.Province = NormalizeText(request.Province);
+        request.City = NormalizeText(request.City);
+        request.Locality = NormalizeText(request.Locality);
+        request.PostalCode = NormalizeText(request.PostalCode);
+    }
+
+    private static void NormalizeRequest(UpdateListingRequest request)
+    {
+        request.Title = NormalizeText(request.Title);
+        request.Description = NormalizeText(request.Description);
+        request.Province = NormalizeText(request.Province);
+        request.City = NormalizeText(request.City);
+        request.Locality = NormalizeText(request.Locality);
+        request.PostalCode = NormalizeText(request.PostalCode);
+    }
+
+    private static string NormalizeText(string? value)
+        => string.IsNullOrEmpty(value) ? string.Empty : value.Normalize(NormalizationForm.FormC).Trim();
 
     /// <summary>Compares an ETag/row version value.</summary>
     public static bool MatchesRowVersion(byte[] current, string? ifMatch)

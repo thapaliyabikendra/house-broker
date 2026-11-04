@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.FeatureManagement;
 using System.Globalization;
 
 
@@ -16,6 +17,7 @@ public static class ServiceDefaultsExtensions
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddHealthChecks();
         builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+        builder.Services.AddFeatureManagement();
         builder.Services.AddProblemDetails();
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
