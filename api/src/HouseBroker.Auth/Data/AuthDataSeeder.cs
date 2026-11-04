@@ -48,7 +48,7 @@ public sealed class AuthDataSeeder(
             if (result.Succeeded)
             {
                 await userManager.AddToRoleAsync(admin, Roles.Admin);
-                logger.LogInformation("Created admin user: {Email}", adminEmail);
+                logger.LogInformation("Created admin user with Id {UserId}.", admin.Id);
             }
             else
             {
@@ -175,7 +175,7 @@ public sealed class AuthDataSeeder(
                 if (result.Succeeded)
                 {
                     await userManager.AddToRoleAsync(user, role);
-                    logger.LogInformation("Created demo user {Email} as {Role}", email, role);
+                    logger.LogInformation("Created demo user with Id {UserId} as {Role}", user.Id, role);
                 }
             }
         }
