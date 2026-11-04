@@ -11,6 +11,13 @@ public class ConsentModel(IStringLocalizer<HouseBroker.Auth.Resources.Resources>
     public Collection<string> Scopes { get; } = new();
 
     public string Title => L["Consent_Title"];
+
+    public string DescribeScope(string scope)
+    {
+        var key = $"Scope_{scope}";
+        var value = L[key];
+        return value.ResourceNotFound ? scope : value;
+    }
     public string Intro => L["Consent_Intro"];
     public string AllowText => L["Consent_Allow"];
     public string DenyText => L["Consent_Deny"];

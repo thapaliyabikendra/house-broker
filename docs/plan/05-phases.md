@@ -78,7 +78,7 @@
 - [x] `auth` rate-limit policy; Information/Warning logs for registration, login, lockout, token issuance, refresh-token reuse (no credentials logged) *(not implemented)*
 - [x] Demo users (Development): two brokers, one seeker, with fixed ids shared through `Domain.Shared`
 - [x] Auth data seeder (idempotent): roles and permission claims in every environment; demo users and clients in Development only; the production Admin comes from configuration/secrets
-- [x] **Unit tests (Auth.Tests):** claim destinations and scope-to-claim mapping, registration role allowlist, `returnUrl` validation, `register-client` command, `ui_locales` negotiation, `.resx` parity between `en` and `ne`
+- [x] **Unit tests (Auth.Tests):** claim destinations and scope-to-claim mapping, registration role allowlist, `returnUrl` validation, `ui_locales` negotiation, localized identity errors, client registration service, `.resx` parity between `en` and `ne`
 
 **Exit:** the authorization code + PKCE flow completes through the Swagger client; `client_credentials` returns a read-scoped token for the demo partner; five wrong passwords lock the account; the discovery document is served under `/sso/.well-known`; the login and consent pages render in Nepali when `ui_locales=ne`.
 
@@ -134,7 +134,7 @@
 - [x] `ICacheService` with `MemoryCacheService` (Tier 1); the `RedisCacheService` L2 and backplane are added in Phase 14 behind the same abstraction and `Cache:Provider` switch; `ListingCache` flag honored; cache errors logged at Warning and fall through to the DB; single-flight loading to prevent stampedes *(partial: memory provider, flag, error fallback, and invalidation tokens exist; no single-flight and no `Cache:Provider` switch)*
 - [x] Caching as decorators: `CachedListingQueries` (wraps `IListingQueries`) and `CachedCommissionRateProvider`, registered in DI; `ListingService` contains no cache code
 - [x] Shared contract-test suite written against `ICacheService` (Liskov); run against the Memory provider now and against Redis in Phase 14
-- [x] Cache commission tiers (long TTL), lookups, listing detail (5 min), search results (60 s, keyed by normalized query) *(partial: commission tiers, detail, search, and owner listings are cached; lookups are not, and the search key is not normalized)*
+- [x] Cache commission tiers (long TTL), lookups, listing detail (5 min), search results (60 s, keyed by normalized query) *(completed: commission tiers, detail, search, owner listings and lookups are cached under culture-aware, normalized keys)*
 - [x] Invalidation on listing create/update/delete, image upload/delete, and rate changes using namespace tokens (a write stores a fresh token that read keys embed; works on both providers)
 - [x] Public and owner DTOs cached under separate keys, contact-bearing responses per scope and localized values per culture, so owner-only or contact fields never reach public cache entries
 - [x] Debug logs for hit/miss

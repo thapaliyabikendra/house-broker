@@ -8,13 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Moq" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\HouseBroker.Auth\HouseBroker.Auth.csproj" />
+    <ProjectReference Include="..\..\src\HouseBroker.ServiceDefaults\HouseBroker.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\tests\HouseBroker.TestSupport\HouseBroker.TestSupport.csproj" />
   </ItemGroup>
 

@@ -42,4 +42,34 @@
   <data name="Consent_Intro" xml:space="preserve">The application is requesting the following permissions:</data>
   <data name="Consent_Allow" xml:space="preserve">Allow</data>
   <data name="Consent_Deny" xml:space="preserve">Deny</data>
+  <data name="Identity_DefaultError" xml:space="preserve">An error occurred.</data>
+  <data name="Identity_ConcurrencyFailure" xml:space="preserve">Optimistic concurrency failure.</data>
+  <data name="Identity_PasswordMismatch" xml:space="preserve">Incorrect password.</data>
+  <data name="Identity_InvalidToken" xml:space="preserve">Invalid token.</data>
+  <data name="Identity_LoginAlreadyAssociated" xml:space="preserve">A user with this login already exists.</data>
+  <data name="Identity_InvalidUserName" xml:space="preserve">User name '{0}' is invalid.</data>
+  <data name="Identity_InvalidEmail" xml:space="preserve">Email '{0}' is invalid.</data>
+  <data name="Identity_DuplicateUserName" xml:space="preserve">User name '{0}' is already taken.</data>
+  <data name="Identity_DuplicateEmail" xml:space="preserve">Email '{0}' is already taken.</data>
+  <data name="Identity_UserAlreadyHasPassword" xml:space="preserve">User already has a password set.</data>
+  <data name="Identity_UserLockoutNotEnabled" xml:space="preserve">Lockout is not enabled for this user.</data>
+  <data name="Identity_UserAlreadyInRole" xml:space="preserve">User already in role '{0}'.</data>
+  <data name="Identity_UserNotInRole" xml:space="preserve">User is not in role '{0}'.</data>
+  <data name="Identity_PasswordTooShort" xml:space="preserve">Password must be at least {0} characters.</data>
+  <data name="Identity_PasswordRequiresNonAlphanumeric" xml:space="preserve">Password requires a non-alphanumeric character.</data>
+  <data name="Identity_PasswordRequiresDigit" xml:space="preserve">Password requires a digit.</data>
+  <data name="Identity_PasswordRequiresLower" xml:space="preserve">Password requires a lowercase letter.</data>
+  <data name="Identity_PasswordRequiresUpper" xml:space="preserve">Password requires an uppercase letter.</data>
+  <data name="Identity_PasswordRequiresUniqueChars" xml:space="preserve">Password requires at least {0} unique characters.</data>
+  <data name="Identity_RecoveryCodeRedemptionFailed" xml:space="preserve">Recovery code redemption failed.</data>
+  <data name="Scope_openid" xml:space="preserve">OpenID identity</data>
+  <data name="Scope_profile" xml:space="preserve">Profile information</data>
+  <data name="Scope_email" xml:space="preserve">Email address</data>
+  <data name="Scope_phone" xml:space="preserve">Phone number</data>
+  <data name="Scope_offline_access" xml:space="preserve">Offline access</data>
+  <data name="Scope_listings.read" xml:space="preserve">Read listings</data>
+  <data name="Scope_contacts.read" xml:space="preserve">Read broker contacts</data>
+  <data name="Scope_listings.write" xml:space="preserve">Manage listings</data>
+  <data name="Scope_commission.read" xml:space="preserve">Read commission</data>
+  <data name="Scope_admin.commission" xml:space="preserve">Manage commission rates</data>
 </root>

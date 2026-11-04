@@ -117,7 +117,7 @@ public class RegisterModel(
         }
 
         await signInManager.SignInAsync(user, isPersistent: false);
-        if (Url.IsLocalUrl(ReturnUrl))
+        if (ReturnUrlValidator.IsLocalUrl(ReturnUrl))
         {
             return LocalRedirect(ReturnUrl);
         }

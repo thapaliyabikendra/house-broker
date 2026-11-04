@@ -55,7 +55,7 @@ public class LoginModel(
         var result = await signInManager.PasswordSignInAsync(user, Input.Password, Input.RememberMe, lockoutOnFailure: true);
         if (result.Succeeded)
         {
-            if (Url.IsLocalUrl(ReturnUrl))
+            if (ReturnUrlValidator.IsLocalUrl(ReturnUrl))
             {
                 return LocalRedirect(ReturnUrl);
             }

@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using HouseBroker.Auth;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using HouseBroker.Auth.Data;
 using HouseBroker.Domain.Common;
 using HouseBroker.ServiceDefaults;
@@ -94,6 +95,12 @@ builder.Services.Configure<CookiePolicyOptions>(options =>
 });
 
 builder.Services.AddScoped<AuthDataSeeder>();
+var identityErrorDescriber = builder.Services.FirstOrDefault(descriptor => descriptor.ServiceType == typeof(Microsoft.AspNetCore.Identity.IdentityErrorDescriber));
+if (identityErrorDescriber is not null)
+{
+    builder.Services.Remove(identityErrorDescriber);
+}
+builder.Services.AddTransient<Microsoft.AspNetCore.Identity.IdentityErrorDescriber, HouseBroker.Auth.LocalizedIdentityErrorDescriber>();
 builder.Services.AddHostedService<TokenPruningService>();
 
 builder.Services
@@ -129,7 +136,27 @@ builder.Services
             "openid", "profile", "email", "phone", "offline_access",
             "listings.read", "contacts.read", "listings.write", "commission.read", "admin.commission");
 
-        options.AddEphemeralEncryptionKey();
+        if (builder.Environment.IsDevelopment())
+{
+    options.AddEphemeralEncryptionKey();
+}
+else
+{
+    var encryptionCertificatePath = builder.Configuration["OpenIddict:EncryptionCertificate:Path"];
+    var encryptionCertificatePassword = builder.Configuration["OpenIddict:EncryptionCertificate:Password"];
+
+    if (string.IsNullOrWhiteSpace(encryptionCertificatePath))
+    {
+        throw new InvalidOperationException("OpenIddict encryption certificate path is not configured for production.");
+    }
+
+    var encryptionCertificate = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12FromFile(
+        encryptionCertificatePath,
+        encryptionCertificatePassword,
+        System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.MachineKeySet);
+
+    options.AddEncryptionCertificate(encryptionCertificate);
+}
 
         // Development uses an ephemeral signing certificate; production must configure a persistent
         // signing certificate via OpenIddict:SigningCertificate (path + optional password).
@@ -290,64 +317,10 @@ if (args.Contains("migrate", StringComparer.OrdinalIgnoreCase))
 if (args.Contains("register-client", StringComparer.OrdinalIgnoreCase))
 {
     using var clientScope = app.Services.CreateScope();
-    var manager = clientScope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
-    var clientId = builder.Configuration["Client:Id"] ?? throw new InvalidOperationException("Client:Id is not configured.");
-    var clientSecret = builder.Configuration["Client:Secret"];
-    var clientType = string.IsNullOrWhiteSpace(clientSecret)
-        ? OpenIddictConstants.ClientTypes.Public
-        : OpenIddictConstants.ClientTypes.Confidential;
-    var redirectUris = builder.Configuration.GetSection("Client:RedirectUris").Get<string[]>() ?? Array.Empty<string>();
-    var scopes = builder.Configuration.GetSection("Client:Scopes").Get<string[]>() ?? new[] { "openid", "profile" };
-
-    var descriptor = new OpenIddictApplicationDescriptor
-    {
-        ClientId = clientId,
-        ClientType = clientType,
-        DisplayName = builder.Configuration["Client:Name"] ?? clientId,
-    };
-
-    if (!string.IsNullOrWhiteSpace(clientSecret))
-    {
-        descriptor.ClientSecret = clientSecret;
-    }
-
-    foreach (var uri in redirectUris)
-    {
-        if (Uri.TryCreate(uri, UriKind.Absolute, out var parsed))
-        {
-            descriptor.RedirectUris.Add(parsed);
-        }
-    }
-
-    descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Token);
-    if (redirectUris.Length > 0)
-    {
-        descriptor.Permissions.Add(OpenIddictConstants.Permissions.Endpoints.Authorization);
-        descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.AuthorizationCode);
-        descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.RefreshToken);
-    }
-    else
-    {
-        descriptor.Permissions.Add(OpenIddictConstants.Permissions.GrantTypes.ClientCredentials);
-    }
-
-    foreach (var scope in scopes)
-    {
-        descriptor.Permissions.Add("scp:" + scope);
-    }
-
-    var existing = await manager.FindByClientIdAsync(clientId);
-    if (existing is null)
-    {
-        await manager.CreateAsync(descriptor);
-        Console.WriteLine($"Registered client {clientId}.");
-    }
-    else
-    {
-        await manager.UpdateAsync(existing, descriptor);
-        Console.WriteLine($"Updated client {clientId}.");
-    }
-
+    var registrationService = new ClientRegistrationService(
+        clientScope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>(),
+        builder.Configuration);
+    await registrationService.RegisterAsync();
     return;
 }
 
