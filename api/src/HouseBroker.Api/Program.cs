@@ -58,7 +58,8 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+            // No cross-origin caller is allowed unless origins are explicitly configured.
+            policy.WithOrigins().AllowAnyHeader();
         }
     });
 });
@@ -130,11 +131,8 @@ builder.Services.AddSwaggerGen(options =>
     }
 });
 
-var connectionString = builder.Configuration.GetConnectionString("HouseBroker");
-if (string.IsNullOrWhiteSpace(connectionString))
-{
-    connectionString = "Server=localhost,1433;Database=HouseBroker;User Id=sa;Password=Your_password123;TrustServerCertificate=True";
-}
+var connectionString = builder.Configuration.GetConnectionString("HouseBroker")
+    ?? throw new InvalidOperationException("Connection string 'HouseBroker' is not configured.");
 
 builder.Services.AddHealthChecks()
     .Add(new Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckRegistration(
@@ -166,7 +164,7 @@ builder.Services
     {
         options.Authority = issuer;
         options.Audience = "housebroker-api";
-        options.RequireHttpsMetadata = false;
+        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,

@@ -34,6 +34,31 @@ public sealed class Listing
             throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.Required, nameof(title));
         }
 
+        if (propertyTypeId == Guid.Empty)
+        {
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.Required, nameof(propertyTypeId));
+        }
+
+        if (price < 0m)
+        {
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.OutOfRange, nameof(price));
+        }
+
+        if (bedrooms < 0)
+        {
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.OutOfRange, nameof(bedrooms));
+        }
+
+        if (bathrooms < 0)
+        {
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.OutOfRange, nameof(bathrooms));
+        }
+
+        if (areaSqFt < 0m)
+        {
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.OutOfRange, nameof(areaSqFt));
+        }
+
         return new Listing
         {
             Id = Guid.CreateVersion7(),
@@ -227,6 +252,37 @@ public sealed class Listing
         decimal areaSqFt)
     {
         ArgumentNullException.ThrowIfNull(title);
+
+        if (string.IsNullOrWhiteSpace(title))
+        {
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.Required, nameof(title));
+        }
+
+        if (propertyTypeId == Guid.Empty)
+        {
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.Required, nameof(propertyTypeId));
+        }
+
+        if (price < 0m)
+        {
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.OutOfRange, nameof(price));
+        }
+
+        if (bedrooms < 0)
+        {
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.OutOfRange, nameof(bedrooms));
+        }
+
+        if (bathrooms < 0)
+        {
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.OutOfRange, nameof(bathrooms));
+        }
+
+        if (areaSqFt < 0m)
+        {
+            throw new HouseBroker.Domain.Common.DomainException(HouseBroker.Domain.Common.ErrorCodes.OutOfRange, nameof(areaSqFt));
+        }
+
         Title = title.Trim();
         Description = description?.Trim() ?? string.Empty;
         PropertyTypeId = propertyTypeId;

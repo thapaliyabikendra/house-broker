@@ -11,8 +11,10 @@ public sealed class CommissionRateRepository(AppDbContext dbContext) : ICommissi
     private readonly AppDbContext _dbContext = dbContext;
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<CommissionRate>> GetAllAsync(CancellationToken cancellationToken)
-        => _dbContext.CommissionRates.AsNoTracking().OrderBy(rate => rate.MinPrice).ToListAsync(cancellationToken).ContinueWith(task => (IReadOnlyList<CommissionRate>)task.Result, cancellationToken);
+    public async Task<IReadOnlyList<CommissionRate>> GetAllAsync(CancellationToken cancellationToken)
+    {
+        return await _dbContext.CommissionRates.AsNoTracking().OrderBy(rate => rate.MinPrice).ToListAsync(cancellationToken);
+    }
 
     /// <inheritdoc />
     public Task<CommissionRate?> GetByIdAsync(Guid id, CancellationToken cancellationToken)

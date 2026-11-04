@@ -11,10 +11,11 @@ public sealed class CommissionRateProvider(AppDbContext dbContext) : ICommission
     private readonly AppDbContext _dbContext = dbContext;
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<CommissionRate>> GetActiveAsync(DateTime effectiveAtUtc, CancellationToken cancellationToken)
-        => _dbContext.CommissionRates
+    public async Task<IReadOnlyList<CommissionRate>> GetActiveAsync(DateTime effectiveAtUtc, CancellationToken cancellationToken)
+    {
+        return await _dbContext.CommissionRates
             .AsNoTracking()
             .Where(rate => rate.IsActive && rate.EffectiveFrom <= effectiveAtUtc)
-            .ToListAsync(cancellationToken)
-            .ContinueWith(task => (IReadOnlyList<CommissionRate>)task.Result, cancellationToken);
+            .ToListAsync(cancellationToken);
+    }
 }

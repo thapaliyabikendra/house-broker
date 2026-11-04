@@ -31,6 +31,13 @@ public sealed class AuditSaveChangesInterceptor(TimeProvider timeProvider, ICurr
             {
                 SetIfPresent(entry, "UpdatedAt", now);
                 SetIfPresent(entry, "UpdatedBy", actor);
+
+                if (entry.Metadata.FindProperty("IsDeleted") is not null
+                    && entry.Property("IsDeleted").CurrentValue is true)
+                {
+                    SetIfPresent(entry, "DeletedAt", now);
+                    SetIfPresent(entry, "DeletedBy", actor);
+                }
             }
         }
 

@@ -137,26 +137,26 @@ builder.Services
             "listings.read", "contacts.read", "listings.write", "commission.read", "admin.commission");
 
         if (builder.Environment.IsDevelopment())
-{
-    options.AddEphemeralEncryptionKey();
-}
-else
-{
-    var encryptionCertificatePath = builder.Configuration["OpenIddict:EncryptionCertificate:Path"];
-    var encryptionCertificatePassword = builder.Configuration["OpenIddict:EncryptionCertificate:Password"];
+        {
+            options.AddEphemeralEncryptionKey();
+        }
+        else
+        {
+            var encryptionCertificatePath = builder.Configuration["OpenIddict:EncryptionCertificate:Path"];
+            var encryptionCertificatePassword = builder.Configuration["OpenIddict:EncryptionCertificate:Password"];
 
-    if (string.IsNullOrWhiteSpace(encryptionCertificatePath))
-    {
-        throw new InvalidOperationException("OpenIddict encryption certificate path is not configured for production.");
-    }
+            if (string.IsNullOrWhiteSpace(encryptionCertificatePath))
+            {
+                throw new InvalidOperationException("OpenIddict encryption certificate path is not configured for production.");
+            }
 
-    var encryptionCertificate = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12FromFile(
-        encryptionCertificatePath,
-        encryptionCertificatePassword,
-        System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.MachineKeySet);
+            var encryptionCertificate = System.Security.Cryptography.X509Certificates.X509CertificateLoader.LoadPkcs12FromFile(
+                encryptionCertificatePath,
+                encryptionCertificatePassword,
+                System.Security.Cryptography.X509Certificates.X509KeyStorageFlags.MachineKeySet);
 
-    options.AddEncryptionCertificate(encryptionCertificate);
-}
+            options.AddEncryptionCertificate(encryptionCertificate);
+        }
 
         // Development uses an ephemeral signing certificate; production must configure a persistent
         // signing certificate via OpenIddict:SigningCertificate (path + optional password).

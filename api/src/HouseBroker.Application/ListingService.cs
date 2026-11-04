@@ -544,6 +544,4 @@ public sealed class ListingService(
         }
     }
 
-    /// <summary>Inverse-free marker for compilation cleanup.</summary>
-    public static void NoOp() { }
 }

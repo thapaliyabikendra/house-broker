@@ -170,10 +170,14 @@ public sealed class ListingQueries(AppDbContext dbContext) : IListingQueries
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<HouseBroker.Domain.PropertyType>> GetPropertyTypesAsync(CancellationToken cancellationToken)
-        => _dbContext.PropertyTypes.AsNoTracking().OrderBy(item => item.SortOrder).ToListAsync(cancellationToken).ContinueWith(task => (IReadOnlyList<HouseBroker.Domain.PropertyType>)task.Result, cancellationToken);
+    public async Task<IReadOnlyList<HouseBroker.Domain.PropertyType>> GetPropertyTypesAsync(CancellationToken cancellationToken)
+    {
+        return await _dbContext.PropertyTypes.AsNoTracking().OrderBy(item => item.SortOrder).ToListAsync(cancellationToken);
+    }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<HouseBroker.Domain.Feature>> GetFeaturesAsync(CancellationToken cancellationToken)
-        => _dbContext.Features.AsNoTracking().OrderBy(item => item.SortOrder).ToListAsync(cancellationToken).ContinueWith(task => (IReadOnlyList<HouseBroker.Domain.Feature>)task.Result, cancellationToken);
+    public async Task<IReadOnlyList<HouseBroker.Domain.Feature>> GetFeaturesAsync(CancellationToken cancellationToken)
+    {
+        return await _dbContext.Features.AsNoTracking().OrderBy(item => item.SortOrder).ToListAsync(cancellationToken);
+    }
 }

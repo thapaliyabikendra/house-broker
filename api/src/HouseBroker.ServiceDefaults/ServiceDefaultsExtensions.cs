@@ -116,6 +116,7 @@ public static class ServiceDefaultsExtensions
     /// <summary>Uses shared service defaults.</summary>
     public static IApplicationBuilder UseServiceDefaults(this IApplicationBuilder app)
     {
+        ArgumentNullException.ThrowIfNull(app);
         app.UseExceptionHandler();
         app.UseRequestLocalization();
         app.UseMiddleware<CorrelationIdMiddleware>();
@@ -150,6 +151,18 @@ public static class ServiceDefaultsExtensions
                     diagnosticContext.Set("ClientIp", httpContext.Connection.RemoteIpAddress.ToString());
                 }
             };
+        });
+
+        var hostEnvironment = app.ApplicationServices.GetService<Microsoft.Extensions.Hosting.IHostEnvironment>();
+        if (hostEnvironment is not null && !hostEnvironment.IsDevelopment())
+        {
+            app.UseHsts();
+        }
+
+        app.Use(async (context, next) =>
+        {
+            context.Response.Headers.Remove("Server");
+            await next();
         });
 
         app.UseSecurityHeaders(options =>

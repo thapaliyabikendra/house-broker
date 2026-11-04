@@ -36,7 +36,17 @@ public sealed class CachedListingQueries(IListingQueries inner, ICacheService ca
 
         var token = await _cache.GetOrCreateAsync(MemoryCacheService.ListingCacheTokenKey, _ => Task.FromResult(Guid.NewGuid().ToString("N")), null, cancellationToken);
         var key = $"listing:{token}:public:{id}:{Culture}";
-        return await _cache.GetOrCreateAsync(key, async ct => await _inner.GetPublicAsync(id, ct), TimeSpan.FromMinutes(5), cancellationToken);
+        return await _cache.GetOrCreateAsync(key, async ct =>
+        {
+            var listing = await _inner.GetPublicAsync(id, ct);
+            if (listing is not null)
+            {
+                // Public cache entries never carry commission data.
+                listing.ApplyCommission(0m, 0m, Guid.Empty);
+            }
+
+            return listing;
+        }, TimeSpan.FromMinutes(5), cancellationToken);
     }
 
     /// <inheritdoc />

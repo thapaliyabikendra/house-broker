@@ -40,7 +40,10 @@ public sealed class PublicListingsController(IListingService listingService, IIm
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Get(Guid id, CancellationToken cancellationToken)
     {
-        var hasContactScope = User.HasClaim("scope", Scopes.ContactsRead) || User.FindAll("scp").Any(claim => claim.Value == Scopes.ContactsRead);
+        var grantedScopes = User.FindAll("scp").Select(claim => claim.Value)
+            .Concat(User.FindAll("scope").SelectMany(claim => claim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)))
+            .ToHashSet(StringComparer.Ordinal);
+        var hasContactScope = grantedScopes.Contains(Scopes.ContactsRead);
         var hasContactPermission = User.HasClaim("permission", AppPermissions.ListingsContactView);
         var includeContact = hasContactScope && (hasContactPermission || !User.HasClaim(claim => claim.Type == "permission"));
         var result = await listingService.GetDetailAsync(id, includeContact, cancellationToken);
