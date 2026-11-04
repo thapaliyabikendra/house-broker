@@ -4,6 +4,7 @@ import { focusFirstInvalid } from '../../../shared/forms/focus-first-invalid';
 import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AdminCommissionRatesDataService } from '../../../core/data/admin-commission-rates-data.service';
+import { CommissionRateEditorDialogComponent } from '../components/commission-rate-editor-dialog.component';
 import { ApiError } from '../../../core/http/api-error';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
@@ -20,6 +21,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatTableModule } from '@angular/material/table';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
@@ -51,6 +53,7 @@ interface BandPreview {
     MatCheckboxModule,
     MatSlideToggleModule,
     MatTableModule,
+    MatDialogModule,
     MatProgressSpinnerModule,
     MatSnackBarModule,
   ],
@@ -133,85 +136,6 @@ interface BandPreview {
               </div>
             </mat-card-content>
           </mat-card>
-
-          <mat-card appearance="outlined" class="rate-card">
-            <mat-card-header>
-              <mat-card-title>
-                {{ editingId() ? ('admin.edit' | transloco) : ('admin.newRate' | transloco) }}
-              </mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              <p class="note">{{ 'admin.nonRetroactive' | transloco }}</p>
-              @if (actionError()) {
-                <p class="action-error" role="alert">{{ actionError() }}</p>
-              }
-              <form [formGroup]="form" (ngSubmit)="submit()" class="rate-form">
-                <mat-form-field appearance="outline">
-                  <mat-label>{{ 'admin.minPrice' | transloco }}</mat-label>
-                  <input matInput type="number" formControlName="minPrice" />
-                </mat-form-field>
-
-                <mat-slide-toggle formControlName="minInclusive" color="primary">
-                  {{ 'admin.minInclusive' | transloco }}
-                </mat-slide-toggle>
-
-                <mat-form-field appearance="outline">
-                  <mat-label>{{ 'admin.maxPrice' | transloco }}</mat-label>
-                  <input matInput type="number" formControlName="maxPrice" />
-                </mat-form-field>
-
-                <mat-slide-toggle formControlName="maxInclusive" color="primary">
-                  {{ 'admin.maxInclusive' | transloco }}
-                </mat-slide-toggle>
-
-                <mat-form-field appearance="outline">
-                  <mat-label>{{ 'admin.ratePercent' | transloco }}</mat-label>
-                  <input matInput type="number" formControlName="ratePercent" />
-                  <span matTextSuffix>%</span>
-                </mat-form-field>
-
-                <mat-form-field appearance="outline">
-                  <mat-label>{{ 'admin.effectiveFrom' | transloco }}</mat-label>
-                  <input matInput type="datetime-local" formControlName="effectiveFrom" />
-                </mat-form-field>
-
-                <mat-slide-toggle formControlName="isActive" color="primary">
-                  {{ 'admin.active' | transloco }}
-                </mat-slide-toggle>
-
-                @if (preview(); as p) {
-                  <p class="band-preview" aria-live="polite">
-                    <span class="band-label">{{ 'admin.bandPreview' | transloco }}:</span>
-                    @if (p.min !== null) {
-                      <span>{{ p.minInclusive ? '≥' : '>' }} {{ p.min | hbPrice }}</span>
-                    }
-                    @if (p.max !== null) {
-                      <span>{{ p.maxInclusive ? '≤' : '<' }} {{ p.max | hbPrice }}</span>
-                    } @else {
-                      <span>{{ 'admin.andAbove' | transloco }}</span>
-                    }
-                    @if (p.rate !== null) {
-                      <span>→ {{ p.rate | hbNumber: percentOptions }}%</span>
-                    }
-                  </p>
-                }
-
-                <div class="actions">
-                  @if (editingId()) {
-                    <button mat-button type="button" (click)="cancelEdit()">
-                      {{ 'common.cancel' | transloco }}
-                    </button>
-                  }
-                  <button mat-raised-button color="primary" type="submit" [disabled]="saving()">
-                    @if (saving()) {
-                      <mat-spinner diameter="20" />
-                    }
-                    {{ saving() ? ('admin.saving' | transloco) : ('admin.save' | transloco) }}
-                  </button>
-                </div>
-              </form>
-            </mat-card-content>
-          </mat-card>
         </div>
       }
     </section>
@@ -269,7 +193,7 @@ interface BandPreview {
     }
     .admin-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1.5fr) minmax(20rem, 24rem);
+      grid-template-columns: minmax(0, 1fr);
       gap: 1.5rem;
       align-items: start;
     }
@@ -337,6 +261,7 @@ export class CommissionRatesAdminPageComponent {
   private readonly transloco = inject(TranslocoService);
   private readonly snack = inject(MatSnackBar);
   private readonly confirmService = inject(ConfirmService);
+  private readonly dialog = inject(MatDialog, { optional: true });
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   readonly loading = signal(false);
@@ -394,10 +319,24 @@ export class CommissionRatesAdminPageComponent {
     });
   }
 
-  /** Clears the form for a new tier and moves focus to its first field. */
+  /** Opens the create dialog; reloads the list after a save. */
   startNew(): void {
     this.cancelEdit();
-    this.host.nativeElement.querySelector<HTMLInputElement>('.rate-form input')?.focus();
+    if (!this.dialog) {
+      return;
+    }
+    this.dialog
+      .open(CommissionRateEditorDialogComponent, {
+        data: { rate: null },
+        width: '48rem',
+        maxWidth: '95vw',
+      })
+      .afterClosed()
+      .subscribe((saved) => {
+        if (saved) {
+          void this.load();
+        }
+      });
   }
 
   async load(): Promise<void> {
@@ -458,6 +397,21 @@ export class CommissionRatesAdminPageComponent {
         typeof rate.effectiveFrom === 'string' ? this.toLocalInputValue(rate.effectiveFrom) : '',
       isActive: rate.isActive ?? true,
     });
+
+    if (this.dialog) {
+      this.dialog
+        .open(CommissionRateEditorDialogComponent, {
+          data: { rate },
+          width: '40rem',
+          maxWidth: '95vw',
+        })
+        .afterClosed()
+        .subscribe((saved) => {
+          if (saved) {
+            void this.load();
+          }
+        });
+    }
   }
 
   /**

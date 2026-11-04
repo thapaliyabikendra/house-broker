@@ -53,7 +53,6 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
             {{ 'broker.create' | transloco }}
           </button>
         }
-        >
       </div>
 
       @if (actionError()) {
