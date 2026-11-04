@@ -82,6 +82,34 @@ public class AuthClaimMapperTests
         Assert.False(AuthClaimMapper.IsIdentityClaim(claimType));
     }
 
+    /// <summary>Identity claims expose their required OpenID scopes.</summary>
+    [Theory]
+    [InlineData("name", "profile")]
+    [InlineData("email", "email")]
+    [InlineData("phone_number", "phone")]
+    public void GetIdentityScope_KnownIdentityClaim_ReturnsScope(string claimType, string scope)
+    {
+        Assert.Equal(scope, AuthClaimMapper.GetIdentityScope(claimType));
+    }
+
+    /// <summary>Other claims do not map to an identity scope.</summary>
+    [Theory]
+    [InlineData("role")]
+    [InlineData("permission")]
+    public void GetIdentityScope_OtherClaim_ReturnsNull(string claimType)
+    {
+        Assert.Null(AuthClaimMapper.GetIdentityScope(claimType));
+    }
+
+    /// <summary>Identity claims are allowed only when the matching scope is granted.</summary>
+    [Fact]
+    public void IsIdentityClaimAllowed_RequiresMatchingScope()
+    {
+        Assert.True(AuthClaimMapper.IsIdentityClaimAllowed("name", new List<string> { "profile" }));
+        Assert.False(AuthClaimMapper.IsIdentityClaimAllowed("name", new List<string> { "email" }));
+        Assert.False(AuthClaimMapper.IsIdentityClaimAllowed("role", new List<string> { "profile" }));
+    }
+
     /// <summary>Registration roles are limited to Seeker and Broker.</summary>
     [Fact]
     public void RegistrationRoles_ContainsOnlyAllowedRoles()

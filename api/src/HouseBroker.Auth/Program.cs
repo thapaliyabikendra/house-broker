@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using HouseBroker.Auth;
+using Microsoft.AspNetCore.DataProtection;
 using HouseBroker.Auth.Data;
 using HouseBroker.Domain.Common;
 using HouseBroker.ServiceDefaults;
@@ -35,6 +36,15 @@ var connectionString = builder.Configuration.GetConnectionString("HouseBroker")
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddDbContext<AuthDbContext>(options => options.UseSqlServer(connectionString));
+
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddDataProtection();
+}
+else
+{
+    builder.Services.AddDataProtection().PersistKeysToDbContext<AuthDbContext>();
+}
 
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
@@ -114,9 +124,24 @@ builder.Services
 
                 if (principal is not null)
                 {
+                    var grantedScopes = new HashSet<string>(StringComparer.Ordinal);
+                    foreach (var scopeClaim in principal.FindAll("scp"))
+                    {
+                        grantedScopes.Add(scopeClaim.Value);
+                    }
+
+                    foreach (var scopeClaim in principal.FindAll("scope"))
+                    {
+                        foreach (var value in scopeClaim.Value.Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        {
+                            grantedScopes.Add(value);
+                        }
+                    }
+
                     foreach (var claim in principal.Claims)
                     {
-                        if (AuthClaimMapper.IsIdentityClaim(claim.Type))
+                        if (AuthClaimMapper.IsIdentityClaim(claim.Type)
+                            && AuthClaimMapper.IsIdentityClaimAllowed(claim.Type, grantedScopes))
                         {
                             claim.SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken);
                         }

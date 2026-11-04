@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using HouseBroker.Application.Contracts;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -9,6 +10,7 @@ public sealed class MemoryCacheService(IMemoryCache memoryCache, ILogger<MemoryC
 {
     private readonly IMemoryCache _memoryCache = memoryCache;
     private readonly ILogger<MemoryCacheService> _logger = logger;
+    private readonly ConcurrentDictionary<string, SemaphoreSlim> _gates = new(StringComparer.Ordinal);
 
     /// <inheritdoc />
     public Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken)
@@ -68,21 +70,33 @@ public sealed class MemoryCacheService(IMemoryCache memoryCache, ILogger<MemoryC
     /// <inheritdoc />
     public async Task<T> GetOrCreateAsync<T>(string key, Func<CancellationToken, Task<T>> factory, TimeSpan? expiration, CancellationToken cancellationToken)
     {
+        var gate = _gates.GetOrAdd(key, _ => new SemaphoreSlim(1, 1));
+        await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            if (_memoryCache.TryGetValue(key, out var cached) && cached is T typed)
+            try
             {
-                return typed;
-            }
+                if (_memoryCache.TryGetValue(key, out var cached) && cached is T typed)
+                {
+                    _logger.LogDebug("Cache hit for key {CacheKey}.", key);
+                    return typed;
+                }
 
-            var value = await factory(cancellationToken);
-            await SetAsync(key, value, expiration, cancellationToken);
-            return value;
+                _logger.LogDebug("Cache miss for key {CacheKey}.", key);
+
+                var value = await factory(cancellationToken).ConfigureAwait(false);
+                await SetAsync(key, value, expiration, cancellationToken).ConfigureAwait(false);
+                return value;
+            }
+            catch (Exception exception)
+            {
+                _logger.LogWarning(exception, "Cache get-or-create failed for key {CacheKey}.", key);
+                return await factory(cancellationToken).ConfigureAwait(false);
+            }
         }
-        catch (Exception exception)
+        finally
         {
-            _logger.LogWarning(exception, "Cache get-or-create failed for key {CacheKey}.", key);
-            return await factory(cancellationToken);
+            gate.Release();
         }
     }
 

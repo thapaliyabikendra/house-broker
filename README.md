@@ -1,6 +1,6 @@
 # House Broker
 
-> **Status: planning phase.** This repository currently contains documentation only; there is no solution or source code yet. [plan.md](plan.md) is the source of truth. Commands below are the intended targets from the plan and become valid as the matching phase lands (phase numbers in brackets).
+> **Status: implementation in progress.** The .NET API/SSO services, Angular app, tests, and documentation listed below are implemented; the delivery plan remains the source of truth for scope and sequencing.
 
 A property marketplace MVP: seekers search listings, brokers manage their own listings and see commission, admins manage commission tiers, and OAuth partners get scoped read access. Delivered as a .NET 10 Clean Architecture API, a separate OpenIddict/Identity SSO service, and an Angular SPA behind one nginx origin.
 
@@ -27,10 +27,10 @@ A property marketplace MVP: seekers search listings, brokers manage their own li
 | `docs/diagrams.md` | System context, container, layering, data model and key flow diagrams |
 | `docs/business-overview.md`, `docs/technical-overview.md` | High-level summaries |
 | `raw-requirements.md` | Original assignment text (do not edit) |
-| `api/` _(planned)_ | .NET solution: 8 `src` projects, 5 test projects |
-| `ui/` _(planned)_ | Angular app served at `/` |
-| `deploy/` _(planned)_ | nginx gateway config |
-| `.github/workflows/ci.yml` _(planned)_ | .NET + web CI jobs and Docker build |
+| `api/` | .NET solution: 8 `src` projects, 5 test projects |
+| `ui/` | Angular app served at `/` |
+| `deploy/` | nginx gateway config and production Compose example |
+| `.github/workflows/ci.yml` | .NET + web CI jobs and Docker build |
 
 ## Architecture at a glance
 

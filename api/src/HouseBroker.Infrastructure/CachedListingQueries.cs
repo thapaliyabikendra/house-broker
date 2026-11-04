@@ -1,3 +1,4 @@
+using System.Globalization;
 using HouseBroker.Application;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Domain;
@@ -49,7 +50,8 @@ public sealed class CachedListingQueries(IListingQueries inner, ICacheService ca
         }
 
         var token = await _cache.GetOrCreateAsync(MemoryCacheService.ListingCacheTokenKey, _ => Task.FromResult(Guid.NewGuid().ToString("N")), null, cancellationToken);
-        var key = $"listing:{token}:search:{query.Location}:{query.MinPrice}:{query.MaxPrice}:{query.PropertyTypeId}:{query.Bedrooms}:{string.Join(",", query.FeatureIds)}:{query.Page}:{query.PageSize}:{query.Sort}";
+        var normalizedLocation = string.IsNullOrWhiteSpace(query.Location) ? string.Empty : query.Location.Trim();
+        var key = $"listing:{token}:search:{normalizedLocation}:{query.MinPrice?.ToString("G", CultureInfo.InvariantCulture)}:{query.MaxPrice?.ToString("G", CultureInfo.InvariantCulture)}:{query.PropertyTypeId}:{query.Bedrooms}:{string.Join(",", query.FeatureIds)}:{query.Page}:{query.PageSize}:{query.Sort}";
         return await _cache.GetOrCreateAsync(key, async ct => await _inner.SearchAsync(query, ct), TimeSpan.FromSeconds(60), cancellationToken);
     }
 

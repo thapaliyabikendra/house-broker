@@ -44,4 +44,26 @@ public static class AuthClaimMapper
         claimType is ClaimTypes.Name or "name"
             or ClaimTypes.Email or "email"
             or ClaimTypes.MobilePhone or "phone_number";
+
+    /// <summary>Returns the OpenID scope required to expose an identity claim, when applicable.</summary>
+    public static string? GetIdentityScope(string claimType) =>
+        claimType switch
+        {
+            ClaimTypes.Name or "name" => "profile",
+            ClaimTypes.Email or "email" => "email",
+            ClaimTypes.MobilePhone or "phone_number" => "phone",
+            _ => null,
+        };
+
+    /// <summary>Indicates whether an identity claim may be emitted for the granted scopes.</summary>
+    public static bool IsIdentityClaimAllowed(string claimType, IEnumerable<string> grantedScopes)
+    {
+        var scope = GetIdentityScope(claimType);
+        if (scope is null)
+        {
+            return false;
+        }
+
+        return grantedScopes.Contains(scope, StringComparer.Ordinal);
+    }
 }

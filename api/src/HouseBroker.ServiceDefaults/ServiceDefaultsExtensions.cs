@@ -81,36 +81,36 @@ public static class ServiceDefaultsExtensions
         app.UseMiddleware<CultureResponseMiddleware>();
         app.UseForwardedHeaders();
 
-//         app.UseSerilogRequestLogging(options =>
-// {
-//     options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
-//     {
-//         diagnosticContext.Set("CorrelationId", httpContext.GetCorrelationId());
-//         var userId = httpContext.User.FindFirst("sub")?.Value;
-//         if (!string.IsNullOrWhiteSpace(userId))
-//         {
-//             diagnosticContext.Set("UserId", userId);
-//         }
-// 
-//         var role = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-//         if (!string.IsNullOrWhiteSpace(role))
-//         {
-//             diagnosticContext.Set("UserRole", role);
-//         }
-// 
-//         var clientId = httpContext.User.FindFirst("client_id")?.Value;
-//         if (!string.IsNullOrWhiteSpace(clientId))
-//         {
-//             diagnosticContext.Set("ClientId", clientId);
-//         }
-// 
-//         if (httpContext.Connection.RemoteIpAddress is not null)
-//         {
-//             diagnosticContext.Set("ClientIp", httpContext.Connection.RemoteIpAddress.ToString());
-//         }
-//     };
-// });
-// 
+        //         app.UseSerilogRequestLogging(options =>
+        // {
+        //     options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+        //     {
+        //         diagnosticContext.Set("CorrelationId", httpContext.GetCorrelationId());
+        //         var userId = httpContext.User.FindFirst("sub")?.Value;
+        //         if (!string.IsNullOrWhiteSpace(userId))
+        //         {
+        //             diagnosticContext.Set("UserId", userId);
+        //         }
+        // 
+        //         var role = httpContext.User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
+        //         if (!string.IsNullOrWhiteSpace(role))
+        //         {
+        //             diagnosticContext.Set("UserRole", role);
+        //         }
+        // 
+        //         var clientId = httpContext.User.FindFirst("client_id")?.Value;
+        //         if (!string.IsNullOrWhiteSpace(clientId))
+        //         {
+        //             diagnosticContext.Set("ClientId", clientId);
+        //         }
+        // 
+        //         if (httpContext.Connection.RemoteIpAddress is not null)
+        //         {
+        //             diagnosticContext.Set("ClientIp", httpContext.Connection.RemoteIpAddress.ToString());
+        //         }
+        //     };
+        // });
+        // 
         app.UseSecurityHeaders();
 
         app.UseHealthChecks("/health/live");

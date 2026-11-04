@@ -10,7 +10,7 @@ public sealed class ApplicationUser : IdentityUser<Guid>
 }
 
 /// <summary>SSO database context.</summary>
-public sealed class AuthDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>
+public sealed class AuthDbContext : IdentityDbContext<ApplicationUser, IdentityRole<Guid>, Guid>, IDataProtectionKeyContext
 {
     /// <summary>Initializes the context.</summary>
     public AuthDbContext(DbContextOptions<AuthDbContext> options) : base(options)
