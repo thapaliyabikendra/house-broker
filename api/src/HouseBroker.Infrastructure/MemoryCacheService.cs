@@ -104,15 +104,16 @@ public sealed class MemoryCacheService(IMemoryCache memoryCache, ILogger<MemoryC
     public Task InvalidateListingsAsync(CancellationToken cancellationToken)
     {
         // Memory provider uses a version token key consumed by CachedListingQueries.
-        return SetAsync(ListingCacheTokenKey, Guid.NewGuid().ToString("N"), null, cancellationToken);
+        return SetAsync(ListingCacheTokenKey, Guid.NewGuid().ToString("N"), TimeSpan.FromDays(30), cancellationToken);
     }
 
     /// <inheritdoc />
     public Task InvalidateCommissionRatesAsync(CancellationToken cancellationToken)
     {
-        return SetAsync(CommissionRateCacheTokenKey, Guid.NewGuid().ToString("N"), null, cancellationToken);
+        return SetAsync(CommissionRateCacheTokenKey, Guid.NewGuid().ToString("N"), TimeSpan.FromDays(30), cancellationToken);
     }
 
     internal const string ListingCacheTokenKey = "cache:token:listings";
     internal const string CommissionRateCacheTokenKey = "cache:token:commission-rates";
 }
+

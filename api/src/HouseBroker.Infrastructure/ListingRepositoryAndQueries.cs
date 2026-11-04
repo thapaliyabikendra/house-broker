@@ -18,7 +18,7 @@ public sealed class ListingRepository(AppDbContext dbContext) : IListingReposito
             .Include(listing => listing.Images)
             .Include(listing => listing.Features)
                 .ThenInclude(feature => feature.Feature)
-            .FirstOrDefaultAsync(listing => listing.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(listing => listing.Id == id && !listing.IsDeleted, cancellationToken);
 
     /// <inheritdoc />
     public async Task AddAsync(Listing listing, CancellationToken cancellationToken)
@@ -51,7 +51,7 @@ public sealed class ListingQueries(AppDbContext dbContext) : IListingQueries
             .Include(listing => listing.Images)
             .Include(listing => listing.Features)
                 .ThenInclude(feature => feature.Feature)
-            .FirstOrDefaultAsync(listing => listing.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(listing => listing.Id == id && !listing.IsDeleted, cancellationToken);
 
     /// <inheritdoc />
     public async Task<IReadOnlyList<Listing>> GetMineAsync(Guid brokerId, CancellationToken cancellationToken)
@@ -70,7 +70,7 @@ public sealed class ListingQueries(AppDbContext dbContext) : IListingQueries
         var listings = _dbContext.Listings
             .AsNoTracking()
             .Include(listing => listing.Images)
-            .Where(listing => listing.Status == ListingStatus.Active);
+            .Where(listing => listing.Status == ListingStatus.Active && !listing.IsDeleted);
 
         var filtered = listings;
 

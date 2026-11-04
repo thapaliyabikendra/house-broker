@@ -490,7 +490,9 @@ public sealed class ListingService(
         }
 
         var features = await _queries.GetFeaturesAsync(cancellationToken);
-        return features.ToDictionary(feature => feature.Id);
+        return features
+            .GroupBy(feature => feature.Id)
+            .ToDictionary(group => group.Key, group => group.First());
     }
 
     private static void NormalizeRequest(CreateListingRequest request)

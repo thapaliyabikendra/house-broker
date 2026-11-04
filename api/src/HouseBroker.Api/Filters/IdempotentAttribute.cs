@@ -21,9 +21,10 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
             return;
         }
 
+        var localizer = context.HttpContext.RequestServices.GetService<Microsoft.Extensions.Localization.IStringLocalizer<HouseBroker.Api.Localization.SharedResource>>();
         if (key.Length > 128)
         {
-            context.Result = validationProblem(context, "Idempotency key is too long.");
+            context.Result = validationProblem(context, localizer is null ? "The idempotency key is too long." : localizer["idempotency.key_too_long"]);
             return;
         }
 
@@ -60,14 +61,14 @@ public sealed class IdempotentAttribute : Attribute, IAsyncActionFilter
         if (begin.Status == IdempotencyStatus.Conflict)
         {
             await transaction.RollbackAsync(context.HttpContext.RequestAborted);
-            context.Result = conflictProblem(context, ErrorCodes.IdempotencyConflict, "The idempotency key was already used with a different request.");
+            context.Result = conflictProblem(context, ErrorCodes.IdempotencyConflict, localizer is null ? "The idempotency key was already used with a different request." : localizer[ErrorCodes.IdempotencyConflict]);
             return;
         }
 
         if (begin.Status == IdempotencyStatus.InProgress)
         {
             await transaction.RollbackAsync(context.HttpContext.RequestAborted);
-            context.Result = conflictProblem(context, ErrorCodes.IdempotencyInProgress, "The idempotency key is already being processed.");
+            context.Result = conflictProblem(context, ErrorCodes.IdempotencyInProgress, localizer is null ? "The idempotency key is already being processed." : localizer[ErrorCodes.IdempotencyInProgress]);
             return;
         }
 

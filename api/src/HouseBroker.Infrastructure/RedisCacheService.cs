@@ -106,11 +106,11 @@ public sealed class RedisCacheService(IDistributedCache distributedCache, ILogge
 
     /// <inheritdoc />
     public Task InvalidateListingsAsync(CancellationToken cancellationToken)
-        => SetAsync(MemoryCacheService.ListingCacheTokenKey, Guid.NewGuid().ToString("N"), null, cancellationToken);
+        => SetAsync(MemoryCacheService.ListingCacheTokenKey, Guid.NewGuid().ToString("N"), TimeSpan.FromDays(30), cancellationToken);
 
     /// <inheritdoc />
     public Task InvalidateCommissionRatesAsync(CancellationToken cancellationToken)
-        => SetAsync(MemoryCacheService.CommissionRateCacheTokenKey, Guid.NewGuid().ToString("N"), null, cancellationToken);
+        => SetAsync(MemoryCacheService.CommissionRateCacheTokenKey, Guid.NewGuid().ToString("N"), TimeSpan.FromDays(30), cancellationToken);
 
     internal static class Keys
     {
@@ -118,3 +118,4 @@ public sealed class RedisCacheService(IDistributedCache distributedCache, ILogge
         public const string CommissionRateCacheTokenKey = "cache:token:commission-rates";
     }
 }
+

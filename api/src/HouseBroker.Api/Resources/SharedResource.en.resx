@@ -48,4 +48,7 @@
   <data name="idempotency.in_progress" xml:space="preserve">
     <value>The idempotency key is already being processed.</value>
   </data>
+  <data name="idempotency.key_too_long" xml:space="preserve">
+    <value>The idempotency key is too long.</value>
+  </data>
 </root>
