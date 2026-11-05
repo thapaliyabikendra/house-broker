@@ -17,6 +17,7 @@ internal static class PermissionScopeMap
         [AppPermissions.CommissionRates] = Scopes.AdminCommission,
         [AppPermissions.CommissionRatesCreate] = Scopes.AdminCommission,
         [AppPermissions.CommissionRatesUpdate] = Scopes.AdminCommission,
+        [AppPermissions.CommissionRatesDelete] = Scopes.AdminCommission,
     };
 
     /// <summary>Gets the required scope for a permission.</summary>

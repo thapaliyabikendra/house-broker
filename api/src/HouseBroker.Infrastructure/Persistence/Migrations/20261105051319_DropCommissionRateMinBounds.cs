@@ -18,10 +18,10 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
                 IF EXISTS (SELECT 1 FROM [CommissionRates])
                 BEGIN
                     IF NOT EXISTS (SELECT 1 FROM [CommissionRates] WHERE [IsActive] = 1)
-                        ;THROW 51001, 'CommissionRates migration aborted: no active commission band exists.', 1;
+                        THROW 51001, 'CommissionRates migration aborted: no active commission band exists.', 1;
 
                     IF (SELECT COUNT(*) FROM [CommissionRates] WHERE [IsActive] = 1 AND [MaxPrice] IS NULL) <> 1
-                        ;THROW 51002, 'CommissionRates migration aborted: the active set must have exactly one open-ended top band.', 1;
+                        THROW 51002, 'CommissionRates migration aborted: the active set must have exactly one open-ended top band.', 1;
 
                     IF EXISTS (
                         SELECT 1
@@ -30,7 +30,7 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
                             ON [bounded].[IsActive] = 1 AND [bounded].[MaxPrice] IS NOT NULL
                         WHERE [open].[IsActive] = 1 AND [open].[MaxPrice] IS NULL
                           AND [bounded].[MinPrice] >= [open].[MinPrice])
-                        ;THROW 51003, 'CommissionRates migration aborted: the open-ended band is not the top band.', 1;
+                        THROW 51003, 'CommissionRates migration aborted: the open-ended band is not the top band.', 1;
 
                     IF EXISTS (
                         SELECT 1
@@ -38,7 +38,7 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
                         WHERE [r].[IsActive] = 1
                           AND [r].[MinPrice] = (SELECT MIN([MinPrice]) FROM [CommissionRates] WHERE [IsActive] = 1)
                           AND ([r].[MinPrice] <> 0 OR [r].[MinInclusive] = 0))
-                        ;THROW 51004, 'CommissionRates migration aborted: the lowest active band must start at zero inclusive.', 1;
+                        THROW 51004, 'CommissionRates migration aborted: the lowest active band must start at zero inclusive.', 1;
 
                     IF EXISTS (
                         SELECT 1
@@ -50,7 +50,7 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
                                   WHERE [n].[IsActive] = 1
                                     AND [n].[MinPrice] = [r].[MaxPrice]
                                     AND [n].[MinInclusive] <> [r].[MaxInclusive]) <> 1))
-                        ;THROW 51005, 'CommissionRates migration aborted: active bands must be contiguous (no gaps or overlaps).', 1;
+                        THROW 51005, 'CommissionRates migration aborted: active bands must be contiguous (no gaps or overlaps).', 1;
 
                     IF EXISTS (
                         SELECT 1
@@ -58,10 +58,10 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
                         WHERE [IsActive] = 1
                         GROUP BY [MinPrice]
                         HAVING COUNT(*) > 1)
-                        ;THROW 51006, 'CommissionRates migration aborted: two active bands share the same lower bound.', 1;
+                        THROW 51006, 'CommissionRates migration aborted: two active bands share the same lower bound.', 1;
 
                     IF EXISTS (SELECT 1 FROM [CommissionRates] WHERE [IsActive] = 1 AND ([RatePercent] <= 0 OR [RatePercent] > 100))
-                        ;THROW 51007, 'CommissionRates migration aborted: an active commission rate is outside (0, 100].', 1;
+                        THROW 51007, 'CommissionRates migration aborted: an active commission rate is outside (0, 100].', 1;
                 END;
                 """);
 
@@ -83,13 +83,13 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
                 IF EXISTS (SELECT 1 FROM [CommissionRates])
                 BEGIN
                     IF NOT EXISTS (SELECT 1 FROM [CommissionRates] WHERE [IsActive] = 1)
-                        ;THROW 51011, 'CommissionRates migration aborted: no active commission band exists.', 1;
+                        THROW 51011, 'CommissionRates migration aborted: no active commission band exists.', 1;
 
                     IF (SELECT COUNT(*) FROM [CommissionRates] WHERE [IsActive] = 1 AND [MaxPrice] IS NULL) <> 1
-                        ;THROW 51012, 'CommissionRates migration aborted: the active set must have exactly one open-ended top band.', 1;
+                        THROW 51012, 'CommissionRates migration aborted: the active set must have exactly one open-ended top band.', 1;
 
                     IF EXISTS (SELECT 1 FROM [CommissionRates] WHERE [IsActive] = 1 AND [MaxPrice] IS NOT NULL AND [MaxPrice] <= 0)
-                        ;THROW 51013, 'CommissionRates migration aborted: every bounded maximum must be greater than zero.', 1;
+                        THROW 51013, 'CommissionRates migration aborted: every bounded maximum must be greater than zero.', 1;
 
                     IF EXISTS (
                         SELECT 1
@@ -97,10 +97,10 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
                         WHERE [IsActive] = 1 AND [MaxPrice] IS NOT NULL
                         GROUP BY [MaxPrice]
                         HAVING COUNT(*) > 1)
-                        ;THROW 51014, 'CommissionRates migration aborted: bounded maxima must be unique.', 1;
+                        THROW 51014, 'CommissionRates migration aborted: bounded maxima must be unique.', 1;
 
                     IF EXISTS (SELECT 1 FROM [CommissionRates] WHERE [IsActive] = 1 AND ([RatePercent] <= 0 OR [RatePercent] > 100))
-                        ;THROW 51015, 'CommissionRates migration aborted: an active commission rate is outside (0, 100].', 1;
+                        THROW 51015, 'CommissionRates migration aborted: an active commission rate is outside (0, 100].', 1;
                 END;
                 """);
         }
