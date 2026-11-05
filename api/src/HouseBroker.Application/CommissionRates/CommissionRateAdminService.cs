@@ -33,6 +33,19 @@ public sealed class CommissionRateAdminService(
         var active = CommissionTierSet.ActiveAt(rates, now);
         var bounds = BoundsById(active);
 
+        // Retired bands keep their derived lower bound for display (computed from the full set, including
+        // retired bands, ordered by upper bound) instead of being shown as "not applicable".
+        foreach (var retired in rates.Where(rate => !rate.IsActive))
+        {
+            var fullOrdered = CommissionTierSet.Order(rates).ToList();
+            var index = fullOrdered.FindIndex(tier => tier.Id == retired.Id);
+            if (index >= 0)
+            {
+                var bound = CommissionTierSet.BoundsOf(fullOrdered, index);
+                bounds[retired.Id] = (bound.Lower, bound.LowerInclusive);
+            }
+        }
+
         var dtos = CommissionTierSet.Order(rates)
             .Select(rate => bounds.TryGetValue(rate.Id, out var bound)
                 ? ToDto(rate, bound.Lower, bound.LowerInclusive)
@@ -322,6 +335,20 @@ public sealed class CommissionRateAdminService(
 
     private static CommissionRateDto ToDtoWithDerivedBounds(CommissionRate rate, IEnumerable<CommissionRate> set, DateTime now)
     {
+        if (!rate.IsActive)
+        {
+            // Retired bands keep their derived lower bound for display (computed from the full set).
+            var fullOrdered = CommissionTierSet.Order(set).ToList();
+            var retiredIndex = fullOrdered.FindIndex(tier => tier.Id == rate.Id);
+            if (retiredIndex < 0)
+            {
+                return ToDto(rate, null, null);
+            }
+
+            var retiredBound = CommissionTierSet.BoundsOf(fullOrdered, retiredIndex);
+            return ToDto(rate, retiredBound.Lower, retiredBound.LowerInclusive);
+        }
+
         var active = CommissionTierSet.ActiveAt(set, now);
         var index = active.ToList().FindIndex(tier => tier.Id == rate.Id);
         return index < 0

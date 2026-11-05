@@ -9,8 +9,9 @@ public sealed class CommissionRateDto
     public Guid Id { get; set; }
 
     /// <summary>
-    /// Gets or sets the derived lower bound for display, or null when the band is retired or not yet effective.
-    /// The lower bound is not stored; it comes from the previous active band.
+    /// Gets or sets the derived lower bound for display, or null when the band is not yet effective.
+    /// Retired bands keep their last derived lower bound. The lower bound is not stored; it comes from the
+    /// previous band in the full set.
     /// </summary>
     public decimal? MinPrice { get; set; }
 

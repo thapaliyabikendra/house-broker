@@ -327,7 +327,7 @@ public sealed class CommissionRateAdminServiceTests
 
     /// <summary>Retired and future bands expose no derived lower bound.</summary>
     [Fact]
-    public async Task GetAllAsync_RetiredAndFutureBands_HaveNoDerivedBounds()
+    public async Task GetAllAsync_RetiredBand_KeepsDerivedMin_FutureBand_HasNoDerivedMin()
     {
         var fixture = Fixture.Create();
         fixture.A.Retire();
@@ -340,19 +340,19 @@ public sealed class CommissionRateAdminServiceTests
         Assert.True(result.IsSuccess);
         Assert.NotNull(result.Value);
         var retired = Assert.Single(result.Value, dto => dto.Id == fixture.A.Id);
-        Assert.Null(retired.MinPrice);
-        Assert.Null(retired.MinInclusive);
+        Assert.Equal(0m, retired.MinPrice);
+        Assert.True(retired.MinInclusive);
         Assert.False(retired.IsActive);
+        var staged = Assert.Single(result.Value, dto => dto.Id == future.Id);
+        Assert.Null(staged.MinPrice);
+        Assert.Null(staged.MinInclusive);
+        Assert.True(staged.IsActive);
         var firstActive = Assert.Single(result.Value, dto => dto.Id == fixture.B.Id);
         Assert.Equal(0m, firstActive.MinPrice);
         Assert.True(firstActive.MinInclusive);
         var openEnded = Assert.Single(result.Value, dto => dto.Id == fixture.C.Id);
         Assert.Equal(10_000_000m, openEnded.MinPrice);
         Assert.False(openEnded.MinInclusive);
-        var staged = Assert.Single(result.Value, dto => dto.Id == future.Id);
-        Assert.Null(staged.MinPrice);
-        Assert.Null(staged.MinInclusive);
-        Assert.True(staged.IsActive);
     }
 
     private static CommissionRateRequest Request(decimal? maxPrice, bool maxInclusive, decimal ratePercent, DateTime? effectiveFrom = null)
