@@ -3,42 +3,27 @@
 
 
 /**
- * Commission rate write request.
+ * Commission rate band write request.
  */
 export interface CommissionRateRequest {
 
   /**
-   * Gets or sets the effective-from timestamp.
+   * Gets or sets the effective-from timestamp. Defaults to now when omitted.
    */
   effectiveFrom?: any;
 
   /**
-   * Gets or sets whether the rate is active.
-   */
-  isActive?: boolean;
-
-  /**
-   * Gets or sets whether the maximum is inclusive.
+   * Gets or sets whether the upper bound is inclusive; ignored when decimal? CommissionRateRequest.MaxPrice is null.
    */
   maxInclusive?: boolean;
 
   /**
-   * Gets or sets the maximum price.
+   * Gets or sets the upper bound, or null for the open-ended top band.
    */
   maxPrice?: (number | string | null);
 
   /**
-   * Gets or sets whether the minimum is inclusive.
-   */
-  minInclusive?: boolean;
-
-  /**
-   * Gets or sets the minimum price.
-   */
-  minPrice?: (number | string);
-
-  /**
-   * Gets or sets the rate percent.
+   * Gets or sets the rate percent, in (0, 100].
    */
   ratePercent?: (number | string);
 }

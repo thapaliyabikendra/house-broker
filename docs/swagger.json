@@ -1,12 +1,13 @@
-﻿{
-  "openapi": "3.0.4",
+{
+  "openapi": "3.1.1",
   "info": {
     "title": "House Broker API",
+    "description": "House Broker listing, image, lookup, and commission-rate endpoints. Errors are returned as RFC 7807 ProblemDetails with stable error codes.",
     "version": "v1"
   },
   "servers": [
     {
-      "url": "/api"
+      "url": "http://localhost:5049/api"
     }
   ],
   "paths": {
@@ -17,6 +18,16 @@
         ],
         "summary": "Gets all commission rates.",
         "description": "Executes this endpoint according to the House Broker API contract.",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "429": {
             "description": "Too Many Requests",
@@ -115,6 +126,27 @@
         ],
         "summary": "Creates a commission rate.",
         "description": "Executes this endpoint according to the House Broker API contract.",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Optional idempotency key, 16 to 64 characters from A-Z, a-z, 0-9, underscore or dash. A replay returns the original response with Idempotent-Replayed: true.",
+            "schema": {
+              "maxLength": 64,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9_-]{16,64}$",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -132,7 +164,8 @@
                 "$ref": "#/components/schemas/CommissionRateRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "429": {
@@ -294,6 +327,23 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Required strong ETag (rowversion) for concurrency control. Returns 428 if missing and 412 if stale.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "requestBody": {
@@ -313,7 +363,8 @@
                 "$ref": "#/components/schemas/CommissionRateRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "429": {
@@ -513,6 +564,14 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -677,6 +736,14 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -864,414 +931,6 @@
         }
       }
     },
-    "/v1/listings/{id}/images": {
-      "post": {
-        "tags": [
-          "Images"
-        ],
-        "summary": "Uploads an image.",
-        "description": "Executes this endpoint according to the House Broker API contract.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "file": {
-                    "type": "string",
-                    "format": "binary"
-                  }
-                }
-              },
-              "encoding": {
-                "file": {
-                  "style": "form"
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ListingImageDto"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ListingImageDto"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ListingImageDto"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Conflict",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service Unavailable",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/v1/listings/{id}/images/{imageId}": {
-      "delete": {
-        "tags": [
-          "Images"
-        ],
-        "summary": "Deletes an image.",
-        "description": "Executes this endpoint according to the House Broker API contract.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "imageId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No Content"
-          },
-          "401": {
-            "description": "Unauthorized",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service Unavailable",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "text/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      },
-      "get": {
-        "tags": [
-          "Images"
-        ],
-        "summary": "Gets an image.",
-        "description": "Executes this endpoint according to the House Broker API contract.",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          {
-            "name": "imageId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "uuid"
-            }
-          }
-        ],
-        "responses": {
-          "429": {
-            "description": "Too Many Requests",
-            "content": {
-              "image/jpeg": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "image/png": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "image/webp": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
-          "200": {
-            "description": "OK"
-          },
-          "404": {
-            "description": "Not Found",
-            "content": {
-              "image/jpeg": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "image/png": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              },
-              "image/webp": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/v1/listings": {
       "post": {
         "tags": [
@@ -1279,6 +938,27 @@
         ],
         "summary": "Creates a listing.",
         "description": "Executes this endpoint according to the House Broker API contract.",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "description": "Optional idempotency key, 16 to 64 characters from A-Z, a-z, 0-9, underscore or dash. A replay returns the original response with Idempotent-Replayed: true.",
+            "schema": {
+              "maxLength": 64,
+              "minLength": 16,
+              "pattern": "^[A-Za-z0-9_-]{16,64}$",
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1296,7 +976,8 @@
                 "$ref": "#/components/schemas/CreateListingRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "429": {
@@ -1451,6 +1132,7 @@
           {
             "name": "Location",
             "in": "query",
+            "description": "Gets or sets the location text.",
             "schema": {
               "type": "string"
             }
@@ -1458,22 +1140,33 @@
           {
             "name": "MinPrice",
             "in": "query",
+            "description": "Gets or sets the minimum price.",
             "schema": {
-              "type": "number",
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
               "format": "double"
             }
           },
           {
             "name": "MaxPrice",
             "in": "query",
+            "description": "Gets or sets the maximum price.",
             "schema": {
-              "type": "number",
+              "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+              "type": [
+                "number",
+                "string"
+              ],
               "format": "double"
             }
           },
           {
             "name": "PropertyTypeId",
             "in": "query",
+            "description": "Gets or sets the property type identifier.",
             "schema": {
               "type": "string",
               "format": "uuid"
@@ -1482,14 +1175,20 @@
           {
             "name": "Bedrooms",
             "in": "query",
+            "description": "Gets or sets the minimum number of bedrooms.",
             "schema": {
-              "type": "integer",
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
           {
             "name": "FeatureIds",
             "in": "query",
+            "description": "Gets or sets the feature identifiers.",
             "schema": {
               "type": "array",
               "items": {
@@ -1501,22 +1200,41 @@
           {
             "name": "Page",
             "in": "query",
+            "description": "Gets or sets the page.",
             "schema": {
-              "type": "integer",
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
           {
             "name": "PageSize",
             "in": "query",
+            "description": "Gets or sets the page size.",
             "schema": {
-              "type": "integer",
+              "pattern": "^-?(?:0|[1-9]\\d*)$",
+              "type": [
+                "integer",
+                "string"
+              ],
               "format": "int32"
             }
           },
           {
             "name": "Sort",
             "in": "query",
+            "description": "Gets or sets the sort order.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
             "schema": {
               "type": "string"
             }
@@ -1548,17 +1266,17 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListingSummaryDtoPagedResult"
+                  "$ref": "#/components/schemas/PagedResultOfListingSummaryDto"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListingSummaryDtoPagedResult"
+                  "$ref": "#/components/schemas/PagedResultOfListingSummaryDto"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListingSummaryDtoPagedResult"
+                  "$ref": "#/components/schemas/PagedResultOfListingSummaryDto"
                 }
               }
             }
@@ -1583,7 +1301,8 @@
               }
             }
           }
-        }
+        },
+        "security": [ ]
       }
     },
     "/v1/listings/{id}": {
@@ -1601,6 +1320,23 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "description": "Required strong ETag (rowversion) for concurrency control. Returns 428 if missing and 412 if stale.",
+            "required": true,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -1621,7 +1357,8 @@
                 "$ref": "#/components/schemas/UpdateListingRequest"
               }
             }
-          }
+          },
+          "required": true
         },
         "responses": {
           "429": {
@@ -1821,6 +1558,14 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -1944,11 +1689,27 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
           "429": {
             "description": "Too Many Requests",
+            "headers": {
+              "ETag": {
+                "description": "Strong ETag based on the listing row version.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -1969,6 +1730,14 @@
           },
           "200": {
             "description": "OK",
+            "headers": {
+              "ETag": {
+                "description": "Strong ETag based on the listing row version.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -1989,6 +1758,14 @@
           },
           "404": {
             "description": "Not Found",
+            "headers": {
+              "ETag": {
+                "description": "Strong ETag based on the listing row version.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "text/plain": {
                 "schema": {
@@ -2007,7 +1784,8 @@
               }
             }
           }
-        }
+        },
+        "security": [ ]
       }
     },
     "/v1/listings/mine": {
@@ -2017,6 +1795,16 @@
         ],
         "summary": "Gets owned listings.",
         "description": "Executes this endpoint according to the House Broker API contract.",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "429": {
             "description": "Too Many Requests",
@@ -2126,8 +1914,201 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
+        "responses": {
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "ETag": {
+                "description": "Strong ETag based on the listing row version.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "description": "Strong ETag based on the listing row version.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerListingDto"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerListingDto"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OwnerListingDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "ETag": {
+                "description": "Strong ETag based on the listing row version.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "headers": {
+              "ETag": {
+                "description": "Strong ETag based on the listing row version.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "ETag": {
+                "description": "Strong ETag based on the listing row version.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/listings/{id}/images": {
+      "post": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Uploads an image.",
+        "description": "Executes this endpoint according to the House Broker API contract.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "$ref": "#/components/schemas/IFormFile"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "429": {
             "description": "Too Many Requests",
@@ -2154,17 +2135,37 @@
             "content": {
               "text/plain": {
                 "schema": {
-                  "$ref": "#/components/schemas/OwnerListingDto"
+                  "$ref": "#/components/schemas/ListingImageDto"
                 }
               },
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OwnerListingDto"
+                  "$ref": "#/components/schemas/ListingImageDto"
                 }
               },
               "text/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/OwnerListingDto"
+                  "$ref": "#/components/schemas/ListingImageDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2228,8 +2229,300 @@
                 }
               }
             }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         }
+      }
+    },
+    "/v1/listings/{id}/images/{imageId}": {
+      "delete": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Deletes an image.",
+        "description": "Executes this endpoint according to the House Broker API contract.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Images"
+        ],
+        "summary": "Gets an image.",
+        "description": "Executes this endpoint according to the House Broker API contract.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "ETag": {
+                "description": "Strong ETag based on the listing row version.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "headers": {
+              "ETag": {
+                "description": "Strong ETag based on the listing row version.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/jpeg": { },
+              "image/png": { },
+              "image/webp": { }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "headers": {
+              "ETag": {
+                "description": "Strong ETag based on the listing row version.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        },
+        "security": [ ]
       }
     },
     "/v1/listings/{id}/publish": {
@@ -2247,6 +2540,14 @@
             "schema": {
               "type": "string",
               "format": "uuid"
+            }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -2390,6 +2691,14 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2532,6 +2841,14 @@
               "type": "string",
               "format": "uuid"
             }
+          },
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2645,6 +2962,16 @@
         ],
         "summary": "Gets property types.",
         "description": "Executes this endpoint according to the House Broker API contract.",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "429": {
             "description": "Too Many Requests",
@@ -2695,7 +3022,8 @@
               }
             }
           }
-        }
+        },
+        "security": [ ]
       }
     },
     "/v1/lookups/features": {
@@ -2705,6 +3033,16 @@
         ],
         "summary": "Gets features.",
         "description": "Executes this endpoint according to the House Broker API contract.",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "429": {
             "description": "Too Many Requests",
@@ -2755,7 +3093,8 @@
               }
             }
           }
-        }
+        },
+        "security": [ ]
       }
     },
     "/v1/meta": {
@@ -2765,6 +3104,16 @@
         ],
         "summary": "Gets deployment metadata.",
         "description": "Executes this endpoint according to the House Broker API contract.",
+        "parameters": [
+          {
+            "name": "Accept-Language",
+            "in": "header",
+            "description": "Response language: en (default) or ne.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "429": {
             "description": "Too Many Requests",
@@ -2806,7 +3155,8 @@
               }
             }
           }
-        }
+        },
+        "security": [ ]
       }
     }
   },
@@ -2817,128 +3167,191 @@
         "properties": {
           "fullName": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the name."
           },
           "email": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the email."
           },
           "phoneNumber": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the phone number."
           }
         },
-        "additionalProperties": false
+        "description": "Broker contact DTO."
       },
       "CommissionRateDto": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
+            "description": "Gets or sets the identifier.",
             "format": "uuid"
           },
           "minPrice": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the derived lower bound for display, or null when the band is retired or not yet effective.\r\nThe lower bound is not stored; it comes from the previous active band.",
+            "format": "double"
           },
           "minInclusive": {
-            "type": "boolean",
-            "nullable": true
+            "type": [
+              "null",
+              "boolean"
+            ],
+            "description": "Gets or sets whether the derived lower bound is inclusive for display, or null when the band is retired or\r\nnot yet effective."
           },
           "maxPrice": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the upper bound, or null for the open-ended top band.",
+            "format": "double"
           },
           "maxInclusive": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Gets or sets whether the upper bound is inclusive."
           },
           "ratePercent": {
-            "type": "number",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the rate percent.",
             "format": "double"
           },
           "isActive": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Gets or sets whether the band is active."
           },
           "effectiveFrom": {
-            "type": "string",
+            "description": "Gets or sets the effective-from timestamp.",
             "format": "date-time"
           },
           "version": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the version."
           }
         },
-        "additionalProperties": false
+        "description": "Commission rate band DTO."
       },
       "CommissionRateRequest": {
         "type": "object",
         "properties": {
           "maxPrice": {
-            "type": "number",
-            "format": "double",
-            "nullable": true
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "null",
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the upper bound, or null for the open-ended top band.",
+            "format": "double"
           },
           "maxInclusive": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Gets or sets whether the upper bound is inclusive; ignored when decimal? CommissionRateRequest.MaxPrice is null."
           },
           "ratePercent": {
-            "type": "number",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the rate percent, in (0, 100].",
             "format": "double"
           },
           "effectiveFrom": {
-            "type": "string",
+            "description": "Gets or sets the effective-from timestamp. Defaults to now when omitted.",
             "format": "date-time"
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Commission rate band write request."
       },
       "CreateListingRequest": {
         "type": "object",
         "properties": {
           "title": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the title."
           },
           "description": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the description."
           },
           "propertyTypeId": {
             "type": "string",
+            "description": "Gets or sets the property type identifier.",
             "format": "uuid"
           },
           "price": {
-            "type": "number",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the price.",
             "format": "double"
           },
           "province": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the province."
           },
           "city": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the city."
           },
           "locality": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the locality."
           },
           "postalCode": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the postal code."
           },
           "bedrooms": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the number of bedrooms.",
             "format": "int32"
           },
           "bathrooms": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the number of bathrooms.",
             "format": "int32"
           },
           "areaSqFt": {
-            "type": "number",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the area in square feet.",
             "format": "double"
           },
           "featureIds": {
@@ -2947,218 +3360,469 @@
               "type": "string",
               "format": "uuid"
             },
-            "nullable": true,
-            "readOnly": true
+            "description": "Gets or sets feature identifiers."
           }
         },
-        "additionalProperties": false
+        "description": "Request to create a listing."
       },
       "FeatureDto": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
+            "description": "Gets or sets the identifier.",
             "format": "uuid"
           },
           "code": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the code."
           },
           "name": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the name."
           },
           "sortOrder": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the sort order.",
             "format": "int32"
           }
         },
-        "additionalProperties": false
+        "description": "Feature DTO."
+      },
+      "IFormFile": {
+        "type": "string",
+        "format": "binary"
       },
       "ListingDetailDto": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
+            "description": "Gets or sets the identifier.",
             "format": "uuid"
           },
           "title": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the title."
           },
           "description": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the description."
           },
           "propertyTypeId": {
             "type": "string",
+            "description": "Gets or sets the property type identifier.",
             "format": "uuid"
           },
           "price": {
-            "type": "number",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the price.",
             "format": "double"
           },
           "province": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the province."
           },
           "city": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the city."
           },
           "locality": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the locality."
           },
           "postalCode": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the postal code."
           },
           "bedrooms": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the number of bedrooms.",
             "format": "int32"
           },
           "bathrooms": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the number of bathrooms.",
             "format": "int32"
           },
           "areaSqFt": {
-            "type": "number",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the area in square feet.",
             "format": "double"
           },
           "status": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the status."
           },
           "images": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ListingImageDto"
             },
-            "nullable": true,
-            "readOnly": true
+            "description": "Gets or sets the images."
           },
           "features": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ListingFeatureDto"
             },
-            "nullable": true,
-            "readOnly": true
+            "description": "Gets or sets the features."
           },
           "brokerContact": {
-            "$ref": "#/components/schemas/BrokerContactDto"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets or sets the broker contact.",
+                "$ref": "#/components/schemas/BrokerContactDto"
+              }
+            ]
           },
           "createdAt": {
-            "type": "string",
+            "description": "Gets or sets the created timestamp.",
             "format": "date-time"
           },
           "version": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the row version."
           }
         },
-        "additionalProperties": false
+        "description": "Listing detail DTO."
       },
       "ListingFeatureDto": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
+            "description": "Gets or sets the identifier.",
             "format": "uuid"
           },
           "code": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the code."
           },
           "name": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the name."
           }
         },
-        "additionalProperties": false
+        "description": "Feature DTO."
       },
       "ListingImageDto": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
+            "description": "Gets or sets the identifier.",
             "format": "uuid"
           },
           "fileName": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the file name."
           },
           "contentType": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the content type."
           },
           "contentLength": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the content length.",
             "format": "int64"
           },
           "isPrimary": {
-            "type": "boolean"
+            "type": "boolean",
+            "description": "Gets or sets whether this is the primary image."
           },
           "sortOrder": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the sort order.",
             "format": "int32"
           }
         },
-        "additionalProperties": false
+        "description": "Image DTO."
       },
       "ListingSummaryDto": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
+            "description": "Gets or sets the identifier.",
             "format": "uuid"
           },
           "title": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the title."
           },
           "price": {
-            "type": "number",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the price.",
             "format": "double"
           },
           "city": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the city."
           },
           "locality": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the locality."
           },
           "bedrooms": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the number of bedrooms.",
             "format": "int32"
           },
           "bathrooms": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the number of bathrooms.",
             "format": "int32"
           },
           "status": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the status."
           },
           "propertyTypeId": {
             "type": "string",
+            "description": "Gets or sets the property type identifier.",
             "format": "uuid"
           },
           "primaryImageId": {
-            "type": "string",
-            "format": "uuid",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the primary image identifier used for the search thumbnail; null when the listing has no image.",
+            "format": "uuid"
           },
           "createdAt": {
-            "type": "string",
+            "description": "Gets or sets the created timestamp.",
             "format": "date-time"
           }
         },
-        "additionalProperties": false
+        "description": "Listing summary DTO."
       },
-      "ListingSummaryDtoPagedResult": {
+      "MetaDto": {
+        "type": "object",
+        "properties": {
+          "defaultCulture": {
+            "type": "string",
+            "description": "Gets or sets the default culture."
+          },
+          "supportedCultures": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Gets or sets the supported cultures."
+          },
+          "currencyCode": {
+            "type": "string",
+            "description": "Gets or sets the currency code."
+          },
+          "maxPageSize": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the maximum page size.",
+            "format": "int32"
+          },
+          "maxSearchTextLength": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the maximum search text length.",
+            "format": "int32"
+          }
+        },
+        "description": "Deployment metadata DTO."
+      },
+      "OwnerListingDto": {
+        "type": "object",
+        "properties": {
+          "commissionAmount": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the commission amount.",
+            "format": "double"
+          },
+          "commissionRatePercent": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the commission rate percent.",
+            "format": "double"
+          },
+          "commissionRateId": {
+            "type": "string",
+            "description": "Gets or sets the commission rate identifier.",
+            "format": "uuid"
+          },
+          "id": {
+            "type": "string",
+            "description": "Gets or sets the identifier.",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "description": "Gets or sets the title."
+          },
+          "description": {
+            "type": "string",
+            "description": "Gets or sets the description."
+          },
+          "propertyTypeId": {
+            "type": "string",
+            "description": "Gets or sets the property type identifier.",
+            "format": "uuid"
+          },
+          "price": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the price.",
+            "format": "double"
+          },
+          "province": {
+            "type": "string",
+            "description": "Gets or sets the province."
+          },
+          "city": {
+            "type": "string",
+            "description": "Gets or sets the city."
+          },
+          "locality": {
+            "type": "string",
+            "description": "Gets or sets the locality."
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "Gets or sets the postal code."
+          },
+          "bedrooms": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the number of bedrooms.",
+            "format": "int32"
+          },
+          "bathrooms": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the number of bathrooms.",
+            "format": "int32"
+          },
+          "areaSqFt": {
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the area in square feet.",
+            "format": "double"
+          },
+          "status": {
+            "type": "string",
+            "description": "Gets or sets the status."
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListingImageDto"
+            },
+            "description": "Gets or sets the images."
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ListingFeatureDto"
+            },
+            "description": "Gets or sets the features."
+          },
+          "brokerContact": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "description": "Gets or sets the broker contact.",
+                "$ref": "#/components/schemas/BrokerContactDto"
+              }
+            ]
+          },
+          "createdAt": {
+            "description": "Gets or sets the created timestamp.",
+            "format": "date-time"
+          },
+          "version": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the row version."
+          }
+        },
+        "description": "Owner listing DTO."
+      },
+      "PagedResultOfListingSummaryDto": {
         "type": "object",
         "properties": {
           "items": {
@@ -3166,243 +3830,170 @@
             "items": {
               "$ref": "#/components/schemas/ListingSummaryDto"
             },
-            "nullable": true
+            "description": "Gets or sets the items."
           },
           "total": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the total count.",
             "format": "int32"
           },
           "page": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the page.",
             "format": "int32"
           },
           "pageSize": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the page size.",
             "format": "int32"
           }
         },
-        "additionalProperties": false
-      },
-      "MetaDto": {
-        "type": "object",
-        "properties": {
-          "defaultCulture": {
-            "type": "string",
-            "nullable": true
-          },
-          "supportedCultures": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "nullable": true
-          },
-          "currencyCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "maxPageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "maxSearchTextLength": {
-            "type": "integer",
-            "format": "int32"
-          }
-        },
-        "additionalProperties": false
-      },
-      "OwnerListingDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "propertyTypeId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "price": {
-            "type": "number",
-            "format": "double"
-          },
-          "province": {
-            "type": "string",
-            "nullable": true
-          },
-          "city": {
-            "type": "string",
-            "nullable": true
-          },
-          "locality": {
-            "type": "string",
-            "nullable": true
-          },
-          "postalCode": {
-            "type": "string",
-            "nullable": true
-          },
-          "bedrooms": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "bathrooms": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "areaSqFt": {
-            "type": "number",
-            "format": "double"
-          },
-          "status": {
-            "type": "string",
-            "nullable": true
-          },
-          "images": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ListingImageDto"
-            },
-            "nullable": true,
-            "readOnly": true
-          },
-          "features": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ListingFeatureDto"
-            },
-            "nullable": true,
-            "readOnly": true
-          },
-          "brokerContact": {
-            "$ref": "#/components/schemas/BrokerContactDto"
-          },
-          "createdAt": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "version": {
-            "type": "string",
-            "nullable": true
-          },
-          "commissionAmount": {
-            "type": "number",
-            "format": "double"
-          },
-          "commissionRatePercent": {
-            "type": "number",
-            "format": "double"
-          },
-          "commissionRateId": {
-            "type": "string",
-            "format": "uuid"
-          }
-        },
-        "additionalProperties": false
+        "description": "Paged result."
       },
       "ProblemDetails": {
         "type": "object",
         "properties": {
           "type": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "title": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "status": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
           },
           "detail": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "instance": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ]
           }
-        },
-        "additionalProperties": { }
+        }
       },
       "PropertyTypeDto": {
         "type": "object",
         "properties": {
           "id": {
             "type": "string",
+            "description": "Gets or sets the identifier.",
             "format": "uuid"
           },
           "code": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the code."
           },
           "name": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the name."
           },
           "sortOrder": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the sort order.",
             "format": "int32"
           }
         },
-        "additionalProperties": false
+        "description": "Property type DTO."
       },
       "UpdateListingRequest": {
         "type": "object",
         "properties": {
           "title": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the title."
           },
           "description": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the description."
           },
           "propertyTypeId": {
             "type": "string",
+            "description": "Gets or sets the property type identifier.",
             "format": "uuid"
           },
           "price": {
-            "type": "number",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the price.",
             "format": "double"
           },
           "province": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the province."
           },
           "city": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the city."
           },
           "locality": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the locality."
           },
           "postalCode": {
             "type": "string",
-            "nullable": true
+            "description": "Gets or sets the postal code."
           },
           "bedrooms": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the number of bedrooms.",
             "format": "int32"
           },
           "bathrooms": {
-            "type": "integer",
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "description": "Gets or sets the number of bathrooms.",
             "format": "int32"
           },
           "areaSqFt": {
-            "type": "number",
+            "pattern": "^-?(?:0|[1-9]\\d*)(?:\\.\\d+)?$",
+            "type": [
+              "number",
+              "string"
+            ],
+            "description": "Gets or sets the area in square feet.",
             "format": "double"
           },
           "featureIds": {
@@ -3411,15 +4002,17 @@
               "type": "string",
               "format": "uuid"
             },
-            "nullable": true,
-            "readOnly": true
+            "description": "Gets or sets feature identifiers."
           },
           "version": {
-            "type": "string",
-            "nullable": true
+            "type": [
+              "null",
+              "string"
+            ],
+            "description": "Gets or sets the row version."
           }
         },
-        "additionalProperties": false
+        "description": "Request to update a listing."
       }
     },
     "securitySchemes": {
@@ -3450,18 +4043,27 @@
       }
     }
   },
+  "security": [
+    {
+      "Bearer": [ ]
+    }
+  ],
   "tags": [
     {
-      "name": "Admin: Commission Rates"
+      "name": "Listings",
+      "description": "Public browse and broker listing management."
     },
     {
-      "name": "Images"
+      "name": "Images",
+      "description": "Listing image upload, serving, and deletion."
     },
     {
-      "name": "Listings"
+      "name": "Lookups",
+      "description": "Property types, features, and deployment metadata."
     },
     {
-      "name": "Lookups"
+      "name": "Admin: Commission Rates",
+      "description": "Commission rate administration."
     }
   ]
 }

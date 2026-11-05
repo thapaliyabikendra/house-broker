@@ -1,4 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
+import type { TestRequest } from '@angular/common/http/testing';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import type { CreateListingRequest } from '../../api/models';
@@ -46,24 +47,24 @@ describe('ListingsDataService.create idempotency', () => {
   it('sends an Idempotency-Key that the API accepts without the caller supplying one', async () => {
     const pending = service.create(request);
 
-    const [sent] = createRequests();
-    expect(sent!.request.headers.get('Idempotency-Key')).toMatch(KEY_PATTERN);
-    sent!.flush({ id: 'listing-1' });
+    const [sent] = createRequests() as [TestRequest];
+    expect(sent.request.headers.get('Idempotency-Key')).toMatch(KEY_PATTERN);
+    sent.flush({ id: 'listing-1' });
     await pending;
   });
 
   it('resends the same key when a failed create is retried with an unchanged form', async () => {
     const failed = service.create(request).catch((error: unknown) => error);
-    const [first] = createRequests();
-    first!.flush({ title: 'Server error' }, { status: 500, statusText: 'Error' });
+    const [first] = createRequests() as [TestRequest];
+    first.flush({ title: 'Server error' }, { status: 500, statusText: 'Error' });
     await failed;
 
     const retry = service.create({ ...request });
-    const [second] = createRequests();
-    expect(second!.request.headers.get('Idempotency-Key')).toBe(
-      first!.request.headers.get('Idempotency-Key'),
+    const [second] = createRequests() as [TestRequest];
+    expect(second.request.headers.get('Idempotency-Key')).toBe(
+      first.request.headers.get('Idempotency-Key'),
     );
-    second!.flush({ id: 'listing-1' });
+    second.flush({ id: 'listing-1' });
     await retry;
   });
 });

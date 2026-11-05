@@ -74,7 +74,7 @@ function setup(options: SetupOptions = {}) {
 }
 
 function fillValidTier(component: CommissionRateEditorDialogComponent): void {
-  component.form.patchValue({ minPrice: 0, ratePercent: 2 });
+  component.form.patchValue({ ratePercent: 2 });
 }
 
 describe('CommissionRateEditorDialogComponent', () => {
@@ -85,9 +85,9 @@ describe('CommissionRateEditorDialogComponent', () => {
     await component.submit();
 
     expect(create).toHaveBeenCalledTimes(1);
-    const request = create.mock.calls[0]?.[0];
-    expect(request?.effectiveFrom).toBeUndefined();
-    expect(request?.maxPrice).toBeNull();
+    const request = create.mock.calls[0]?.[0] as CommissionRateRequest;
+    expect(request.effectiveFrom).toBeUndefined();
+    expect(request.maxPrice).toBeNull();
   });
 
   it('sends the stored instant unchanged when the admin does not touch effectiveFrom', async () => {
@@ -96,8 +96,8 @@ describe('CommissionRateEditorDialogComponent', () => {
       rate: {
         id: '1',
         version: 'v1',
-        minPrice: 0,
         maxPrice: 100,
+        maxInclusive: false,
         ratePercent: 2,
         isActive: true,
         effectiveFrom: stored,
@@ -113,24 +113,14 @@ describe('CommissionRateEditorDialogComponent', () => {
     );
   });
 
-  it('rejects a max price that is not above the min price without calling the API', async () => {
+  it('rejects a non-positive max price without calling the API', async () => {
     const { component, create } = setup();
-    component.form.patchValue({ minPrice: 50, maxPrice: 40, ratePercent: 2 });
+    component.form.patchValue({ maxPrice: 0, ratePercent: 2 });
 
     await component.submit();
 
     expect(create).not.toHaveBeenCalled();
-    expect(component.form.controls.maxPrice.hasError('range')).toBe(true);
-  });
-
-  it('re-checks the max price when the min price changes', () => {
-    const { component } = setup();
-    component.form.patchValue({ minPrice: 50, maxPrice: 40 });
-    expect(component.form.controls.maxPrice.valid).toBe(false);
-
-    component.form.controls.minPrice.setValue(10);
-
-    expect(component.form.controls.maxPrice.valid).toBe(true);
+    expect(component.form.controls.maxPrice.hasError('min')).toBe(true);
   });
 
   it('keeps a field error for a toggle inline, not in the banner', async () => {
@@ -139,7 +129,7 @@ describe('CommissionRateEditorDialogComponent', () => {
         new ApiError({
           status: 400,
           message: 'Invalid.',
-          fieldErrors: { minInclusive: [{ code: 'x', message: 'Must include the minimum.' }] },
+          fieldErrors: { maxInclusive: [{ code: 'x', message: 'Must include the maximum.' }] },
         }),
       ),
     });
@@ -149,14 +139,14 @@ describe('CommissionRateEditorDialogComponent', () => {
     fixture.detectChanges();
 
     expect(create).toHaveBeenCalled();
-    expect(component.form.controls.minInclusive.errors).toEqual({
-      server: 'Must include the minimum.',
+    expect(component.form.controls.maxInclusive.errors).toEqual({
+      server: 'Must include the maximum.',
     });
     expect(component.banner()).toEqual([]);
     const toggle = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(
-      '#minInclusive-error',
+      '#maxInclusive-error',
     );
-    expect(toggle?.textContent?.trim()).toBe('Must include the minimum.');
+    expect(toggle?.textContent?.trim()).toBe('Must include the maximum.');
   });
 
   it('lists unattached messages in the banner and adds the related-tiers hint for a field-less conflict', async () => {

@@ -3,7 +3,7 @@
 
 
 /**
- * Commission rate DTO.
+ * Commission rate band DTO.
  */
 export interface CommissionRateDto {
 
@@ -18,29 +18,31 @@ export interface CommissionRateDto {
   id?: string;
 
   /**
-   * Gets or sets whether the rate is active.
+   * Gets or sets whether the band is active.
    */
   isActive?: boolean;
 
   /**
-   * Gets or sets whether the maximum is inclusive.
+   * Gets or sets whether the upper bound is inclusive.
    */
   maxInclusive?: boolean;
 
   /**
-   * Gets or sets the maximum price.
+   * Gets or sets the upper bound, or null for the open-ended top band.
    */
   maxPrice?: (number | string | null);
 
   /**
-   * Gets or sets whether the minimum is inclusive.
+   * Gets or sets whether the derived lower bound is inclusive for display, or null when the band is retired or
+   * not yet effective.
    */
-  minInclusive?: boolean;
+  minInclusive?: (boolean | null);
 
   /**
-   * Gets or sets the minimum price.
+   * Gets or sets the derived lower bound for display, or null when the band is retired or not yet effective.
+   * The lower bound is not stored; it comes from the previous active band.
    */
-  minPrice?: (number | string);
+  minPrice?: (number | string | null);
 
   /**
    * Gets or sets the rate percent.

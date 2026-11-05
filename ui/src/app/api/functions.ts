@@ -13,6 +13,12 @@ export type { V1AdminCommissionRatesIdPut$Plain$Params as V1AdminCommissionRates
 export { v1AdminCommissionRatesIdPut$Plain as v1AdminCommissionRatesIdPut$Plain } from './fn/admin-commission-rates/v-1-admin-commission-rates-id-put-plain';
 export type { V1AdminCommissionRatesIdPut$Json$Params as V1AdminCommissionRatesIdPut$Json$Params } from './fn/admin-commission-rates/v-1-admin-commission-rates-id-put-json';
 export { v1AdminCommissionRatesIdPut$Json as v1AdminCommissionRatesIdPut$Json } from './fn/admin-commission-rates/v-1-admin-commission-rates-id-put-json';
+export type { V1AdminCommissionRatesIdDelete$Params as V1AdminCommissionRatesIdDelete$Params } from './fn/admin-commission-rates/v-1-admin-commission-rates-id-delete';
+export { v1AdminCommissionRatesIdDelete as v1AdminCommissionRatesIdDelete } from './fn/admin-commission-rates/v-1-admin-commission-rates-id-delete';
+export type { V1AdminCommissionRatesIdReactivatePost$Plain$Params as V1AdminCommissionRatesIdReactivatePost$Plain$Params } from './fn/admin-commission-rates/v-1-admin-commission-rates-id-reactivate-post-plain';
+export { v1AdminCommissionRatesIdReactivatePost$Plain as v1AdminCommissionRatesIdReactivatePost$Plain } from './fn/admin-commission-rates/v-1-admin-commission-rates-id-reactivate-post-plain';
+export type { V1AdminCommissionRatesIdReactivatePost$Json$Params as V1AdminCommissionRatesIdReactivatePost$Json$Params } from './fn/admin-commission-rates/v-1-admin-commission-rates-id-reactivate-post-json';
+export { v1AdminCommissionRatesIdReactivatePost$Json as v1AdminCommissionRatesIdReactivatePost$Json } from './fn/admin-commission-rates/v-1-admin-commission-rates-id-reactivate-post-json';
 export type { V1ListingsGet$Plain$Params as V1ListingsGet$Plain$Params } from './fn/listings/v-1-listings-get-plain';
 export { v1ListingsGet$Plain as v1ListingsGet$Plain } from './fn/listings/v-1-listings-get-plain';
 export type { V1ListingsGet$Json$Params as V1ListingsGet$Json$Params } from './fn/listings/v-1-listings-get-json';

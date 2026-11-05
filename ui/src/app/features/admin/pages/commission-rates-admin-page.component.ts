@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatDialog } from '@angular/material/dialog';
@@ -10,6 +11,7 @@ import { HbDatePipe } from '../../../shared/pipes/hb-date.pipe';
 import { HbDateTimePipe } from '../../../shared/pipes/hb-date-time.pipe';
 import { HbNumberPipe } from '../../../shared/pipes/hb-number.pipe';
 import { HbPricePipe } from '../../../shared/pipes/hb-price.pipe';
+import { ConfirmService } from '../../../shared/ui/confirm.service';
 import { ErrorStateComponent } from '../../../shared/ui/error-state.component';
 import { LoadingStateComponent } from '../../../shared/ui/loading-state.component';
 import { CommissionRateEditorDialogComponent } from '../components/commission-rate-editor-dialog.component';
@@ -50,7 +52,12 @@ const EDITOR_DIALOG_WIDTH = '40rem';
           <mat-card appearance="outlined" class="table-card">
             <mat-card-content>
               <div class="table-toolbar">
-                <button mat-raised-button type="button" (click)="startNew()">
+                <button
+                  mat-raised-button
+                  type="button"
+                  (click)="startNew()"
+                  [disabled]="busy() !== null"
+                >
                   {{ 'admin.newRate' | transloco }}
                 </button>
               </div>
@@ -59,8 +66,12 @@ const EDITOR_DIALOG_WIDTH = '40rem';
                   <ng-container matColumnDef="min">
                     <th mat-header-cell *matHeaderCellDef>{{ 'admin.min' | transloco }}</th>
                     <td mat-cell *matCellDef="let rate">
-                      <div class="bound-symbol">{{ rate.minInclusive ? '≥' : '>' }}</div>
-                      <div class="bound-amount">{{ rate.minPrice | hbPrice }}</div>
+                      @if (rate.minPrice !== null && rate.minPrice !== undefined) {
+                        <div class="bound-symbol">{{ rate.minInclusive ? '≥' : '>' }}</div>
+                        <div class="bound-amount">{{ rate.minPrice | hbPrice }}</div>
+                      } @else {
+                        <div class="bound-amount">{{ 'admin.notApplicable' | transloco }}</div>
+                      }
                     </td>
                   </ng-container>
                   <ng-container matColumnDef="max">
@@ -91,18 +102,43 @@ const EDITOR_DIALOG_WIDTH = '40rem';
                       </div>
                     </td>
                   </ng-container>
-                  <ng-container matColumnDef="active">
-                    <th mat-header-cell *matHeaderCellDef>{{ 'admin.active' | transloco }}</th>
+                  <ng-container matColumnDef="status">
+                    <th mat-header-cell *matHeaderCellDef>{{ 'admin.status' | transloco }}</th>
                     <td mat-cell *matCellDef="let rate">
-                      {{ rate.isActive ? ('admin.yes' | transloco) : ('admin.no' | transloco) }}
+                      {{ statusLabel(rate) }}
                     </td>
                   </ng-container>
                   <ng-container matColumnDef="actions">
                     <th mat-header-cell *matHeaderCellDef></th>
                     <td mat-cell *matCellDef="let rate">
-                      <button mat-stroked-button type="button" (click)="edit(rate)">
+                      <button
+                        mat-stroked-button
+                        type="button"
+                        (click)="edit(rate)"
+                        [disabled]="busy() === rate.id"
+                      >
                         {{ 'admin.edit' | transloco }}
                       </button>
+                      @if (rate.isActive) {
+                        <button
+                          mat-stroked-button
+                          color="warn"
+                          type="button"
+                          (click)="retire(rate)"
+                          [disabled]="busy() === rate.id"
+                        >
+                          {{ 'admin.retire' | transloco }}
+                        </button>
+                      } @else {
+                        <button
+                          mat-stroked-button
+                          type="button"
+                          (click)="reactivate(rate)"
+                          [disabled]="busy() === rate.id"
+                        >
+                          {{ 'admin.reactivate' | transloco }}
+                        </button>
+                      }
                     </td>
                   </ng-container>
 
@@ -167,7 +203,7 @@ const EDITOR_DIALOG_WIDTH = '40rem';
       min-inline-size: 9rem;
     }
     .rates-table .mat-column-rate,
-    .rates-table .mat-column-active {
+    .rates-table .mat-column-status {
       min-inline-size: 7rem;
     }
     .admin-layout {
@@ -187,10 +223,13 @@ export class CommissionRatesAdminPageComponent {
   private readonly data = inject(AdminCommissionRatesDataService);
   private readonly transloco = inject(TranslocoService);
   private readonly dialog = inject(MatDialog);
+  private readonly snack = inject(MatSnackBar);
+  private readonly confirm = inject(ConfirmService);
 
   readonly loading = signal(false);
   readonly error = signal<string | null>(null);
   readonly rates = signal<CommissionRateDto[]>([]);
+  readonly busy = signal<string | null>(null);
 
   readonly percentOptions: Intl.NumberFormatOptions = { maximumFractionDigits: 2 };
   readonly timeOnlyOptions: Intl.DateTimeFormatOptions = {
@@ -200,7 +239,7 @@ export class CommissionRatesAdminPageComponent {
     hour: 'numeric',
     minute: '2-digit',
   };
-  readonly displayedColumns = ['min', 'max', 'rate', 'effective', 'active', 'actions'];
+  readonly displayedColumns = ['min', 'max', 'rate', 'effective', 'status', 'actions'];
 
   constructor() {
     void this.load();
@@ -214,6 +253,65 @@ export class CommissionRatesAdminPageComponent {
   /** Opens the edit dialog for one rate; reloads the list after a save. */
   edit(rate: CommissionRateDto): void {
     this.openEditor(rate);
+  }
+
+  async retire(rate: CommissionRateDto): Promise<void> {
+    if (!rate.id) {
+      return;
+    }
+    const discard = await this.confirm.confirm({
+      message: this.transloco.translate('admin.retireConfirm'),
+      confirmLabel: this.transloco.translate('admin.retire'),
+      destructive: true,
+    });
+    if (!discard) {
+      return;
+    }
+    this.busy.set(rate.id);
+    try {
+      await this.data.retire(rate.id, rate.version);
+      this.snack.open(this.transloco.translate('admin.retiredNotice'), undefined, {
+        duration: 3000,
+      });
+      await this.load();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : this.transloco.translate('errors.deleteFailed');
+      this.snack.open(message, undefined, { duration: 4000 });
+    } finally {
+      this.busy.set(null);
+    }
+  }
+
+  async reactivate(rate: CommissionRateDto): Promise<void> {
+    if (!rate.id) {
+      return;
+    }
+    this.busy.set(rate.id);
+    try {
+      await this.data.reactivate(rate.id, rate.version);
+      this.snack.open(this.transloco.translate('admin.reactivatedNotice'), undefined, {
+        duration: 3000,
+      });
+      await this.load();
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : this.transloco.translate('errors.saveFailed');
+      this.snack.open(message, undefined, { duration: 4000 });
+    } finally {
+      this.busy.set(null);
+    }
+  }
+
+  statusLabel(rate: CommissionRateDto): string {
+    if (!rate.isActive) {
+      return this.transloco.translate('admin.statusRetired');
+    }
+    const effective = new Date(String(rate.effectiveFrom));
+    if (!Number.isNaN(effective.getTime()) && effective.getTime() > Date.now()) {
+      return this.transloco.translate('admin.statusScheduled');
+    }
+    return this.transloco.translate('admin.statusActive');
   }
 
   async load(): Promise<void> {

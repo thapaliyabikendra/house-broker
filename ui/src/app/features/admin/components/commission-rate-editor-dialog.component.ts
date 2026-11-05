@@ -251,7 +251,7 @@ export class CommissionRateEditorDialogComponent {
     // An empty max price makes the band open-ended; max-inclusive no longer applies.
     this.form.controls.maxPrice.valueChanges
       .pipe(takeUntilDestroyed())
-      .subscribe((value) => this.openEnded.set(value == null || value === ''));
+      .subscribe((value) => this.openEnded.set(value == null));
   }
 
   /** Server error for the max-inclusive toggle, if one is attached. */
