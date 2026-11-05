@@ -90,7 +90,7 @@
 |------|----------|
 | Semantics | Flat rate chosen by price tier, applied to the whole price; the 50L and 1 crore boundaries are inclusive in the 1.75% band |
 | Storage | Snapshot stored on the listing (`CommissionAmount`, `CommissionRatePercent`, `CommissionRateId`); recalculated when the price changes; later rate changes are not retroactive |
-| Configuration | `CommissionRates` table (MinPrice, MinInclusive, MaxPrice nullable, MaxInclusive, RatePercent, IsActive, EffectiveFrom, RowVersion; bound model in 01-scope), seeded with the 3 tiers; Admin-only CRUD endpoints; cache invalidation on change |
+| Configuration | `CommissionRates` table (MaxPrice nullable, MaxInclusive, RatePercent, IsActive, EffectiveFrom, RowVersion; upper-bound band model in 01-scope), seeded with the 3 tiers; Admin-only endpoints (list, create, update, retire, reactivate); cache invalidation on change |
 | Visibility | Exposed only through the owner DTO (`OwnerListingDto`); public DTOs do not contain the field. Admins do not see per-listing commission |
 
 ### Listing domain

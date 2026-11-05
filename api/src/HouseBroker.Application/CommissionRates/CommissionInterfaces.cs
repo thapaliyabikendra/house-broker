@@ -5,8 +5,11 @@ namespace HouseBroker.Application.CommissionRates;
 /// <summary>Commission rate repository.</summary>
 public interface ICommissionRateRepository
 {
-    /// <summary>Gets all commission rates.</summary>
+    /// <summary>Gets all commission rates for reading.</summary>
     Task<IReadOnlyList<CommissionRate>> GetAllAsync(CancellationToken cancellationToken);
+
+    /// <summary>Gets all commission rates as tracked entities for a write inside the current transaction.</summary>
+    Task<IReadOnlyList<CommissionRate>> GetAllForUpdateAsync(CancellationToken cancellationToken);
 
     /// <summary>Gets a commission rate.</summary>
     Task<CommissionRate?> GetByIdAsync(Guid id, CancellationToken cancellationToken);

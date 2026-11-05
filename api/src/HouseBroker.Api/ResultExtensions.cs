@@ -101,8 +101,8 @@ public static class ResultExtensions
     }
 
     /// <summary>
-    /// Appends a sentence that names the existing tiers the caller must fix first, when the error carries their ranges.
-    /// Each record's arguments are <c>[minPrice, minInclusive, maxPrice-or-null, maxInclusive]</c>.
+    /// Appends a sentence that names the existing bands the caller must fix first, when the error carries their bounds.
+    /// Each record's arguments are <c>[maxPrice-or-null, maxInclusive]</c>.
     /// </summary>
     private static string AppendRelatedTiers(
         string message,
@@ -111,7 +111,7 @@ public static class ResultExtensions
         ArgumentFormat format)
     {
         var ranges = records
-            .Where(record => record.Args.Count == 4)
+            .Where(record => record.Args.Count == 2)
             .Select(record => FormatTierRange(record.Args, format))
             .ToList();
         if (ranges.Count == 0)
@@ -123,13 +123,16 @@ public static class ResultExtensions
         return $"{message} {sentence}";
     }
 
-    /// <summary>Formats one tier as interval notation, for example <c>[50,00,000, 1,00,00,000)</c>; an absent maximum is <c>∞</c>.</summary>
+    /// <summary>Formats one band's upper bound, for example <c>≤ 1,00,00,000</c>; an absent maximum is <c>∞</c>.</summary>
     private static string FormatTierRange(IReadOnlyList<object?> args, ArgumentFormat format)
     {
-        var opening = args[1] is true ? "[" : "(";
-        var upper = args[2] is null ? "∞" : format.Format(args[2]);
-        var closing = args[2] is not null && args[3] is true ? "]" : ")";
-        return $"{opening}{format.Format(args[0])}, {upper}{closing}";
+        if (args[0] is null)
+        {
+            return "∞";
+        }
+
+        var symbol = args[1] is true ? "≤" : "<";
+        return $"{symbol} {format.Format(args[0])}";
     }
 
     private static string Localize(IStringLocalizer<SharedResource>? localizer, string key, IReadOnlyList<string> args)

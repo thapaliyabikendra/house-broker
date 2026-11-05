@@ -6,7 +6,6 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import type { AbstractControl, ValidatorFn } from '@angular/forms';
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from '@angular/material/dialog';
@@ -30,26 +29,7 @@ export interface CommissionRateEditorDialogData {
 }
 
 /** Controls rendered with an inline error slot. Server errors for any other field go to the banner. */
-const INLINE_FIELDS = [
-  'minPrice',
-  'minInclusive',
-  'maxPrice',
-  'maxInclusive',
-  'ratePercent',
-  'effectiveFrom',
-] as const;
-
-/** Min price (`minPrice`) of the same tier must be below the max price when a max is set. */
-function maxAboveMin(minControl: AbstractControl): ValidatorFn {
-  return (control) => {
-    const max: unknown = control.value;
-    const min: unknown = minControl.value;
-    if (max === null || max === '' || min === null || min === '') {
-      return null;
-    }
-    return Number(max) > Number(min) ? null : { range: true };
-  };
-}
+const INLINE_FIELDS = ['maxPrice', 'maxInclusive', 'ratePercent', 'effectiveFrom'] as const;
 
 /** Local `YYYY-MM-DDTHH:mm:ss` value for a datetime-local input, in the browser's zone. */
 function toLocalInputValue(isoUtc: string): string {
@@ -69,9 +49,12 @@ function numberOrNull(value: number | string | null | undefined): number | null 
 }
 
 /**
- * Create or edit a commission tier. Closes with `true` after a save (or after the admin accepts a
- * reload on a stale version) and `false` on cancel. Opened with `disableClose`, so Escape and the
- * backdrop reach requestClose(), which asks before discarding edits.
+ * Create or edit a commission band. A band stores only its upper bound; the lower bound is derived
+ * from the previous band, so there is no min price or min-inclusive input. An empty max price makes
+ * the band the open-ended top band. Bands are always created active and retired from the list.
+ * Closes with `true` after a save (or after the admin accepts a reload on a stale version) and
+ * `false` on cancel. Opened with `disableClose`, so Escape and the backdrop reach requestClose(),
+ * which asks before discarding edits.
  */
 @Component({
   selector: 'hb-commission-rate-editor-dialog',
@@ -104,31 +87,9 @@ function numberOrNull(value: number | string | null | undefined): number | null 
       }
       <form id="rate-form" [formGroup]="form" (ngSubmit)="submit()" class="rate-form">
         <mat-form-field appearance="outline" subscriptSizing="dynamic">
-          <mat-label>{{ 'admin.minPrice' | transloco }}</mat-label>
-          <input matInput type="number" formControlName="minPrice" />
-          @if (form.controls.minPrice.invalid && form.controls.minPrice.touched) {
-            <mat-error>{{
-              form.controls.minPrice.errors?.['server'] ?? ('admin.minPriceError' | transloco)
-            }}</mat-error>
-          }
-        </mat-form-field>
-
-        <div class="toggle-field">
-          <mat-slide-toggle
-            formControlName="minInclusive"
-            color="primary"
-            [aria-describedby]="toggleErrorId('minInclusive')"
-          >
-            {{ 'admin.minInclusive' | transloco }}
-          </mat-slide-toggle>
-          @if (serverError('minInclusive'); as message) {
-            <p id="minInclusive-error" class="field-error">{{ message }}</p>
-          }
-        </div>
-
-        <mat-form-field appearance="outline" subscriptSizing="dynamic">
           <mat-label>{{ 'admin.maxPrice' | transloco }}</mat-label>
           <input matInput type="number" formControlName="maxPrice" />
+          <mat-hint>{{ 'admin.maxPriceHint' | transloco }}</mat-hint>
           @if (form.controls.maxPrice.invalid && form.controls.maxPrice.touched) {
             <mat-error>{{
               form.controls.maxPrice.errors?.['server'] ?? ('admin.maxPriceError' | transloco)
@@ -140,6 +101,7 @@ function numberOrNull(value: number | string | null | undefined): number | null 
           <mat-slide-toggle
             formControlName="maxInclusive"
             color="primary"
+            [disabled]="openEnded()"
             [aria-describedby]="toggleErrorId('maxInclusive')"
           >
             {{ 'admin.maxInclusive' | transloco }}
@@ -167,12 +129,6 @@ function numberOrNull(value: number | string | null | undefined): number | null 
             <mat-error>{{ form.controls.effectiveFrom.errors?.['server'] }}</mat-error>
           }
         </mat-form-field>
-
-        <div class="toggle-field">
-          <mat-slide-toggle formControlName="isActive" color="primary">
-            {{ 'admin.active' | transloco }}
-          </mat-slide-toggle>
-        </div>
       </form>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
@@ -256,6 +212,8 @@ export class CommissionRateEditorDialogComponent {
   readonly banner = signal<string[]>([]);
   /** Set when a field-less conflict names other records that must change too. */
   readonly relatedHint = signal(false);
+  /** True when the band is the open-ended top band: no max price, so max-inclusive does not apply. */
+  readonly openEnded = signal(this.data.rate?.maxPrice == null);
   private readonly editingVersion = this.data.rate?.version ?? null;
   /** The stored instant and its local form, so an untouched effective date is sent unchanged. */
   private readonly originalEffectiveFrom = this.data.rate?.effectiveFrom
@@ -265,27 +223,17 @@ export class CommissionRateEditorDialogComponent {
     ? toLocalInputValue(this.originalEffectiveFrom)
     : '';
 
-  private readonly minPriceControl = new FormControl<number | null>(
-    numberOrNull(this.data.rate?.minPrice),
-    { validators: [Validators.required, Validators.min(0)] },
-  );
-
   readonly form = new FormGroup({
-    minPrice: this.minPriceControl,
-    minInclusive: new FormControl<boolean>(this.data.rate?.minInclusive ?? true, {
-      nonNullable: true,
-    }),
     maxPrice: new FormControl<number | null>(numberOrNull(this.data.rate?.maxPrice), {
-      validators: [maxAboveMin(this.minPriceControl)],
+      validators: [Validators.min(0.01)],
     }),
     maxInclusive: new FormControl<boolean>(this.data.rate?.maxInclusive ?? false, {
       nonNullable: true,
     }),
     ratePercent: new FormControl<number | null>(numberOrNull(this.data.rate?.ratePercent), {
-      validators: [Validators.required, Validators.min(0), Validators.max(100)],
+      validators: [Validators.required, Validators.min(0.0001), Validators.max(100)],
     }),
     effectiveFrom: new FormControl<string>(this.originalEffectiveLocal, { nonNullable: true }),
-    isActive: new FormControl<boolean>(this.data.rate?.isActive ?? true, { nonNullable: true }),
   });
 
   constructor() {
@@ -300,20 +248,20 @@ export class CommissionRateEditorDialogComponent {
       .backdropClick()
       .pipe(takeUntilDestroyed())
       .subscribe(() => void this.requestClose());
-    // Changing the minimum can make the maximum valid or invalid, so re-check it.
-    this.minPriceControl.valueChanges
+    // An empty max price makes the band open-ended; max-inclusive no longer applies.
+    this.form.controls.maxPrice.valueChanges
       .pipe(takeUntilDestroyed())
-      .subscribe(() => this.form.controls.maxPrice.updateValueAndValidity());
+      .subscribe((value) => this.openEnded.set(value == null || value === ''));
   }
 
-  /** Server error for a toggle, if one is attached. */
-  protected serverError(name: 'minInclusive' | 'maxInclusive'): string | null {
+  /** Server error for the max-inclusive toggle, if one is attached. */
+  protected serverError(name: 'maxInclusive'): string | null {
     const message: unknown = this.form.controls[name].errors?.['server'];
     return typeof message === 'string' ? message : null;
   }
 
-  /** The id of a toggle's inline error when one is shown, for aria-describedby; empty otherwise. */
-  protected toggleErrorId(name: 'minInclusive' | 'maxInclusive'): string {
+  /** The id of the toggle's inline error when one is shown, for aria-describedby; empty otherwise. */
+  protected toggleErrorId(name: 'maxInclusive'): string {
     return this.serverError(name) ? `${name}-error` : '';
   }
 
@@ -335,7 +283,7 @@ export class CommissionRateEditorDialogComponent {
   }
 
   /**
-   * Effective-from is optional: an empty value is omitted, so the API uses now for a new tier
+   * Effective-from is optional: an empty value is omitted, so the API uses now for a new band
    * and keeps the stored value for an edit. An untouched value is sent as the stored instant,
    * so seconds and sub-second precision survive a save.
    */
@@ -362,14 +310,12 @@ export class CommissionRateEditorDialogComponent {
     this.banner.set([]);
     this.relatedHint.set(false);
     const value = this.form.getRawValue();
+    const maxPrice = value.maxPrice ?? null;
     const request: CommissionRateRequest = {
-      minPrice: value.minPrice ?? 0,
-      minInclusive: value.minInclusive,
-      maxPrice: value.maxPrice ?? null,
-      maxInclusive: value.maxInclusive,
+      maxPrice,
+      maxInclusive: maxPrice === null ? false : value.maxInclusive,
       ratePercent: value.ratePercent ?? 0,
       effectiveFrom: this.effectiveFromValue(),
-      isActive: value.isActive,
     };
 
     try {

@@ -1,59 +1,78 @@
 using HouseBroker.Application.CommissionRates;
 using HouseBroker.Domain;
+using HouseBroker.Domain.Common;
 using Xunit;
 
 namespace HouseBroker.Application.Tests;
 
-/// <summary>Commission calculator tests.</summary>
+/// <summary>Commission calculator tests for the upper-bound band model.</summary>
 public sealed class CommissionCalculatorTests
 {
-    /// <summary>Calculates expected rate.</summary>
-    [Theory]
-    [InlineData(4999999.50, 2)]
-    [InlineData(5000000.00, 1.75)]
-    [InlineData(10000000.00, 1.75)]
-    [InlineData(10000000.01, 1.5)]
-    public void Calculate_ReturnsExpectedTier(decimal price, decimal expectedRate)
-    {
-        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
-        var tiers = new[]
-        {
-            CommissionRate.Create(0m, true, 5000000m, false, 2m, true, DateTime.MinValue),
-            CommissionRate.Create(5000000m, true, 10000000m, true, 1.75m, true, DateTime.MinValue),
-            CommissionRate.Create(10000000m, false, null, false, 1.5m, true, DateTime.MinValue),
-        };
+    private static readonly DateTime Now = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        var result = CommissionCalculator.Calculate(price, tiers, now);
+    /// <summary>Calculates the expected rate at and around every seeded boundary.</summary>
+    [Theory]
+    [InlineData(0, 2)]
+    [InlineData(4_999_999, 2)]
+    [InlineData(4_999_999.50, 2)]
+    [InlineData(5_000_000, 1.75)]
+    [InlineData(10_000_000, 1.75)]
+    [InlineData(10_000_000.01, 1.5)]
+    public void Calculate_ReturnsExpectedBand(decimal price, decimal expectedRate)
+    {
+        var result = CommissionCalculator.Calculate(price, Seeded(), Now);
 
         Assert.Equal(expectedRate, result.RatePercent);
         Assert.Equal(Math.Round(price * expectedRate / 100m, 2, MidpointRounding.AwayFromZero), result.Amount);
     }
 
-    /// <summary>Ignores future tiers.</summary>
+    /// <summary>Ignores a future band.</summary>
     [Fact]
-    public void Calculate_IgnoresFutureTier()
+    public void Calculate_IgnoresFutureBand()
     {
-        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
-        var tiers = new[]
+        var bands = new[]
         {
-            CommissionRate.Create(0m, true, null, false, 2m, true, DateTime.MinValue),
-            CommissionRate.Create(0m, true, null, false, 99m, true, now.AddMinutes(5)),
+            Band(null, false, 2m),
+            Band(null, false, 99m, Now.AddMinutes(5)),
         };
 
-        var result = CommissionCalculator.Calculate(1000m, tiers, now);
+        var result = CommissionCalculator.Calculate(1_000m, bands, Now);
 
         Assert.Equal(2m, result.RatePercent);
     }
 
-    /// <summary>Throws when no tier.</summary>
+    /// <summary>Ignores a retired band.</summary>
     [Fact]
-    public void Calculate_NoTier_Throws()
+    public void Calculate_IgnoresRetiredBand()
     {
-        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
-        var tiers = Array.Empty<CommissionRate>();
+        var retired = Band(null, false, 99m);
+        retired.Retire();
+        var bands = new[] { Band(5_000_000m, false, 2m), retired };
 
-        Assert.Throws<HouseBroker.Domain.Common.DomainException>(() => CommissionCalculator.Calculate(1000m, tiers, now));
+        Assert.Throws<DomainException>(() => CommissionCalculator.Calculate(6_000_000m, bands, Now));
     }
+
+    /// <summary>A negative price never matches a band.</summary>
+    [Fact]
+    public void Calculate_NegativePrice_Throws()
+    {
+        Assert.Throws<DomainException>(() => CommissionCalculator.Calculate(-1m, Seeded(), Now));
+    }
+
+    /// <summary>Throws when no band covers the price.</summary>
+    [Fact]
+    public void Calculate_NoBand_Throws()
+    {
+        Assert.Throws<DomainException>(() => CommissionCalculator.Calculate(1_000m, [], Now));
+    }
+
+    private static CommissionRate[] Seeded() =>
+    [
+        Band(5_000_000m, false, 2m),
+        Band(10_000_000m, true, 1.75m),
+        Band(null, false, 1.5m),
+    ];
+
+    private static CommissionRate Band(decimal? maxPrice, bool maxInclusive, decimal ratePercent = 2m, DateTime? effectiveFrom = null)
+        => CommissionRate.Create(maxPrice, maxInclusive, ratePercent, effectiveFrom ?? DateTime.MinValue);
 }
-
-

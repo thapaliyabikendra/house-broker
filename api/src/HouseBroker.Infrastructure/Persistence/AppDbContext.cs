@@ -242,7 +242,6 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
         entity.ToTable("CommissionRates");
         entity.HasKey(rate => rate.Id);
         entity.Property(rate => rate.Id).ValueGeneratedNever();
-        entity.Property(rate => rate.MinPrice).HasPrecision(18, 2);
         entity.Property(rate => rate.MaxPrice).HasPrecision(18, 2);
         entity.Property(rate => rate.RatePercent).HasPrecision(9, 4);
         entity.Property(rate => rate.EffectiveFrom).IsRequired();

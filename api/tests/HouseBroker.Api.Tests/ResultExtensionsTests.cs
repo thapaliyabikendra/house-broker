@@ -237,8 +237,8 @@ public sealed class ResultExtensionsTests
             RelatedIds = [first, second],
             RelatedRecords =
             [
-                new RelatedRecord(first, 0m, true, 4999999m, false),
-                new RelatedRecord(second, 5000001m, true, null, false),
+                new RelatedRecord(first, 4999999m, false),
+                new RelatedRecord(second, null, false),
             ],
         };
 
@@ -246,6 +246,6 @@ public sealed class ResultExtensionsTests
 
         var problem = Assert.IsType<ProblemDetails>(Assert.IsType<ObjectResult>(result).Value);
         Assert.Equal("localized:conflict", problem.Title);
-        Assert.Equal("localized:conflict related:[0, 49,99,999); [50,00,001, ∞)", problem.Detail);
+        Assert.Equal("localized:conflict related:< 49,99,999; ∞", problem.Detail);
     }
 }

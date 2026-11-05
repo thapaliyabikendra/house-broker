@@ -17,6 +17,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<ILookupService, HouseBroker.Application.Lookups.LookupService>();
         services.AddScoped<IValidator<CreateListingRequest>, HouseBroker.Application.Listings.CreateListingRequestValidator>();
         services.AddScoped<IValidator<UpdateListingRequest>, HouseBroker.Application.Listings.UpdateListingRequestValidator>();
+        services.AddScoped<IValidator<CommissionRateRequest>, HouseBroker.Application.CommissionRates.CommissionRateRequestValidator>();
         return services;
     }
 }

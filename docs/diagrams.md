@@ -167,12 +167,10 @@ erDiagram
 
     CommissionRates {
         guid Id PK "GUID v7"
-        decimal MinPrice
-        bool MinInclusive
         decimal MaxPrice "nullable = open-ended top tier"
         bool MaxInclusive
         decimal RatePercent
-        bool IsActive
+        bool IsActive "false = retired"
         datetime EffectiveFrom "UTC"
         datetime CreatedAt "UTC"
         guid CreatedBy "null = system"
@@ -339,7 +337,7 @@ flowchart TD
     H["Later tier edit"] -.->|"not retroactive"| N
 ```
 
-Tier configuration is validated as a whole: no gaps, no overlaps, exactly one open-ended top tier.
+Tier configuration is validated as a whole: at least one active band, exactly one open-ended top band, and bounded maxima that are strictly positive and strictly increasing. Lower bounds are derived from the previous band, so gaps and overlaps cannot occur.
 
 ## 7. Listing lifecycle
 

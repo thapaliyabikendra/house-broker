@@ -1,7 +1,6 @@
 using HouseBroker.Application.Contracts.CommissionRates;
 using HouseBroker.Application.Contracts;
 using HouseBroker.Application.Listings;
-using HouseBroker.Application.Mapping;
 using HouseBroker.Domain;
 using HouseBroker.Domain.Common;
 using System.Text.Json;
@@ -14,34 +13,52 @@ public sealed class CommissionRateAdminService(
     ICurrentUserService currentUser,
     TimeProvider clock,
     ICacheService cache,
-    IUnitOfWork unitOfWork) : ICommissionRateAdminService
+    IUnitOfWork unitOfWork,
+    FluentValidation.IValidator<CommissionRateRequest> requestValidator) : ICommissionRateAdminService
 {
     private readonly ICommissionRateRepository _repository = repository;
     private readonly ICurrentUserService _currentUser = currentUser;
     private readonly TimeProvider _clock = clock;
     private readonly ICacheService _cache = cache;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly FluentValidation.IValidator<CommissionRateRequest> _requestValidator = requestValidator;
 
     private string ActorType => _currentUser.UserId.HasValue ? "User" : "System";
 
     /// <inheritdoc />
     public async Task<Result<IReadOnlyList<CommissionRateDto>>> GetAllAsync(CancellationToken cancellationToken)
     {
+        var now = _clock.GetUtcNow().UtcDateTime;
         var rates = await _repository.GetAllAsync(cancellationToken);
-        return Result.Success<IReadOnlyList<CommissionRateDto>>(rates.Select(ListingMapper.Instance.ToCommissionRate).ToList());
+        var active = CommissionTierSet.ActiveAt(rates, now);
+        var bounds = BoundsById(active);
+
+        var dtos = CommissionTierSet.Order(rates)
+            .Select(rate => bounds.TryGetValue(rate.Id, out var bound)
+                ? ToDto(rate, bound.Lower, bound.LowerInclusive)
+                : ToDto(rate, null, null))
+            .ToList();
+
+        return Result.Success<IReadOnlyList<CommissionRateDto>>(dtos);
     }
 
     /// <inheritdoc />
     public async Task<Result<CommissionRateDto>> CreateAsync(CommissionRateRequest request, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        var validation = await _requestValidator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
+        {
+            return Result.Failure<CommissionRateDto>(ValidationErrors.FromValidation(validation));
+        }
+
         var now = _clock.GetUtcNow().UtcDateTime;
         var effectiveFrom = request.EffectiveFrom == default ? now : NormalizeUtc(request.EffectiveFrom);
 
         await using var createTransaction = await _unitOfWork.BeginTransactionAsync(TransactionIsolationLevel.Serializable, cancellationToken);
 
-        var rates = (await _repository.GetAllAsync(cancellationToken)).ToList();
-        var candidate = CommissionRate.Create(request.MinPrice, request.MinInclusive, request.MaxPrice, request.MaxInclusive, request.RatePercent, request.IsActive, effectiveFrom);
+        var rates = (await _repository.GetAllForUpdateAsync(cancellationToken)).ToList();
+        var candidate = CommissionRate.Create(request.MaxPrice, request.MaxInclusive, request.RatePercent, effectiveFrom);
         rates.Add(candidate);
 
         // Validate now and at every later instant where a scheduled tier takes effect.
@@ -56,19 +73,7 @@ public sealed class CommissionRateAdminService(
         }
 
         await _repository.AddAsync(candidate, cancellationToken);
-
-        await _repository.AddAuditEventAsync(AuditEvent.Create(
-            now,
-            _currentUser.UserId,
-            ActorType,
-            null,
-            "commission.rate.created",
-            "CommissionRate",
-            candidate.Id,
-            null,
-            null,
-            JsonSerializer.Serialize(new { request.MinPrice, request.MinInclusive, request.MaxPrice, request.MaxInclusive, request.RatePercent, request.IsActive, effectiveFrom })),
-            cancellationToken);
+        await AddAuditAsync(now, candidate, "commission.rate.created", null, SerializeBand(candidate), cancellationToken);
 
         var createSave = await _unitOfWork.SaveChangesAsync(cancellationToken);
         if (!createSave.IsSuccess)
@@ -81,7 +86,7 @@ public sealed class CommissionRateAdminService(
         // The write is durable at this point, so the invalidation must not be abandoned by a cancelled request.
         await _cache.InvalidateCommissionRatesAsync(CancellationToken.None);
 
-        return Result.Success<CommissionRateDto>(ListingMapper.Instance.ToCommissionRate(candidate));
+        return Result.Success(ToDtoWithDerivedBounds(candidate, rates, now));
     }
 
     /// <inheritdoc />
@@ -99,28 +104,30 @@ public sealed class CommissionRateAdminService(
             return Result.Failure<CommissionRateDto>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
-        if (string.IsNullOrWhiteSpace(ifMatch))
+        var precondition = CheckIfMatch(rate, ifMatch);
+        if (precondition is not null)
         {
-            return Result.Failure<CommissionRateDto>(new ApplicationError(ErrorCodes.PreconditionRequired, ErrorKind.PreconditionRequired));
+            return Result.Failure<CommissionRateDto>(precondition);
         }
 
-        if (!ListingService.MatchesRowVersion(rate.RowVersion, ifMatch))
+        var validation = await _requestValidator.ValidateAsync(request, cancellationToken);
+        if (!validation.IsValid)
         {
-            return Result.Failure<CommissionRateDto>(new ApplicationError(ErrorCodes.PreconditionFailed, ErrorKind.PreconditionFailed));
+            return Result.Failure<CommissionRateDto>(ValidationErrors.FromValidation(validation));
         }
 
         var effectiveFrom = request.EffectiveFrom == default ? rate.EffectiveFrom : NormalizeUtc(request.EffectiveFrom);
-        var rates = (await _repository.GetAllAsync(cancellationToken)).ToList();
+        var rates = (await _repository.GetAllForUpdateAsync(cancellationToken)).ToList();
 
         // Snapshot of the stored set, used to tell "this edit broke the set" from "the set was already broken".
         var storedRates = rates.ToList();
 
-        // Adjacent tiers share a boundary, so moving this tier's boundary moves its neighbour's matching boundary.
-        // Neighbours are found before the proposed tier replaces the stored one: the proposed tier has a new Id and
-        // must never be matched as its own neighbour.
-        var cascades = FindBoundaryCascades(rate, request, effectiveFrom, now, rates);
+        var proposed = CommissionRate.Create(request.MaxPrice, request.MaxInclusive, request.RatePercent, effectiveFrom);
+        if (!rate.IsActive)
+        {
+            proposed.Retire();
+        }
 
-        var proposed = CommissionRate.Create(request.MinPrice, request.MinInclusive, request.MaxPrice, request.MaxInclusive, request.RatePercent, request.IsActive, effectiveFrom);
         var existingIndex = rates.FindIndex(item => item.Id == id);
         if (existingIndex >= 0)
         {
@@ -131,44 +138,25 @@ public sealed class CommissionRateAdminService(
             rates.Add(proposed);
         }
 
-        // Validate against unsaved copies of the neighbours; tracked entities are only touched after validation passes.
-        // Copies are matched by reference so entity equality overrides cannot confuse the lookup.
-        var cascadeByCopy = new Dictionary<CommissionRate, (string EditedField, CommissionRate Original)>(ReferenceEqualityComparer.Instance);
-        var candidates = new List<CommissionRate>(rates);
-        foreach (var cascade in cascades)
-        {
-            var copy = CommissionRate.Create(cascade.MinPrice, cascade.MinInclusive, cascade.MaxPrice, cascade.MaxInclusive, cascade.Tier.RatePercent, cascade.Tier.IsActive, cascade.Tier.EffectiveFrom);
-            cascadeByCopy[copy] = (cascade.EditedField, cascade.Tier);
-            candidates[candidates.FindIndex(item => ReferenceEquals(item, cascade.Tier))] = copy;
-        }
-
         // Validate now and at every later instant where a scheduled tier takes effect.
-        var violations = CommissionTierValidator.ValidateTimeline(candidates, now);
-
-        // A neighbour broken by this edit is reported against the edited tier's field, and the stored neighbour is kept
-        // as a related tier so the client can see which record the edit collided with.
-        violations = violations
-            .Select(violation => violation.Tier is not null && cascadeByCopy.TryGetValue(violation.Tier, out var cascaded)
-                ? violation with { Tier = proposed, Field = cascaded.EditedField, RelatedTier = cascaded.Original }
-                : violation)
-            .Distinct()
-            .ToList();
-
+        var violations = CommissionTierValidator.ValidateTimeline(rates, now);
         if (violations.Count > 0)
         {
             var storedSetInvalid = CommissionTierValidator.ValidateTimeline(storedRates, now).Count > 0;
             return Result.Failure<CommissionRateDto>(CommissionTierValidator.ToApplicationError(violations, proposed, storedSetInvalid));
         }
 
-        var oldValues = JsonSerializer.Serialize(ListingMapper.Instance.ToCommissionRate(rate));
-        rate.Update(request.MinPrice, request.MinInclusive, request.MaxPrice, request.MaxInclusive, request.RatePercent, request.IsActive, effectiveFrom);
-        await AddUpdateAuditAsync(now, rate, "commission.rate.updated", oldValues, cancellationToken);
+        var oldValues = SerializeBand(rate);
+        var normalizedMaxInclusive = request.MaxPrice is null ? false : request.MaxInclusive;
+        var isNoOp = rate.MaxPrice == request.MaxPrice
+            && rate.MaxInclusive == normalizedMaxInclusive
+            && rate.RatePercent == request.RatePercent
+            && rate.EffectiveFrom == effectiveFrom;
 
-        foreach (var cascade in cascades)
+        rate.Update(request.MaxPrice, request.MaxInclusive, request.RatePercent, effectiveFrom);
+        if (!isNoOp)
         {
-            var neighbourOldValues = JsonSerializer.Serialize(ListingMapper.Instance.ToCommissionRate(cascade.Tier));
-            cascade.Tier.Update(cascade.MinPrice, cascade.MinInclusive, cascade.MaxPrice, cascade.MaxInclusive, cascade.Tier.RatePercent, cascade.Tier.IsActive, cascade.Tier.EffectiveFrom);
-            await AddUpdateAuditAsync(now, cascade.Tier, "commission.rate.cascaded", neighbourOldValues, cancellationToken);
+            await AddAuditAsync(now, rate, "commission.rate.updated", oldValues, SerializeBand(rate), cancellationToken);
         }
 
         var updateSave = await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -182,64 +170,214 @@ public sealed class CommissionRateAdminService(
         // The write is durable at this point, so the invalidation must not be abandoned by a cancelled request.
         await _cache.InvalidateCommissionRatesAsync(CancellationToken.None);
 
-        return Result.Success<CommissionRateDto>(ListingMapper.Instance.ToCommissionRate(rate));
+        var finalSet = rates.Select(item => ReferenceEquals(item, proposed) ? rate : item).ToList();
+        return Result.Success(ToDtoWithDerivedBounds(rate, finalSet, now));
     }
 
-    /// <summary>
-    /// Finds the active neighbours whose shared boundary must move with the edited tier: the successor when the max changes,
-    /// the predecessor when the min changes. Open-ended edges have no neighbour and are left to the validator.
-    /// Cascades only apply when the edited tier is part of the active chain both before and after the edit, and only
-    /// to neighbours that are in effect now; an inactive or scheduled tier that merely shares a number with a live
-    /// tier must not drag it along.
-    /// </summary>
-    private static List<BoundaryCascade> FindBoundaryCascades(
-        CommissionRate rate,
-        CommissionRateRequest request,
-        DateTime effectiveFrom,
-        DateTime now,
-        IReadOnlyList<CommissionRate> rates)
+    /// <inheritdoc />
+    public async Task<Result> RetireAsync(Guid id, string? ifMatch, CancellationToken cancellationToken)
     {
-        var cascades = new List<BoundaryCascade>();
+        var now = _clock.GetUtcNow().UtcDateTime;
 
-        if (!rate.IsActive || rate.EffectiveFrom > now || !request.IsActive || effectiveFrom > now)
+        await using var retireTransaction = await _unitOfWork.BeginTransactionAsync(TransactionIsolationLevel.Serializable, cancellationToken);
+
+        var rate = await _repository.GetByIdAsync(id, cancellationToken);
+        if (rate is null)
         {
-            return cascades;
+            return Result.Failure(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
-        bool IsLiveNeighbour(CommissionRate tier) => tier.Id != rate.Id && tier.IsActive && tier.EffectiveFrom <= now;
-
-        if (rate.MaxPrice is decimal oldMax && request.MaxPrice is decimal newMax
-            && (newMax != oldMax || request.MaxInclusive != rate.MaxInclusive))
+        var precondition = CheckIfMatch(rate, ifMatch);
+        if (precondition is not null)
         {
-            cascades.AddRange(rates
-                .Where(tier => IsLiveNeighbour(tier) && tier.MinPrice == oldMax && tier.MinInclusive == !rate.MaxInclusive)
-                .Select(tier => new BoundaryCascade(tier, newMax, !request.MaxInclusive, tier.MaxPrice, tier.MaxInclusive, nameof(CommissionRate.MaxPrice))));
+            return Result.Failure(precondition);
         }
 
-        if (request.MinPrice != rate.MinPrice || request.MinInclusive != rate.MinInclusive)
+        if (!rate.IsActive)
         {
-            cascades.AddRange(rates
-                .Where(tier => IsLiveNeighbour(tier) && tier.MaxPrice == rate.MinPrice && tier.MaxInclusive == !rate.MinInclusive)
-                .Select(tier => new BoundaryCascade(tier, tier.MinPrice, tier.MinInclusive, request.MinPrice, !request.MinInclusive, nameof(CommissionRate.MinPrice))));
+            return Result.Success();
         }
 
-        // One cascade per neighbour: corrupt stored data can make a tier match both sides, and applying two
-        // cascades to the same tier would lose the first edit and break the copy replacement during validation.
-        return cascades.DistinctBy(cascade => cascade.Tier.Id).ToList();
+        var rates = (await _repository.GetAllForUpdateAsync(cancellationToken)).ToList();
+
+        var retiredCopy = Copy(rate);
+        retiredCopy.Retire();
+        Replace(rates, rate.Id, retiredCopy);
+
+        // Retiring the active open-ended top leaves no band covering the top of the range; promote the highest
+        // remaining band that is effective now so the set stays exhaustive.
+        CommissionRate? promoted = null;
+        CommissionRate? promotedCopy = null;
+        if (IsActiveOpenEndedTop(rate, now))
+        {
+            var remaining = CommissionTierSet.ActiveAt(rates.Where(item => item.Id != rate.Id), now);
+            if (remaining.Count > 0 && remaining[^1].MaxPrice is not null)
+            {
+                promoted = remaining[^1];
+                promotedCopy = Copy(promoted);
+                promotedCopy.PromoteToOpenEnded();
+                Replace(rates, promoted.Id, promotedCopy);
+            }
+        }
+
+        var violations = CommissionTierValidator.ValidateTimeline(rates, now);
+        if (violations.Count > 0)
+        {
+            // Retiring has no request fields to blame: a request that would leave the stored set invalid is a state conflict.
+            return Result.Failure(CommissionTierValidator.ToConflict(violations));
+        }
+
+        var retiredOldValues = SerializeBand(rate);
+        rate.Retire();
+        await AddAuditAsync(now, rate, "commission.rate.retired", retiredOldValues, SerializeBand(rate), cancellationToken);
+
+        if (promoted is not null)
+        {
+            var promotedOldValues = SerializeBand(promoted);
+            promoted.PromoteToOpenEnded();
+            await AddAuditAsync(now, promoted, "commission.rate.promoted", promotedOldValues, SerializeBand(promoted), cancellationToken);
+        }
+
+        var retireSave = await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!retireSave.IsSuccess)
+        {
+            return Result.Failure(retireSave.Error!);
+        }
+
+        await retireTransaction.CommitAsync(cancellationToken);
+
+        // The write is durable at this point, so the invalidation must not be abandoned by a cancelled request.
+        await _cache.InvalidateCommissionRatesAsync(CancellationToken.None);
+
+        return Result.Success();
     }
 
-    /// <summary>
-    /// Records an update audit event, skipping updates that leave the serialized tier unchanged.
-    /// </summary>
-    private async Task AddUpdateAuditAsync(DateTime now, CommissionRate rate, string action, string oldValues, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    public async Task<Result<CommissionRateDto>> ReactivateAsync(Guid id, string? ifMatch, CancellationToken cancellationToken)
     {
-        var newValues = JsonSerializer.Serialize(ListingMapper.Instance.ToCommissionRate(rate));
-        if (newValues == oldValues)
+        var now = _clock.GetUtcNow().UtcDateTime;
+
+        await using var reactivateTransaction = await _unitOfWork.BeginTransactionAsync(TransactionIsolationLevel.Serializable, cancellationToken);
+
+        var rate = await _repository.GetByIdAsync(id, cancellationToken);
+        if (rate is null)
         {
-            return;
+            return Result.Failure<CommissionRateDto>(new ApplicationError(ErrorCodes.ResourceNotFound, ErrorKind.NotFound));
         }
 
-        await _repository.AddAuditEventAsync(
+        var precondition = CheckIfMatch(rate, ifMatch);
+        if (precondition is not null)
+        {
+            return Result.Failure<CommissionRateDto>(precondition);
+        }
+
+        if (rate.IsActive)
+        {
+            var currentRates = await _repository.GetAllAsync(cancellationToken);
+            return Result.Success(ToDtoWithDerivedBounds(rate, currentRates, now));
+        }
+
+        var rates = (await _repository.GetAllForUpdateAsync(cancellationToken)).ToList();
+
+        var reactivatedCopy = Copy(rate);
+        reactivatedCopy.Reactivate();
+        Replace(rates, rate.Id, reactivatedCopy);
+
+        var violations = CommissionTierValidator.ValidateTimeline(rates, now);
+        if (violations.Count > 0)
+        {
+            // Reactivating has no request fields to blame: a request that would leave the stored set invalid is a state conflict.
+            return Result.Failure<CommissionRateDto>(CommissionTierValidator.ToConflict(violations));
+        }
+
+        var oldValues = SerializeBand(rate);
+        rate.Reactivate();
+        await AddAuditAsync(now, rate, "commission.rate.reactivated", oldValues, SerializeBand(rate), cancellationToken);
+
+        var reactivateSave = await _unitOfWork.SaveChangesAsync(cancellationToken);
+        if (!reactivateSave.IsSuccess)
+        {
+            return Result.Failure<CommissionRateDto>(reactivateSave.Error!);
+        }
+
+        await reactivateTransaction.CommitAsync(cancellationToken);
+
+        // The write is durable at this point, so the invalidation must not be abandoned by a cancelled request.
+        await _cache.InvalidateCommissionRatesAsync(CancellationToken.None);
+
+        var finalSet = rates.Select(item => ReferenceEquals(item, reactivatedCopy) ? rate : item).ToList();
+        return Result.Success(ToDtoWithDerivedBounds(rate, finalSet, now));
+    }
+
+    private static Dictionary<Guid, (decimal Lower, bool LowerInclusive)> BoundsById(IReadOnlyList<CommissionRate> orderedActive)
+    {
+        var bounds = new Dictionary<Guid, (decimal Lower, bool LowerInclusive)>(orderedActive.Count);
+        for (var index = 0; index < orderedActive.Count; index++)
+        {
+            bounds[orderedActive[index].Id] = CommissionTierSet.BoundsOf(orderedActive, index);
+        }
+
+        return bounds;
+    }
+
+    private static CommissionRateDto ToDtoWithDerivedBounds(CommissionRate rate, IEnumerable<CommissionRate> set, DateTime now)
+    {
+        var active = CommissionTierSet.ActiveAt(set, now);
+        var index = active.ToList().FindIndex(tier => tier.Id == rate.Id);
+        return index < 0
+            ? ToDto(rate, null, null)
+            : ToDto(rate, CommissionTierSet.BoundsOf(active, index).Lower, CommissionTierSet.BoundsOf(active, index).LowerInclusive);
+    }
+
+    private static CommissionRateDto ToDto(CommissionRate rate, decimal? minPrice, bool? minInclusive)
+        => new()
+        {
+            Id = rate.Id,
+            MinPrice = minPrice,
+            MinInclusive = minInclusive,
+            MaxPrice = rate.MaxPrice,
+            MaxInclusive = rate.MaxInclusive,
+            RatePercent = rate.RatePercent,
+            IsActive = rate.IsActive,
+            EffectiveFrom = rate.EffectiveFrom,
+            Version = Convert.ToBase64String(rate.RowVersion),
+        };
+
+    private static CommissionRate Copy(CommissionRate rate) => rate.DetachedCopy();
+
+    private static void Replace(List<CommissionRate> rates, Guid id, CommissionRate replacement)
+    {
+        var index = rates.FindIndex(item => item.Id == id);
+        if (index >= 0)
+        {
+            rates[index] = replacement;
+        }
+        else
+        {
+            rates.Add(replacement);
+        }
+    }
+
+    private static bool IsActiveOpenEndedTop(CommissionRate rate, DateTime now)
+        => rate.IsActive && rate.EffectiveFrom <= now && rate.MaxPrice is null;
+
+    private static ApplicationError? CheckIfMatch(CommissionRate rate, string? ifMatch)
+    {
+        if (string.IsNullOrWhiteSpace(ifMatch))
+        {
+            return new ApplicationError(ErrorCodes.PreconditionRequired, ErrorKind.PreconditionRequired);
+        }
+
+        return ListingService.MatchesRowVersion(rate.RowVersion, ifMatch)
+            ? null
+            : new ApplicationError(ErrorCodes.PreconditionFailed, ErrorKind.PreconditionFailed);
+    }
+
+    private static string SerializeBand(CommissionRate rate)
+        => JsonSerializer.Serialize(new { rate.MaxPrice, rate.MaxInclusive, rate.RatePercent, rate.EffectiveFrom, rate.IsActive });
+
+    private async Task AddAuditAsync(DateTime now, CommissionRate rate, string action, string? oldValues, string? newValues, CancellationToken cancellationToken)
+        => await _repository.AddAuditEventAsync(
             AuditEvent.Create(
                 now,
                 _currentUser.UserId,
@@ -252,7 +390,6 @@ public sealed class CommissionRateAdminService(
                 oldValues,
                 newValues),
             cancellationToken);
-    }
 
     /// <summary>
     /// Normalizes a client-supplied instant to UTC. Local values are converted; unspecified values are taken as UTC,
@@ -264,7 +401,4 @@ public sealed class CommissionRateAdminService(
         DateTimeKind.Unspecified => DateTime.SpecifyKind(value, DateTimeKind.Utc),
         _ => value,
     };
-
-    /// <summary>A neighbouring tier whose boundary follows the edited tier. <paramref name="EditedField"/> names the edited tier's field that caused it.</summary>
-    private sealed record BoundaryCascade(CommissionRate Tier, decimal MinPrice, bool MinInclusive, decimal? MaxPrice, bool MaxInclusive, string EditedField);
 }

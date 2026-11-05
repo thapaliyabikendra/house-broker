@@ -57,29 +57,23 @@ public static class ErrorCodes
     /// <summary>A value does not match the expected format (for example the postal code).</summary>
     public const string InvalidFormat = "validation.invalid_format";
 
-    /// <summary>A commission tier boundary does not line up with the adjacent tier's boundary.</summary>
-    public const string TierBoundaryMismatch = "validation.tier_boundary_mismatch";
-
-    /// <summary>Two adjacent commission tiers share a boundary with the same inclusivity.</summary>
-    public const string TierBoundaryInclusiveMismatch = "validation.tier_boundary_inclusive_mismatch";
-
-    /// <summary>The commission tier set must contain exactly one open-ended tier.</summary>
+    /// <summary>Exactly one commission tier may be open-ended.</summary>
     public const string TierOpenEndedCount = "validation.tier_open_ended_count";
 
-    /// <summary>The lowest commission tier must be inclusive at its minimum.</summary>
-    public const string TierLowestInclusive = "validation.tier_lowest_inclusive";
-
-    /// <summary>The highest active commission tier must be open-ended.</summary>
+    /// <summary>Only the highest active commission tier may be open-ended.</summary>
     public const string TierTopOpenEnded = "validation.tier_top_open_ended";
 
     /// <summary>An open-ended commission tier must be the last tier in the set.</summary>
     public const string TierOpenEndedLast = "validation.tier_open_ended_last";
 
-    /// <summary>The lowest commission tier must start at zero.</summary>
-    public const string TierMinNotZero = "validation.tier_min_not_zero";
+    /// <summary>A bounded commission tier's maximum must be greater than zero and greater than the previous band's maximum.</summary>
+    public const string TierMaxNotAscending = "validation.tier_max_not_ascending";
 
-    /// <summary>A commission tier's maximum must be greater than its minimum.</summary>
+    /// <summary>A commission tier's maximum must be greater than zero.</summary>
     public const string TierMaxNotAboveMin = "validation.tier_max_not_above_min";
+
+    /// <summary>A commission tier's rate must be greater than zero and at most 100 percent.</summary>
+    public const string TierRateOutOfRange = "validation.tier_rate_out_of_range";
 
     /// <summary>At least one commission tier must be active.</summary>
     public const string TierSetEmpty = "validation.tier_set_empty";

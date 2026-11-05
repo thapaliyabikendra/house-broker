@@ -140,13 +140,6 @@ namespace HouseBroker.Infrastructure.Persistence.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
-                    b.Property<bool>("MinInclusive")
-                        .HasColumnType("bit");
-
-                    b.Property<decimal>("MinPrice")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<decimal>("RatePercent")
                         .HasPrecision(9, 4)
                         .HasColumnType("decimal(9,4)");

@@ -33,8 +33,7 @@ public sealed record CommissionTierViolation
     public IReadOnlyList<object?> Args { get; init; }
 
     /// <summary>
-    /// Gets the stored tier that actually broke a rule when the violation was re-attributed to another tier
-    /// (for example a neighbour whose boundary moved with the edited tier), or null.
+    /// Gets the stored tier that actually broke a rule when the violation was re-attributed to another tier, or null.
     /// </summary>
     public CommissionRate? RelatedTier { get; init; }
 
@@ -67,18 +66,14 @@ public sealed record CommissionTierViolation
     }
 }
 
-/// <summary>Commission tier validation.</summary>
+/// <summary>Commission tier validation for the upper-bound band model.</summary>
 public static class CommissionTierValidator
 {
-    /// <summary>Validates a set of commission tiers at the supplied instant.</summary>
+    /// <summary>Validates a set of commission bands at the supplied instant.</summary>
     public static IReadOnlyList<CommissionTierViolation> Validate(IEnumerable<CommissionRate> tiers, DateTime effectiveAtUtc)
     {
         var violations = new List<CommissionTierViolation>();
-        var active = tiers
-            .Where(tier => tier.IsActive && tier.EffectiveFrom <= effectiveAtUtc)
-            .OrderBy(tier => tier.MinPrice)
-            .ThenBy(tier => tier.MinInclusive ? 0 : 1)
-            .ToList();
+        var active = CommissionTierSet.ActiveAt(tiers, effectiveAtUtc);
 
         if (active.Count == 0)
         {
@@ -89,66 +84,50 @@ public static class CommissionTierValidator
         var openEnded = active.Where(tier => tier.MaxPrice is null).ToList();
         if (openEnded.Count != 1)
         {
-            // Point at the open-ended candidate when there is one; otherwise at the top tier.
+            // Point at the open-ended candidate when there is one; otherwise at the top band.
             var subject = openEnded.Count > 1 ? openEnded[0] : active[^1];
-            violations.Add(new CommissionTierViolation(ErrorCodes.TierOpenEndedCount, subject, "MaxPrice", openEnded.Count));
+            var related = openEnded.Count > 1 ? openEnded[1] : null;
+            violations.Add(new CommissionTierViolation(ErrorCodes.TierOpenEndedCount, subject, "MaxPrice", openEnded.Count)
+            {
+                RelatedTier = related,
+            });
+        }
+        else if (!ReferenceEquals(openEnded[0], active[^1]))
+        {
+            // Defensive: the ordering puts the open-ended band last, so this can only happen with a broken comparer.
+            violations.Add(new CommissionTierViolation(ErrorCodes.TierTopOpenEnded, openEnded[0], "MaxPrice", openEnded[0].MaxPrice));
         }
 
-        var first = active[0];
-        if (first.MinPrice != 0m)
+        decimal? previousMax = null;
+        CommissionRate? previousTier = null;
+        foreach (var tier in active)
         {
-            violations.Add(new CommissionTierViolation(ErrorCodes.TierMinNotZero, first, "MinPrice", first.MinPrice));
-        }
-        else if (!first.MinInclusive)
-        {
-            violations.Add(new CommissionTierViolation(ErrorCodes.TierLowestInclusive, first, "MinInclusive", first.MinPrice));
+            if (tier.MaxPrice is not decimal max)
+            {
+                continue;
+            }
+
+            if (max <= 0m)
+            {
+                violations.Add(new CommissionTierViolation(ErrorCodes.TierMaxNotAboveMin, tier, "MaxPrice", previousMax ?? 0m, max));
+            }
+            else if (previousMax is decimal previous && max <= previous)
+            {
+                violations.Add(new CommissionTierViolation(ErrorCodes.TierMaxNotAscending, tier, "MaxPrice", previous, max)
+                {
+                    RelatedTier = previousTier,
+                });
+            }
+
+            previousMax = max;
+            previousTier = tier;
         }
 
         foreach (var tier in active)
         {
-            if (tier.MaxPrice is decimal max && max <= tier.MinPrice)
+            if (tier.RatePercent <= 0m || tier.RatePercent > 100m)
             {
-                violations.Add(new CommissionTierViolation(ErrorCodes.TierMaxNotAboveMin, tier, "MaxPrice", tier.MinPrice, max));
-            }
-        }
-
-        // An open-ended tier below a bounded top tier is reported once here; the adjacency loop below skips it
-        // so the same tier and field are not reported twice under two codes.
-        CommissionRate? reportedTopOpenEnded = null;
-        if (openEnded.Count > 0 && active[^1].MaxPrice is not null)
-        {
-            reportedTopOpenEnded = openEnded[0];
-            violations.Add(new CommissionTierViolation(ErrorCodes.TierTopOpenEnded, reportedTopOpenEnded, "MaxPrice", reportedTopOpenEnded.MinPrice));
-        }
-
-        for (var index = 1; index < active.Count; index++)
-        {
-            var previous = active[index - 1];
-            var current = active[index];
-
-            if (previous.MaxPrice is null)
-            {
-                if (!ReferenceEquals(previous, reportedTopOpenEnded))
-                {
-                    violations.Add(new CommissionTierViolation(ErrorCodes.TierOpenEndedLast, previous, "MaxPrice", previous.MinPrice));
-                }
-
-                continue;
-            }
-
-            // Each side's args are phrased from that tier's point of view: "this boundary" and "the adjacent boundary".
-            var sharedBoundary = previous.MaxPrice.Value;
-            if (sharedBoundary != current.MinPrice)
-            {
-                violations.Add(new CommissionTierViolation(ErrorCodes.TierBoundaryMismatch, previous, "MaxPrice", sharedBoundary, current.MinPrice));
-                violations.Add(new CommissionTierViolation(ErrorCodes.TierBoundaryMismatch, current, "MinPrice", current.MinPrice, sharedBoundary));
-                continue;
-            }
-
-            if (previous.MaxInclusive == current.MinInclusive)
-            {
-                violations.Add(new CommissionTierViolation(ErrorCodes.TierBoundaryInclusiveMismatch, previous, "MaxInclusive", sharedBoundary));
-                violations.Add(new CommissionTierViolation(ErrorCodes.TierBoundaryInclusiveMismatch, current, "MinInclusive", sharedBoundary));
+                violations.Add(new CommissionTierViolation(ErrorCodes.TierRateOutOfRange, tier, "RatePercent", tier.RatePercent));
             }
         }
 
@@ -195,13 +174,14 @@ public static class CommissionTierValidator
     {
         var all = violations.ToList();
         var fieldErrors = all
-            .Where(violation => ReferenceEquals(violation.Tier, proposed) && violation.Field is not null)
+            .Where(violation => (ReferenceEquals(violation.Tier, proposed) || ReferenceEquals(violation.RelatedTier, proposed))
+                && violation.Field is not null)
             .DistinctBy(violation => (violation.Field, violation.Code))
             .Select(violation => new FieldError(violation.Field!, violation.Code, violation.Args.ToArray()))
             .ToList();
 
         // Existing tiers (not the proposed one) involved in a violation: either the tier that broke a rule, or the
-        // stored neighbour whose cascaded boundary caused a violation reported against the proposed tier.
+        // stored neighbour whose state caused a violation reported against the proposed tier.
         var existingTiers = all
             .SelectMany(violation => new[] { violation.Tier, violation.RelatedTier })
             .Where(tier => tier is not null && !ReferenceEquals(tier, proposed))
@@ -210,7 +190,7 @@ public static class CommissionTierValidator
             .ToList();
         var existingIds = existingTiers.Select(tier => tier.Id).ToList();
         var relatedRecords = existingTiers
-            .Select(tier => new RelatedRecord(tier.Id, tier.MinPrice, tier.MinInclusive, tier.MaxPrice, tier.MaxInclusive))
+            .Select(tier => new RelatedRecord(tier.Id, tier.MaxPrice, tier.MaxInclusive))
             .ToList();
 
         if (storedSetInvalid && fieldErrors.Count == 0 && existingIds.Count > 0 && all.All(violation => violation.Tier is not null))
@@ -224,6 +204,32 @@ public static class CommissionTierValidator
         return new ApplicationError(code, ErrorKind.Validation, fieldErrors.FirstOrDefault()?.Field)
         {
             FieldErrors = fieldErrors,
+            RelatedIds = existingIds,
+            RelatedRecords = relatedRecords,
+        };
+    }
+
+    /// <summary>
+    /// Maps a set-level failure from a lifecycle write (retire/reactivate) to a conflict, so a request that would
+    /// leave the stored set invalid is a state conflict rather than a bad request.
+    /// </summary>
+    public static ApplicationError ToConflict(IEnumerable<CommissionTierViolation> violations)
+    {
+        var all = violations.ToList();
+        var existingTiers = all
+            .SelectMany(violation => new[] { violation.Tier, violation.RelatedTier })
+            .Where(tier => tier is not null)
+            .Select(tier => tier!)
+            .DistinctBy(tier => tier.Id)
+            .ToList();
+        var existingIds = existingTiers.Select(tier => tier.Id).ToList();
+        var relatedRecords = existingTiers
+            .Select(tier => new RelatedRecord(tier.Id, tier.MaxPrice, tier.MaxInclusive))
+            .ToList();
+
+        var code = all.Count > 0 ? all[0].Code : ErrorCodes.Conflict;
+        return new ApplicationError(code, ErrorKind.Conflict)
+        {
             RelatedIds = existingIds,
             RelatedRecords = relatedRecords,
         };

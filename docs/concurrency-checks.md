@@ -34,7 +34,7 @@ dotnet run --project api/src/HouseBroker.Auth -- migrate
 1. Read a tier with its `version`.
 2. Submit two concurrent edits with the same `If-Match`.
 3. Expected: one succeeds, one returns `412 Precondition Failed`.
-4. Run tier-set validation after the test and confirm no gaps or overlaps.
+4. Run tier-set validation after the test and confirm the active band set still has exactly one open-ended top band and strictly increasing maxima.
 
 ## 4. Duplicate idempotent create (`POST /api/v1/listings`)
 

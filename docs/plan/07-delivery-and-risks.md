@@ -21,7 +21,7 @@ Tier 1 is the assignment submission scope: it satisfies every raw requirement. *
 | Risk | Mitigation |
 |------|-----------|
 | Commission leaks to public or other brokers | Separate owner DTO; tests asserting public JSON lacks the field; separate cache keys |
-| Boundary ambiguity in tiers | Decided (inclusive middle tier); per-tier `MinInclusive`/`MaxInclusive` flags avoid decimal gaps; explicit boundary and tier-set tests |
+| Boundary ambiguity in tiers | Decided (inclusive middle tier); `MaxInclusive` plus derived lower bounds make gaps and overlaps structurally impossible; explicit boundary and tier-set tests |
 | Reviewer expects a visual "display" of listings but Tier 1 has no UI | Swagger UI in Tier 1 (Postman collection optional); Showcase slice of Phase 11 is the first Tier 2 increment |
 | OpenIddict or Swashbuckle incompatibility with .NET 10 | Spikes in Phases 1, 3 and 4; fallbacks: built-in OpenAPI, JwtBearer validation |
 | Path-base pitfalls (Swagger URLs, redirects, cookie paths, issuer mismatch behind the proxy) | PathBase tested in Phase 1 and again behind the gateway in Phase 14; public issuer configured explicitly |

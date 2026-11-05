@@ -16,6 +16,8 @@ public sealed class CommissionRateProvider(AppDbContext dbContext) : ICommission
         return await _dbContext.CommissionRates
             .AsNoTracking()
             .Where(rate => rate.IsActive)
+            .OrderBy(rate => rate.MaxPrice == null)
+            .ThenBy(rate => rate.MaxPrice)
             .ToListAsync(cancellationToken);
     }
 }

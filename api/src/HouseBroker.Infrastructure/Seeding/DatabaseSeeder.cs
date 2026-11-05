@@ -77,9 +77,9 @@ public static class DatabaseSeeder
         var now = clock.GetUtcNow().UtcDateTime;
 
         db.CommissionRates.AddRange(
-            CommissionRate.Create(0m, true, 5_000_000m, false, 2.00m, true, now),
-            CommissionRate.Create(5_000_000m, true, 10_000_000m, true, 1.75m, true, now),
-            CommissionRate.Create(10_000_000m, false, null, false, 1.50m, true, now));
+            CommissionRate.Create(5_000_000m, false, 2.00m, now),
+            CommissionRate.Create(10_000_000m, true, 1.75m, now),
+            CommissionRate.Create(null, false, 1.50m, now));
     }
 
     private static async Task SeedDemoBrokerProfilesAsync(AppDbContext db, CancellationToken cancellationToken)

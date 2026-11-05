@@ -86,4 +86,61 @@ public sealed class CommissionRatesController(ICommissionRateAdminService servic
         var result = await service.UpdateAsync(id, request, Request.Headers.IfMatch.ToString(), cancellationToken);
         return result.ToActionResult(this);
     }
+
+    /// <summary>Retires a commission rate band (soft delete).</summary>
+    /// <remarks>
+    /// Sets <c>IsActive</c> to false; the row remains visible in <c>GET</c> but is ignored by pricing. Retiring the
+    /// active open-ended top band promotes the highest remaining active band to open-ended in the same transaction.
+    /// </remarks>
+    /// <response code="204">No content: the band was retired.</response>
+    /// <response code="401">Unauthorized.</response>
+    /// <response code="403">Forbidden.</response>
+    /// <response code="404">Not found.</response>
+    /// <response code="409">Conflict: retiring the band would leave the active set invalid.</response>
+    /// <response code="412">Precondition failed: the If-Match version is stale.</response>
+    /// <response code="428">Precondition required: If-Match is missing.</response>
+    [HttpDelete("{id:guid}")]
+    [HasPermission(AppPermissions.CommissionRatesDelete)]
+    [EnableRateLimiting(RateLimitPolicies.Write)]
+    [Tags("Admin: Commission Rates")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status428PreconditionRequired)]
+    public async Task<IActionResult> Retire(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await service.RetireAsync(id, Request.Headers.IfMatch.ToString(), cancellationToken);
+        return result.ToActionResult(this);
+    }
+
+    /// <summary>Reactivates a retired commission rate band.</summary>
+    /// <remarks>The whole active set is re-validated before the band becomes active again.</remarks>
+    /// <response code="200">OK: the band is active again.</response>
+    /// <response code="400">Bad request: the stored set is invalid and the request does not fix it.</response>
+    /// <response code="401">Unauthorized.</response>
+    /// <response code="403">Forbidden.</response>
+    /// <response code="404">Not found.</response>
+    /// <response code="409">Conflict: reactivating the band would leave the active set invalid.</response>
+    /// <response code="412">Precondition failed: the If-Match version is stale.</response>
+    /// <response code="428">Precondition required: If-Match is missing.</response>
+    [HttpPost("{id:guid}/reactivate")]
+    [HasPermission(AppPermissions.CommissionRatesUpdate)]
+    [EnableRateLimiting(RateLimitPolicies.Write)]
+    [Tags("Admin: Commission Rates")]
+    [ProducesResponseType<CommissionRateDto>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status412PreconditionFailed)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status428PreconditionRequired)]
+    public async Task<IActionResult> Reactivate(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await service.ReactivateAsync(id, Request.Headers.IfMatch.ToString(), cancellationToken);
+        return result.ToActionResult(this);
+    }
 }

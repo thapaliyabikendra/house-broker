@@ -2,7 +2,7 @@ namespace HouseBroker.Application.Contracts;
 
 /// <summary>
 /// An existing record that must be fixed before the request can succeed, with the raw values needed to describe it to the caller.
-/// For commission tiers, the arguments are <c>[minPrice, minInclusive, maxPrice-or-null, maxInclusive]</c>.
+/// For commission bands, the arguments are <c>[maxPrice-or-null, maxInclusive]</c>.
 /// </summary>
 public sealed record RelatedRecord
 {

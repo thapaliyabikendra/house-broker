@@ -74,7 +74,7 @@ AGENTS.md, README.md, docker-compose.yml, docker-compose.prod.yml, .editorconfig
 - `Listings` (Id [GUID v7], BrokerId [Guid], Title, Description, PropertyTypeId [Guid], Price, Province, City, Locality, PostalCode, Bedrooms, Bathrooms, AreaSqFt, Status [int, `ListingStatus` enum], CommissionAmount, CommissionRatePercent, CommissionRateId [Guid], CreatedAt, CreatedBy, UpdatedAt, UpdatedBy, IsDeleted, DeletedAt, DeletedBy, RowVersion)
 - `PropertyTypes` (Id [GUID v7], Code [unique], Name [nvarchar], SortOrder, CreatedAt, CreatedBy?, UpdatedAt, UpdatedBy?); `Features` (same shape with `Name`); `ListingFeatures` (Id [GUID v7], ListingId, FeatureId, unique on `(ListingId, FeatureId)`, CreatedAt, CreatedBy?). No `PropertyTypeTranslations`/`FeatureTranslations`: lookup names live on the lookup row in the default language (normalization + data integrity; feature set still reference-data rather than appsettings)
 - `ListingImages` (Id [GUID v7], ListingId, FileName, ContentType, ContentLength, ContentHash, SortOrder, IsPrimary, CreatedAt, CreatedBy, UpdatedAt, UpdatedBy); `ListingImageData` (ListingImageId PK/FK, Content `varbinary(max)`) keeps LOB bytes in a separate table so listing and search reads never load them; the payload table carries no audit columns
-- `CommissionRates` (Id [GUID v7], MinPrice, MinInclusive, MaxPrice?, MaxInclusive, RatePercent, IsActive, EffectiveFrom, CreatedAt, CreatedBy, UpdatedAt, UpdatedBy, RowVersion). Admin creates or edits rates through the API; each change also writes an append-only `AuditEvents` row with the old and new values. The snapshot on `Listings` remains non-retroactive
+- `CommissionRates` (Id [GUID v7], MaxPrice?, MaxInclusive, RatePercent, IsActive, EffectiveFrom, CreatedAt, CreatedBy, UpdatedAt, UpdatedBy, RowVersion). Each row is an upper-bound band; the lower bound is derived from the previous band (see 01-scope). Admin lists, creates, edits, retires and reactivates rates through the API; retire is a soft `IsActive = false`, never a delete, because `Listings.CommissionRateId` has no FK. Each change also writes an append-only `AuditEvents` row with the old and new values. The snapshot on `Listings` remains non-retroactive
 - `BrokerProfiles` (BrokerId = token `sub` [Guid] PK, FullName, Email, PhoneNumber, CreatedAt, CreatedBy?, UpdatedAt, UpdatedBy?). Read-model of a broker's contact details (synced from token claims); kept separate from Identity even though both live in the same database, so the API never reads the `identity` schema
 - `IdempotencyKeys` (Id [GUID v7], UserId [Guid], Key, Method, Route, RequestHash, State, StatusCode, ResponseBody, ResourceId, CreatedAt, ExpiresAt); unique index on `(UserId, Key)`; no `CorrelationId` column (trace via logs/`AuditEvents`); `UserId` is the actor, so no `CreatedBy`/`UpdatedBy`
 - `ListingStatusHistories` (Id [GUID v7], ListingId, FromStatus?, ToStatus, ChangedBy? [Guid], ChangedAt, Reason?); append-only; indexed on `(ListingId, ChangedAt)`
@@ -145,13 +145,14 @@ Effective access requires both the user's permission (for user tokens) and the c
 | `CommissionRates` | `admin.commission` | | | ✔ |
 | `CommissionRates.Create` | `admin.commission` | | | ✔ |
 | `CommissionRates.Update` | `admin.commission` | | | ✔ |
+| `CommissionRates.Delete` | `admin.commission` | | | ✔ |
 
 "Own only" is enforced by a resource-based ownership check (`sub` equals the listing's `BrokerId`). Partner (`client_credentials`) tokens carry no user, so they can satisfy only `listings.read` and `contacts.read`. `admin.commission` is granted only to the first-party client.
 
 ### 3.7 Domain approach (DDD-lite)
 
 - **Aggregate:** `Listing` is the aggregate root, with `ListingImage` and `ListingFeature` inside it. A factory `Listing.Create(...)` and behavior methods (`ChangePrice`, `ApplyCommission`, `Publish`, `Archive`, `MarkSold`, `AddImage`) protect invariants; violations raise `DomainException`. Setters are private.
-- **Domain logic:** `CommissionRate.Covers(price)` and `CommissionCalculator.Calculate(price, tiers)`, pure and framework-free.
+- **Domain logic:** `CommissionTierSet` (ordering, derived lower bounds, tier lookup) and `CommissionCalculator.Calculate(price, tiers)`, pure and framework-free.
 - **Identity** lives in the Auth service; the domain refers to users only by `BrokerId`.
 - **Not used:** domain events, specification pattern, strongly-typed IDs.
 - A short ubiquitous-language glossary (Listing, Broker, Seeker, Commission Tier, Owner View) is kept in `AGENTS.md`.

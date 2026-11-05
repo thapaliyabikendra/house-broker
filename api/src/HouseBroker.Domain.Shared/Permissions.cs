@@ -26,4 +26,7 @@ public static class AppPermissions
 
     /// <summary>May update commission rate tiers.</summary>
     public const string CommissionRatesUpdate = "CommissionRates.Update";
+
+    /// <summary>May retire (soft delete) commission rate tiers.</summary>
+    public const string CommissionRatesDelete = "CommissionRates.Delete";
 }

@@ -144,7 +144,7 @@ Controls are mapped to the OWASP Top 10:2025 and the OWASP API Security Top 10:2
 - `Listing` and `CommissionRate` carry a SQL Server `rowversion`, exposed as an opaque `version` on `ListingDetailDto`, `OwnerListingDto` and the rate DTO, and as the `ETag` header on `GET /listings/{id}` and `GET /listings/mine/{id}`
 - `PUT /listings/{id}` requires `If-Match`: missing gives `428 Precondition Required`, stale gives `412 Precondition Failed` (the ProblemDetails carries the current version). `DELETE` honors `If-Match` when sent
 - Aggregate boundary = consistency boundary: adding or removing an image or feature touches the `Listing` root (new `rowversion`), so the 10-image limit and the single-primary-image rule hold under parallel uploads
-- Commission-tier changes run in one `Serializable` transaction that re-validates the whole tier set (no gaps, no overlaps, one open-ended top tier)
+- Commission-tier changes run in one `Serializable` transaction that re-validates the whole active band set (at least one band, exactly one open-ended top band, strictly increasing positive maxima)
 - A listing update that races with a tier change keeps the snapshot it computed (commission is not retroactive by design)
 - Duplicate registrations rely on Identity's unique email index; a unique-violation maps to a validation error
 - EF Core's SQL Server execution strategy (`EnableRetryOnFailure`) retries transient faults, and transactions run through the strategy

@@ -62,16 +62,18 @@ Edge cases the tests must cover: `49,99,999`, `49,99,999.50`, `50,00,000`, `1,00
 
 Boundary resolution: both inclusive thresholds use the middle tier, so the tier predicates are mutually exclusive and exhaustive: `Price < 5000000`, `Price >= 5000000 AND Price <= 10000000`, `Price > 10000000`.
 
-**Tier bound model.** Because price is `decimal(18,2)`, a tier cannot be described by two plain inclusive bounds (that leaves gaps or overlaps between 49,99,999 and 50,00,000). Each `CommissionRates` row therefore stores `MinPrice`, `MinInclusive`, `MaxPrice?` (null = open-ended top tier) and `MaxInclusive`. A price matches a tier when it is `>=` (or `>` if not `MinInclusive`) `MinPrice` and `<=` (or `<` if not `MaxInclusive`) `MaxPrice`. Seeded tiers:
+**Tier bound model.** Each `CommissionRates` row stores only its upper bound: `MaxPrice?` (null = open-ended top tier) and `MaxInclusive`. The lower bound is derived from the previous band in `MaxPrice` order (nulls last): the first band starts at 0 inclusive, and every later band starts at the previous band's `MaxPrice` with the opposite inclusivity. A price matches a band when it is below `MaxPrice` (or at or below it when `MaxInclusive`); an open-ended band matches every price at or above its derived lower bound. Because the bands are contiguous by construction, gaps and overlaps are impossible. Seeded tiers:
 
-| Tier | MinPrice | MinInclusive | MaxPrice | MaxInclusive | Rate |
-|------|---------:|:------------:|---------:|:------------:|-----:|
-| 1 | 0 | yes | 5,000,000 | no | 2.00% |
-| 2 | 5,000,000 | yes | 10,000,000 | yes | 1.75% |
-| 3 | 10,000,000 | no | null | n/a | 1.50% |
+| Tier | MaxPrice | MaxInclusive | Derived range | Rate |
+|------|---------:|:------------:|---------------|-----:|
+| 1 | 5,000,000 | no | `[0, 5,000,000)` | 2.00% |
+| 2 | 10,000,000 | yes | `[5,000,000, 10,000,000]` | 1.75% |
+| 3 | null | no | `(10,000,000, ∞)` | 1.50% |
 
-Admin writes re-validate the complete active tier set (the set effective now; a future-dated row is validated together with the set that will be effective at its `EffectiveFrom`): sorted by `MinPrice`, the first tier starts at 0 (inclusive), each tier's `MaxPrice` equals the next tier's `MinPrice` with exactly one of the two sides inclusive (no gap, no overlap), and exactly one tier is open-ended.
+`MaxInclusive` is forced to `false` when `MaxPrice` is null.
 
-Editing a boundary cascades to the adjacent active tier so the set stays contiguous: changing a tier's `MaxPrice`/`MaxInclusive` sets the successor's `MinPrice`/`MinInclusive` to the same boundary (inclusivity flipped), and changing its `MinPrice`/`MinInclusive` sets the predecessor's `MaxPrice`/`MaxInclusive` likewise. Both rows are written in the same `Serializable` transaction, each gets its own `commission.rate.updated` audit event, and the whole set is validated before anything is saved. A cascade that breaks the set (for example a max beyond the successor's max) is rejected as a validation error on the edited tier's field and nothing is persisted. Open-ended edges have no neighbour to cascade to.
+Admin writes re-validate the complete active band set (the set effective now; a future-dated row is validated together with the set that will be effective at its `EffectiveFrom`): at least one active band, exactly one open-ended band and it must be the top band, every bounded `MaxPrice` strictly positive and strictly increasing, and every `RatePercent` in `(0, 100]`.
+
+A band is **retired**, never hard-deleted: `DELETE` sets `IsActive = false`, the row stays visible in `GET`, and the provider/calculator ignore it. If the retired band was the active open-ended top, the highest remaining active band is promoted to open-ended (`MaxPrice = null`) in the same transaction and effective at `now`. `POST /{id}/reactivate` restores a retired band after re-validating the whole active set. `PUT`, `DELETE` and reactivate require `If-Match` and run in a `Serializable` transaction with tracked reads. Each change writes an append-only `AuditEvents` row (`commission.rate.created`, `.updated`, `.retired`, `.reactivated`, `.promoted`) with max-only old/new values.
 
 ---

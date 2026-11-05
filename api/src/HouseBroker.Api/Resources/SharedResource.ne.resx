@@ -48,23 +48,14 @@
   <data name="validation.invalid_format" xml:space="preserve">
     <value>मान सही ढाँचामा छैन।</value>
   </data>
-  <data name="validation.tier_boundary_mismatch" xml:space="preserve">
-    <value>यो दरको सीमा ({0}) छिमेकी दरको सीमा ({1}) सँग बराबर हुनुपर्छ। मिल्नका लागि कुनै एउटा मान बदल्नुहोस्।</value>
-  </data>
-  <data name="validation.tier_boundary_inclusive_mismatch" xml:space="preserve">
-    <value>छिमेकी दरहरूको साझा सीमा {0} मा समावेशिता विपरीत हुनुपर्छ: एउटा सीमा समावेशी र अर्को बहिष्कृत बनाउनुहोस्।</value>
-  </data>
   <data name="validation.tier_open_ended_count" xml:space="preserve">
-    <value>ठीक एउटा सक्रिय दरमा अधिकतम हुनु हुँदैन (भेटियो {0})।</value>
-  </data>
-  <data name="validation.tier_lowest_inclusive" xml:space="preserve">
-    <value>सबभन्दा कम दर {0} बाट सुरु हुन्छ, त्यसैले यसको न्यूनतम समावेशी हुनुपर्छ। न्यूनतमलाई समावेशी बनाउनुहोस्।</value>
+    <value>ठीक एउटा सक्रिय ब्यान्डमा अधिकतम हुनु हुँदैन (भेटियो {0})।</value>
   </data>
   <data name="validation.tier_top_open_ended" xml:space="preserve">
-    <value>केवल सबभन्दा माथिल्लो दरमा मात्र अधिकतम नहुन सक्छ। {0} बाट सुरु हुने दरलाई अधिकतम दिनुहोस्, वा सबभन्दा माथिल्लो दरबाट अधिकतम हटाउनुहोस्।</value>
+    <value>केवल सबभन्दा माथिल्लो सक्रिय ब्यान्डमा मात्र अधिकतम नहुन सक्छ। खुला ब्यान्डलाई अधिकतम दिनुहोस्, वा यसलाई सबभन्दा माथिल्लो ब्यान्ड बनाउनुहोस्।</value>
   </data>
   <data name="validation.tier_open_ended_last" xml:space="preserve">
-    <value>{0} बाट सुरु हुने दरको अधिकतम छैन, त्यसैले त्यसपछि कुनै दर आउन सक्दैन। यसलाई अधिकतम दिनुहोस्, वा सबभन्दा माथि सार्नुहोस्।</value>
+    <value>खुला ब्यान्ड सेटको अन्तिम ब्यान्ड हुनुपर्छ।</value>
   </data>
   <data name="idempotency.conflict" xml:space="preserve">
     <value>आइडेम्पोटेन्सी कुञ्जी फरक अनुरोधसँग पहिले प्रयोग भएको छ।</value>
@@ -78,16 +69,19 @@
   <data name="idempotency.key_invalid" xml:space="preserve">
     <value>Idempotency-Key को लम्बाइ १६ देखि ६४ अक्षरसम्म हुनुपर्छ, र A-Z, a-z, 0-9, अन्डरस्कोर वा ड्यास मात्र हुनुपर्छ।</value>
   </data>
-  <data name="validation.tier_min_not_zero" xml:space="preserve">
-    <value>सबभन्दा कम दर ० बाट सुरु हुनुपर्छ, तर यो {0} बाट सुरु हुन्छ। यसको न्यूनतमलाई ० मा सेट गर्नुहोस्।</value>
-  </data>
   <data name="validation.tier_max_not_above_min" xml:space="preserve">
-    <value>यो दरको अधिकतम ({1}) न्यूनतम ({0}) भन्दा ठूलो हुनुपर्छ। अधिकतम बढाउनुहोस् वा न्यूनतम घटाउनुहोस्।</value>
+    <value>यो ब्यान्डको अधिकतम ({1}) शून्यभन्दा ठूलो र अघिल्लो ब्यान्डको अधिकतम ({0}) भन्दा पनि ठूलो हुनुपर्छ।</value>
+  </data>
+  <data name="validation.tier_max_not_ascending" xml:space="preserve">
+    <value>यो ब्यान्डको अधिकतम ({1}) अघिल्लो ब्यान्डको अधिकतम ({0}) भन्दा ठूलो हुनुपर्छ।</value>
+  </data>
+  <data name="validation.tier_rate_out_of_range" xml:space="preserve">
+    <value>कमिसन दर ({0}) शून्यभन्दा ठूलो र बढीमा १०० प्रतिशत हुनुपर्छ।</value>
   </data>
   <data name="validation.tier_set_empty" xml:space="preserve">
-    <value>कम्तीमा एउटा कमिसन दर सक्रिय हुनुपर्छ।</value>
+    <value>कम्तीमा एउटा कमिसन ब्यान्ड सक्रिय हुनुपर्छ।</value>
   </data>
   <data name="validation.related_tiers" xml:space="preserve">
-    <value>यी अवस्थित दरहरूले दर नियम उल्लंघन गर्छन् र पहिले सच्याउनुपर्छ: {0}।</value>
+    <value>यी अवस्थित ब्यान्डहरूले ब्यान्ड नियम उल्लंघन गर्छन् र पहिले सच्याउनुपर्छ: {0}।</value>
   </data>
 </root>

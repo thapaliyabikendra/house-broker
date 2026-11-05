@@ -70,7 +70,7 @@ public sealed class ListingServiceTests
         currentUser.SetupGet(user => user.FullName).Returns("Broker Name");
         currentUser.SetupGet(user => user.Email).Returns("broker@example.com");
         rates.Setup(provider => provider.GetActiveAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { CommissionRate.Create(0m, true, null, false, 2m, true, DateTime.MinValue) });
+            .ReturnsAsync(new[] { CommissionRate.Create(null, false, 2m, DateTime.MinValue) });
         unitOfWork.Setup(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success<int>(1));
 
         var service = new ListingService(
@@ -119,7 +119,7 @@ public sealed class ListingServiceTests
         currentUser.SetupGet(user => user.Email).Returns("broker@example.com");
         repository.Setup(repo => repo.GetByIdAsync(listing.Id, It.IsAny<CancellationToken>())).ReturnsAsync(listing);
         rates.Setup(provider => provider.GetActiveAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new[] { CommissionRate.Create(0m, true, null, false, 3m, true, DateTime.MinValue) });
+            .ReturnsAsync(new[] { CommissionRate.Create(null, false, 3m, DateTime.MinValue) });
         unitOfWork.Setup(unit => unit.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(Result.Success<int>(1));
         queries.Setup(q => q.GetFeaturesByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>())).ReturnsAsync(Array.Empty<Feature>());
 

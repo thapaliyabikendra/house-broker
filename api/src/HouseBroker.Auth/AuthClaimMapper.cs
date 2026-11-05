@@ -38,6 +38,7 @@ public static class AuthClaimMapper
                 permissions.Add(AppPermissions.CommissionRates);
                 permissions.Add(AppPermissions.CommissionRatesCreate);
                 permissions.Add(AppPermissions.CommissionRatesUpdate);
+                permissions.Add(AppPermissions.CommissionRatesDelete);
             }
         }
 

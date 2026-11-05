@@ -6,258 +6,246 @@ using Xunit;
 
 namespace HouseBroker.Application.Tests;
 
-/// <summary>Commission tier validator tests.</summary>
+/// <summary>Commission band validator tests for the upper-bound model.</summary>
 public sealed class CommissionTierValidatorTests
 {
-    /// <summary>Valid set no errors.</summary>
+    private static readonly DateTime Now = new(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+    /// <summary>The seeded upper-bound bands are valid.</summary>
     [Fact]
-    public void Validate_ValidSet_NoErrors()
+    public void Validate_ValidSeededSet_NoViolations()
     {
-        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
-        var tiers = new[]
+        var bands = new[]
         {
-            CommissionRate.Create(0m, true, 5000000m, false, 2m, true, DateTime.MinValue),
-            CommissionRate.Create(5000000m, true, 10000000m, true, 1.75m, true, DateTime.MinValue),
-            CommissionRate.Create(10000000m, false, null, false, 1.5m, true, DateTime.MinValue),
+            Band(5_000_000m, false, 2m),
+            Band(10_000_000m, true, 1.75m),
+            Band(null, false, 1.5m),
         };
 
-        var errors = CommissionTierValidator.Validate(tiers, now);
-
-        Assert.Empty(errors);
+        Assert.Empty(CommissionTierValidator.Validate(bands, Now));
     }
 
-    /// <summary>Gap returns error.</summary>
+    /// <summary>Two bounded bands with the same maximum break strict ordering.</summary>
     [Fact]
-    public void Validate_Gap_ReturnsError()
+    public void Validate_DuplicateMax_ReturnsTierMaxNotAscending()
     {
-        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
-        var tiers = new[]
+        var first = Band(5_000_000m, false);
+        var second = Band(5_000_000m, true);
+        var bands = new[] { first, second, Band(null, false) };
+
+        var violation = Assert.Single(CommissionTierValidator.Validate(bands, Now), item => item.Code == ErrorCodes.TierMaxNotAscending);
+
+        Assert.Same(second, violation.Tier);
+        Assert.Equal("MaxPrice", violation.Field);
+        Assert.Equal(new object?[] { 5_000_000m, 5_000_000m }, violation.Args);
+    }
+
+    /// <summary>Input order does not matter: the set is ordered by maximum before validation.</summary>
+    [Fact]
+    public void Validate_DescendingInput_IsNormalizedToAscendingOrder()
+    {
+        var bands = new[]
         {
-            CommissionRate.Create(0m, true, 4999999m, false, 2m, true, DateTime.MinValue),
-            CommissionRate.Create(5000001m, true, null, false, 1.5m, true, DateTime.MinValue),
+            Band(10_000_000m, false),
+            Band(5_000_000m, false),
+            Band(null, false),
         };
 
-        var errors = CommissionTierValidator.Validate(tiers, now);
-
-        Assert.NotEmpty(errors);
+        Assert.Empty(CommissionTierValidator.Validate(bands, Now));
     }
 
-    /// <summary>Double inclusive boundary returns error.</summary>
+    /// <summary>A bounded maximum of zero is rejected; the first band would be empty.</summary>
     [Fact]
-    public void Validate_DoubleInclusiveBoundary_ReturnsError()
+    public void Validate_ZeroMax_ReturnsTierMaxNotAboveMin()
     {
-        var now = TimeProvider.System.GetUtcNow().UtcDateTime;
-        var tiers = new[]
-        {
-            CommissionRate.Create(0m, true, 5000000m, true, 2m, true, DateTime.MinValue),
-            CommissionRate.Create(5000000m, true, null, false, 1.5m, true, DateTime.MinValue),
-        };
+        var zero = WithMax(Band(null, false), 0m);
+        var bands = new[] { zero, Band(null, false) };
 
-        var errors = CommissionTierValidator.Validate(tiers, now);
-
-        Assert.NotEmpty(errors);
-    }
-
-    /// <summary>Future-dated invalid sets are detected at their effective instant.</summary>
-    [Fact]
-    public void Validate_FutureTier_DetectsInvalidFutureSet()
-    {
-        var now = DateTime.UtcNow;
-        var future = now.AddHours(1);
-        var tiers = new[]
-        {
-            CommissionRate.Create(0m, true, null, false, 2m, true, DateTime.MinValue),
-            CommissionRate.Create(0m, true, null, false, 99m, true, future),
-        };
-
-        var nowErrors = CommissionTierValidator.Validate(tiers, now);
-        var futureErrors = CommissionTierValidator.Validate(tiers, future);
-
-        Assert.Empty(nowErrors);
-        Assert.NotEmpty(futureErrors);
-    }
-
-    /// <summary>A gap created by the proposed tier is reported on that tier's MaxPrice field.</summary>
-    [Fact]
-    public void ToApplicationError_GapCausedByProposedTier_ReportsMaxPriceField()
-    {
-        var now = DateTime.UtcNow;
-        var proposed = CommissionRate.Create(0m, true, 4999999m, false, 2m, true, DateTime.MinValue);
-        var tiers = new[]
-        {
-            proposed,
-            CommissionRate.Create(5000001m, true, null, false, 1.5m, true, DateTime.MinValue),
-        };
-
-        var error = CommissionTierValidator.ToApplicationError(CommissionTierValidator.Validate(tiers, now), proposed);
-
-        Assert.Equal(HouseBroker.Application.Contracts.ErrorKind.Validation, error.Kind);
-        Assert.Contains(error.FieldErrors, f => f.Field == "MaxPrice");
-        Assert.All(error.FieldErrors, f => Assert.False(string.IsNullOrWhiteSpace(f.Code)));
-    }
-
-    /// <summary>A problem between two existing tiers does not invent a field on the proposed tier.</summary>
-    [Fact]
-    public void ToApplicationError_ProblemBetweenExistingTiers_HasNoFieldErrors()
-    {
-        var now = DateTime.UtcNow;
-        var proposed = CommissionRate.Create(20000000m, false, null, false, 1.5m, false, DateTime.MinValue);
-        var tiers = new[]
-        {
-            CommissionRate.Create(0m, true, 4999999m, false, 2m, true, DateTime.MinValue),
-            CommissionRate.Create(5000001m, true, 10000000m, true, 1.75m, true, DateTime.MinValue),
-            proposed,
-        };
-
-        var error = CommissionTierValidator.ToApplicationError(CommissionTierValidator.Validate(tiers, now), proposed);
-
-        Assert.Equal(HouseBroker.Application.Contracts.ErrorKind.Conflict, error.Kind);
-        Assert.Equal(ErrorCodes.Conflict, error.Code);
-        Assert.Empty(error.FieldErrors);
-        Assert.Contains(tiers[0].Id, error.RelatedIds);
-        Assert.Contains(tiers[1].Id, error.RelatedIds);
-        Assert.DoesNotContain(proposed.Id, error.RelatedIds);
-    }
-    /// <summary>A boundary mismatch carries both boundaries, seen from each tier's side.</summary>
-    [Fact]
-    public void Validate_BoundaryMismatch_CarriesBothBoundariesAsArgs()
-    {
-        var now = DateTime.UtcNow;
-        var first = CommissionRate.Create(0m, true, 5000000m, false, 2m, true, DateTime.MinValue);
-        var second = CommissionRate.Create(6000000m, true, null, false, 1.5m, true, DateTime.MinValue);
-
-        var errors = CommissionTierValidator.Validate(new[] { first, second }, now);
-
-        var previous = Assert.Single(errors, violation => violation.Code == ErrorCodes.TierBoundaryMismatch && ReferenceEquals(violation.Tier, first));
-        Assert.Equal("MaxPrice", previous.Field);
-        Assert.Equal(new object?[] { 5000000m, 6000000m }, previous.Args);
-        var current = Assert.Single(errors, violation => violation.Code == ErrorCodes.TierBoundaryMismatch && ReferenceEquals(violation.Tier, second));
-        Assert.Equal("MinPrice", current.Field);
-        Assert.Equal(new object?[] { 6000000m, 5000000m }, current.Args);
-    }
-
-    /// <summary>An inclusivity clash carries the shared boundary.</summary>
-    [Fact]
-    public void Validate_InclusiveMismatch_CarriesSharedBoundary()
-    {
-        var now = DateTime.UtcNow;
-        var tiers = new[]
-        {
-            CommissionRate.Create(0m, true, 5000000m, true, 2m, true, DateTime.MinValue),
-            CommissionRate.Create(5000000m, true, null, false, 1.5m, true, DateTime.MinValue),
-        };
-
-        var violation = Assert.Single(CommissionTierValidator.Validate(tiers, now), item => item.Code == ErrorCodes.TierBoundaryInclusiveMismatch && ReferenceEquals(item.Tier, tiers[0]));
-
-        Assert.Equal(new object?[] { 5000000m }, violation.Args);
-    }
-
-    /// <summary>The open-ended count violation carries how many open-ended tiers were found.</summary>
-    [Fact]
-    public void Validate_OpenEndedCount_CarriesFoundCount()
-    {
-        var now = DateTime.UtcNow;
-        var tiers = new[]
-        {
-            CommissionRate.Create(0m, true, null, false, 2m, true, DateTime.MinValue),
-            CommissionRate.Create(5000000m, true, null, false, 1.5m, true, DateTime.MinValue),
-        };
-
-        var violation = Assert.Single(CommissionTierValidator.Validate(tiers, now), item => item.Code == ErrorCodes.TierOpenEndedCount);
-
-        Assert.Equal(new object?[] { 2 }, violation.Args);
-    }
-
-    /// <summary>A lowest tier that does not start at zero has its own code and carries its minimum.</summary>
-    [Fact]
-    public void Validate_FirstTierNotZero_UsesSpecificCodeWithMinimum()
-    {
-        var now = DateTime.UtcNow;
-        var tiers = new[] { CommissionRate.Create(100m, true, null, false, 2m, true, DateTime.MinValue) };
-
-        var violation = Assert.Single(CommissionTierValidator.Validate(tiers, now), item => item.Code == ErrorCodes.TierMinNotZero);
-
-        Assert.Equal("MinPrice", violation.Field);
-        Assert.Equal(new object?[] { 100m }, violation.Args);
-    }
-
-    /// <summary>A maximum at or below the minimum has its own code and carries both values.</summary>
-    [Fact]
-    public void Validate_MaxNotAboveMin_UsesSpecificCodeWithBothValues()
-    {
-        var now = DateTime.UtcNow;
-        var tiers = new[] { CommissionRate.Create(0m, true, 0m, false, 2m, true, DateTime.MinValue) };
-
-        var violation = Assert.Single(CommissionTierValidator.Validate(tiers, now), item => item.Code == ErrorCodes.TierMaxNotAboveMin);
+        var violation = Assert.Single(CommissionTierValidator.Validate(bands, Now), item => item.Code == ErrorCodes.TierMaxNotAboveMin);
 
         Assert.Equal("MaxPrice", violation.Field);
         Assert.Equal(new object?[] { 0m, 0m }, violation.Args);
     }
 
-    /// <summary>A set with no active tier reports the set-level code, not the generic required code.</summary>
+    /// <summary>A negative bounded maximum is rejected.</summary>
     [Fact]
-    public void Validate_NoActiveTiers_ReportsTierSetEmpty()
+    public void Validate_NegativeMax_ReturnsTierMaxNotAboveMin()
     {
-        var now = DateTime.UtcNow;
-        var tiers = new[] { CommissionRate.Create(0m, true, null, false, 2m, false, DateTime.MinValue) };
+        var negative = WithMax(Band(null, false), -1m);
+        var bands = new[] { negative, Band(null, false) };
 
-        var violation = Assert.Single(CommissionTierValidator.Validate(tiers, now));
+        var violation = Assert.Single(CommissionTierValidator.Validate(bands, Now), item => item.Code == ErrorCodes.TierMaxNotAboveMin);
 
-        Assert.Equal(ErrorCodes.TierSetEmpty, violation.Code);
-        Assert.Null(violation.Tier);
+        Assert.Equal(new object?[] { 0m, -1m }, violation.Args);
     }
 
-    /// <summary>Field errors on the proposed tier keep their args, and the set-level error uses the rule's own code.</summary>
+    /// <summary>Every active set needs exactly one open-ended top band.</summary>
     [Fact]
-    public void ToApplicationError_GapCausedByProposedTier_FieldErrorCarriesArgs()
+    public void Validate_NoOpenEnded_ReturnsTierOpenEndedCount()
     {
-        var now = DateTime.UtcNow;
-        var proposed = CommissionRate.Create(0m, true, 4999999m, false, 2m, true, DateTime.MinValue);
-        var tiers = new[]
+        var bands = new[] { Band(5_000_000m, false), Band(10_000_000m, true) };
+
+        var violation = Assert.Single(CommissionTierValidator.Validate(bands, Now), item => item.Code == ErrorCodes.TierOpenEndedCount);
+
+        Assert.Equal(new object?[] { 0 }, violation.Args);
+    }
+
+    /// <summary>Two open-ended bands are rejected and the found count is reported.</summary>
+    [Fact]
+    public void Validate_TwoOpenEnded_ReturnsTierOpenEndedCount()
+    {
+        var bands = new[] { Band(null, false), Band(null, false) };
+
+        var violation = Assert.Single(CommissionTierValidator.Validate(bands, Now), item => item.Code == ErrorCodes.TierOpenEndedCount);
+
+        Assert.Equal(new object?[] { 2 }, violation.Args);
+    }
+
+    /// <summary>A rate outside (0, 100] is rejected with the offending value.</summary>
+    [Fact]
+    public void Validate_RateOutOfRange_ReturnsTierRateOutOfRange()
+    {
+        var invalid = WithRate(Band(5_000_000m, false), 0m);
+        var bands = new[] { invalid, Band(null, false) };
+
+        var violation = Assert.Single(CommissionTierValidator.Validate(bands, Now), item => item.Code == ErrorCodes.TierRateOutOfRange);
+
+        Assert.Equal("RatePercent", violation.Field);
+        Assert.Equal(new object?[] { 0m }, violation.Args);
+    }
+
+    /// <summary>A future band that would break the set is detected at its effective instant.</summary>
+    [Fact]
+    public void ValidateTimeline_FutureTierBreakingSet_IsRejected()
+    {
+        var future = Now.AddHours(1);
+        var bands = new[]
         {
-            proposed,
-            CommissionRate.Create(5000001m, true, null, false, 1.5m, true, DateTime.MinValue),
+            Band(null, false, 2m),
+            Band(null, false, 99m, future),
         };
 
-        var error = CommissionTierValidator.ToApplicationError(CommissionTierValidator.Validate(tiers, now), proposed);
-
-        var fieldError = Assert.Single(error.FieldErrors);
-        Assert.Equal("MaxPrice", fieldError.Field);
-        Assert.Equal(ErrorCodes.TierBoundaryMismatch, fieldError.Code);
-        Assert.Equal(new object?[] { 4999999m, 5000001m }, fieldError.Args);
+        Assert.Empty(CommissionTierValidator.Validate(bands, Now));
+        Assert.NotEmpty(CommissionTierValidator.Validate(bands, future));
+        Assert.NotEmpty(CommissionTierValidator.ValidateTimeline(bands, Now));
     }
 
-    /// <summary>A set-level failure with no field and no related tiers uses the rule's own code.</summary>
+    /// <summary>A duplicate maximum caused by the proposed band is reported on that band's MaxPrice field.</summary>
     [Fact]
-    public void ToApplicationError_NoActiveTiers_UsesSetLevelCode()
+    public void ToApplicationError_DuplicateMaxCausedByProposed_ReportsMaxPriceField()
     {
-        var now = DateTime.UtcNow;
-        var proposed = CommissionRate.Create(0m, true, null, false, 2m, false, DateTime.MinValue);
+        var existing = Band(5_000_000m, false);
+        var proposed = Band(5_000_000m, true);
+        var bands = new[] { existing, proposed, Band(null, false) };
 
-        var error = CommissionTierValidator.ToApplicationError(CommissionTierValidator.Validate(new[] { proposed }, now), proposed);
+        var error = CommissionTierValidator.ToApplicationError(
+            CommissionTierValidator.Validate(bands, Now),
+            proposed,
+            storedSetInvalid: false);
+
+        Assert.Equal(ErrorKind.Validation, error.Kind);
+        Assert.Equal(ErrorCodes.ValidationFailed, error.Code);
+        var fieldError = Assert.Single(error.FieldErrors);
+        Assert.Equal("MaxPrice", fieldError.Field);
+        Assert.Equal(ErrorCodes.TierMaxNotAscending, fieldError.Code);
+        Assert.Equal(new object?[] { 5_000_000m, 5_000_000m }, fieldError.Args);
+        Assert.Contains(existing.Id, error.RelatedIds);
+        Assert.DoesNotContain(proposed.Id, error.RelatedIds);
+    }
+
+    /// <summary>A problem between stored bands is a state conflict, not a bad request field.</summary>
+    [Fact]
+    public void ToApplicationError_ProblemBetweenExistingBands_IsConflict()
+    {
+        var first = Band(5_000_000m, false);
+        var second = Band(5_000_000m, true);
+        var proposed = Band(null, false);
+        var bands = new[] { first, second, proposed };
+
+        var error = CommissionTierValidator.ToApplicationError(
+            CommissionTierValidator.Validate(bands, Now),
+            proposed,
+            storedSetInvalid: true);
+
+        Assert.Equal(ErrorKind.Conflict, error.Kind);
+        Assert.Equal(ErrorCodes.Conflict, error.Code);
+        Assert.Empty(error.FieldErrors);
+        Assert.Contains(second.Id, error.RelatedIds);
+        Assert.DoesNotContain(proposed.Id, error.RelatedIds);
+    }
+
+    /// <summary>Related bands are described by their upper bound only.</summary>
+    [Fact]
+    public void ToApplicationError_ExistingBrokenBands_CarryMaxOnlyRelatedRecords()
+    {
+        var first = Band(5_000_000m, false);
+        var second = Band(5_000_000m, true);
+        var proposed = Band(null, false);
+        var bands = new[] { first, second, proposed };
+
+        var error = CommissionTierValidator.ToApplicationError(
+            CommissionTierValidator.Validate(bands, Now),
+            proposed,
+            storedSetInvalid: true);
+
+        var records = error.RelatedRecords.OrderBy(record => record.Id == first.Id ? 0 : 1).ToList();
+        Assert.Equal(2, records.Count);
+        Assert.Equal(first.Id, records[0].Id);
+        Assert.Equal(new object?[] { 5_000_000m, false }, records[0].Args);
+        Assert.Equal(second.Id, records[1].Id);
+        Assert.Equal(new object?[] { 5_000_000m, true }, records[1].Args);
+    }
+
+    /// <summary>A set-level failure with nothing to point at keeps its own rule code.</summary>
+    [Fact]
+    public void ToApplicationError_NoActiveBands_UsesSetLevelCode()
+    {
+        var proposed = Band(null, false);
+        proposed.Retire();
+
+        var error = CommissionTierValidator.ToApplicationError(
+            CommissionTierValidator.Validate(new[] { proposed }, Now),
+            proposed,
+            storedSetInvalid: false);
 
         Assert.Equal(ErrorKind.Validation, error.Kind);
         Assert.Equal(ErrorCodes.TierSetEmpty, error.Code);
+        Assert.Empty(error.FieldErrors);
     }
 
-    /// <summary>Existing tiers that break the rules are reported with their range as arguments.</summary>
+    /// <summary>Lifecycle failures map to a conflict with the offending bands attached.</summary>
     [Fact]
-    public void ToApplicationError_ExistingBrokenTiers_CarryRangeInRelatedRecords()
+    public void ToConflict_AttachesRelatedBands()
     {
-        var now = DateTime.UtcNow;
-        var proposed = CommissionRate.Create(20000000m, false, null, false, 1.5m, false, DateTime.MinValue);
-        var tiers = new[]
-        {
-            CommissionRate.Create(0m, true, 4999999m, false, 2m, true, DateTime.MinValue),
-            CommissionRate.Create(5000001m, true, 10000000m, true, 1.75m, true, DateTime.MinValue),
-            proposed,
-        };
+        var bands = new[] { Band(5_000_000m, false), Band(10_000_000m, true) };
 
-        var error = CommissionTierValidator.ToApplicationError(CommissionTierValidator.Validate(tiers, now), proposed);
+        var error = CommissionTierValidator.ToConflict(CommissionTierValidator.Validate(bands, Now));
 
-        var first = Assert.Single(error.RelatedRecords, record => record.Id == tiers[0].Id);
-        Assert.Equal(new object?[] { 0m, true, 4999999m, false }, first.Args);
-        var second = Assert.Single(error.RelatedRecords, record => record.Id == tiers[1].Id);
-        Assert.Equal(new object?[] { 5000001m, true, 10000000m, true }, second.Args);
+        Assert.Equal(ErrorKind.Conflict, error.Kind);
+        Assert.Equal(ErrorCodes.TierOpenEndedCount, error.Code);
+        var related = Assert.Single(error.RelatedIds);
+        Assert.Equal(bands[1].Id, related);
     }
+
+    private static CommissionRate Band(decimal? maxPrice, bool maxInclusive, decimal ratePercent = 2m, DateTime? effectiveFrom = null)
+        => CommissionRate.Create(maxPrice, maxInclusive, ratePercent, effectiveFrom ?? DateTime.MinValue);
+
+    private static CommissionRate WithMax(CommissionRate band, decimal? maxPrice, bool maxInclusive = false)
+    {
+        Set(band, nameof(CommissionRate.MaxPrice), maxPrice);
+        Set(band, nameof(CommissionRate.MaxInclusive), maxInclusive);
+        return band;
+    }
+
+    private static CommissionRate WithRate(CommissionRate band, decimal ratePercent)
+    {
+        Set(band, nameof(CommissionRate.RatePercent), ratePercent);
+        return band;
+    }
+
+    private static void Set(CommissionRate band, string property, object? value)
+        => typeof(CommissionRate)
+            .GetProperty(property)!
+            .GetSetMethod(nonPublic: true)!
+            .Invoke(band, [value]);
 }

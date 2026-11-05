@@ -11,7 +11,7 @@ public static class CommissionCalculator
     /// <summary>Calculates commission.</summary>
     public static CommissionResult Calculate(decimal price, IEnumerable<CommissionRate> tiers, DateTime nowUtc)
     {
-        var tier = tiers.FirstOrDefault(tier => tier.IsActive && tier.EffectiveFrom <= nowUtc && tier.Covers(price));
+        var tier = CommissionTierSet.FindTier(tiers, price, nowUtc);
         if (tier is null)
         {
             throw new Domain.Common.DomainException(Domain.Common.ErrorCodes.NotFound, "commission.rate");
